@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Harm Gap · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 8ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .harm { border: 1px solid var(--border); border-radius: 11px; padding: 12px 14px; margin-top: 10px; }
+  .harmtop { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  .harmtext { font-size: 14.5px; line-height: 1.5; flex: 1; min-width: 260px; }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .harmv { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
+  .harmv strong { color: var(--text-primary); }
+  .tagline { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 4px; }
+  .tagline.yes { color: var(--good); }
+  .tagline.no { color: var(--warn); }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Harm Gap <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Everything you have measured so far has been street crime.</strong> Chapter 4 is about the offenses that do not fit the machinery: crime in suites, crime as an enterprise, crime that scales through a screen. They share one feature that makes them hard to see. The bigger the harm, the less likely it is to appear in the number people call the crime rate. This page measures that gap in dollars, then shows you exactly where it hides. Guess before each reveal, and keep your own notes. You will need them for Forum 4.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-dollars" type="button">The dollar gap</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-counts" type="button">What counts as crime?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-who" type="button">Who gets hit</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-dollars">
+      <div class="card">
+        <h2>Every robbery in America, added up</h2>
+        <p class="lede">Robbery is the offense most people picture when they hear the word crime: a person, a threat, property taken by force. The FBI once published what all of it costs. In the last year it reported the figure this way, robberies nationwide accounted for about <strong>$390 million</strong> in stolen property, at an average of $1,190 per robbery. Hold that number.</p>
+        <div class="guessbox">
+          <p class="gq">Internet-enabled fraud reported to the FBI in a single recent year cost victims $20.9 billion. How many years of <em>every robbery in America</em> would it take to add up to that one year of reported online fraud?</p>
+          <div class="gr">
+            <input type="range" id="yrSlider" min="1" max="100" step="1" value="10">
+            <span class="gval" id="yrVal">10 yrs</span>
+            <button class="gbtn" id="yrLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="yrVerdict"></p>
+        </div>
+        <div class="veiled" id="yrReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Internet fraud reported to the FBI, one year</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">$20.9B</span></div>
+            <div class="brow"><span class="blabel">Wage theft, minimum wage violations only</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="72%"></div></div><span class="bval">$15B+</span></div>
+            <div class="brow"><span class="blabel">Consumer fraud reported to the FTC, one year</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="60%"></div></div><span class="bval">$12.5B</span></div>
+            <div class="brow"><span class="blabel">Every robbery in America, one year</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="1.9%"></div></div><span class="bval">$0.39B</span></div>
+          </div>
+          <p class="teach"><strong>About 54 years.</strong> One year of reported internet fraud costs roughly what every robbery in the United States would cost across more than half a century. And the three big bars are all undercounts: the fraud figures are only what victims reported, and the wage theft figure counts one narrow violation, employers paying below the legal minimum, in a study of the ten most populous states. It excludes unpaid overtime, stolen tips, and misclassification entirely.</p>
+          <p class="teach"><strong>Now the part that matters for this course.</strong> Robbery, the smallest bar on this chart by a factor of fifty, is the one that appears in the crime rate, gets its own FBI category, drives police deployment, and shapes elections. The other three barely register in public conversation about crime. That asymmetry is not an accident of arithmetic. It is a question about power, and Chapter 1 gave you the two competing answers. The consensus perspective says law tracks shared values, and people genuinely do fear the mugger more than the payroll department. The conflict perspective says law tracks whose interests are threatened, and asks who wrote the rules that make one a felony and the other a wage claim.</p>
+        </div>
+        <p class="srcnote">Sources: FBI, Uniform Crime Reports, robbery topic page (about $390 million in losses nationwide, average $1,190 per robbery, 2015, the last year the FBI published a national robbery loss total in this form). FBI Internet Crime Complaint Center, 2025 Internet Crime Report ($20.877 billion in reported losses, 1,008,597 complaints, a 26 percent increase in losses over the prior year). Federal Trade Commission, Consumer Sentinel Network, 2024 ($12.5 billion in reported fraud losses across 2.6 million reports). Economic Policy Institute, minimum wage violation study (over $8 billion annually in the ten most populous states, extrapolating to more than $15 billion nationally, 2.4 million affected workers, based on 2013 to 2015 data). The 54-year figure is arithmetic from the first two numbers. These figures come from different years and different collection systems, so treat the comparison as orders of magnitude rather than a precise ratio.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-counts">
+      <div class="card">
+        <h2>Which of these is in the crime rate?</h2>
+        <p class="lede">When a news story says crime rose or fell, it almost always means the FBI's <strong>violent crime</strong> total (homicide, rape, robbery, aggravated assault) plus the <strong>property crime</strong> total (burglary, larceny-theft, motor vehicle theft, and arson). That is the number. Eight real harms follow. For each one, decide whether it lands inside that number.</p>
+        <div id="harms"></div>
+        <div class="veiled" id="countWrap">
+          <div class="statrow">
+            <div class="stat ok"><div class="v" id="cScore">0 of 8</div><div class="l">Your correct calls</div></div>
+            <div class="stat"><div class="v">4</div><div class="l">Of these eight harms appear in the crime rate</div></div>
+            <div class="stat warn"><div class="v">4</div><div class="l">Do not appear, and together they cost far more</div></div>
+          </div>
+          <p class="teach"><strong>Look at which four made it in.</strong> Robbery, burglary, shoplifting, and the assault. Direct, physical, individual, and committed by people without institutional cover. Now look at the four that did not: wage theft, investment fraud, illegal dumping, and health care billing fraud. Every one of them is unlawful. Every one has identifiable victims. Several dwarf the first four in dollars and in bodies. They are absent because of decisions made about what the counting system would count, not because anyone decided they were fine.</p>
+          <p class="teach"><strong>One honest clarification, because this is the kind of claim students overstate.</strong> Not counted in the crime rate does not mean not counted anywhere. NIBRS, the incident-based system you met in Chapter 2, does record fraud, embezzlement, and bribery when police handle them. Federal agencies keep their own enforcement statistics, the FTC and the FBI's complaint center collect victim reports, and regulators track violations. The problem is that these live in separate systems that do not add up to anything, are never combined into a headline number, and mostly capture cases only when someone with authority decided to pursue them. There is no national harm rate. There is a crime rate, and it is built out of street offenses.</p>
+          <p class="teach"><strong>Chapter 2 and Chapter 4 just met.</strong> A measurement system is a theory of what matters, written in the form of a database schema. The dark figure you studied last time was about victims choosing not to report. This is a deeper version: harms that no reporting decision could ever place inside the number, because the box does not exist.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-who">
+      <div class="card">
+        <h2>Who actually gets hit</h2>
+        <p class="lede">Cybercrime has a stubborn public image: a young person with technical skill, targeting institutions. The complaint data tells a different story about who loses money. First, where the losses come from.</p>
+        <div class="bars">
+          <div class="brow"><span class="blabel">Investment fraud</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">$8.65B</span></div>
+          <div class="brow"><span class="blabel">Business email compromise</span><div class="btrack"><div class="bfill" style="width:0%" data-w="35%"></div></div><span class="bval">$3.05B</span></div>
+          <div class="brow"><span class="blabel">Tech and customer support scams</span><div class="btrack"><div class="bfill" style="width:0%" data-w="25%"></div></div><span class="bval">$2.13B</span></div>
+          <div class="brow"><span class="blabel">Personal data breach</span><div class="btrack"><div class="bfill" style="width:0%" data-w="15%"></div></div><span class="bval">$1.31B</span></div>
+          <div class="brow"><span class="blabel">Ransomware</span><div class="btrack"><div class="bfill" style="width:0%" data-w="0.4%"></div></div><span class="bval">$32M</span></div>
+        </div>
+        <p class="teach"><strong>Ransomware gets the headlines and investment fraud takes the money.</strong> Most of that investment fraud is what practitioners call pig butchering: a stranger builds a relationship over weeks or months, then introduces a fake trading platform that shows the victim fake gains until the victim sends everything. It is a confidence scheme with the patience of a long con and the reach of a call center. Note also that the ransomware figure counts only the losses victims reported to the FBI, and most organizations that pay do not file a complaint.</p>
+        <div class="guessbox">
+          <p class="gq">Which age group of victims reported losing the most money in total?</p>
+          <div class="pickrow">
+            <button class="pick" data-age="u20" type="button">Under 20</button>
+            <button class="pick" data-age="a20" type="button">20 to 39</button>
+            <button class="pick" data-age="a40" type="button">40 to 59</button>
+            <button class="pick" data-age="a60" type="button">60 and over</button>
+          </div>
+          <p class="verdict" id="ageVerdict"></p>
+        </div>
+        <div class="veiled" id="ageReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">$7.75B</div><div class="l">Reported losses by victims age 60 and over, in one year</div></div>
+            <div class="stat"><div class="v">201,266</div><div class="l">Complaints filed by victims age 60 and over</div></div>
+            <div class="stat warn"><div class="v">+37%</div><div class="l">Increase in losses for that age group in a single year</div></div>
+          </div>
+          <p class="teach"><strong>Victims over 60 accounted for roughly 37 percent of all reported losses.</strong> They are not the least sophisticated targets. They are the group most likely to hold retirement savings, to own a home outright, and to be reachable by phone. Offenders are doing what Chapter 3 called instrumental crime, and they are selecting targets rationally. Chapter 14 has a name for this way of thinking about crime, and it is not about the offender's character at all.</p>
+          <p class="teach"><strong>The newest wrinkle.</strong> The same annual report included its first dedicated section on artificial intelligence, covering 22,364 complaints with more than $893 million in adjusted losses, of which over $632 million came from AI-assisted investment scams. Cloned voices, generated video, and synthetic identities lower the cost of running a convincing fraud. The offense is ancient. The scale is new. That has been the story of cybercrime since it started, and it is why Chapter 4 keeps insisting that these are not new crimes so much as old crimes with better logistics.</p>
+        </div>
+        <p class="srcnote">Source: FBI Internet Crime Complaint Center, 2025 Internet Crime Report. Investment fraud $8,648,617,756. Business email compromise $3,046,598,558. Tech and customer support scams $2,134,675,818. Personal data breach $1,314,923,988. Ransomware 3,611 complaints with losses exceeding $32 million. Victims age 60 and over: $7.748 billion across 201,266 complaints, a 37 percent increase over the prior year. Artificial intelligence: 22,364 complaints, adjusted losses over $893 million, of which AI-assisted investment scams exceeded $632 million. Bar lengths are drawn relative to the largest category. All figures are complaints filed with the FBI, so they are a floor rather than a measure of total cybercrime.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum 4: your post</h2>
+        <p class="lede">Write roughly 250 to 300 words for your initial post, then reply to two classmates. Check that week’s module in the LMS for the posting and reply deadlines.</p>
+        <p class="lede" style="margin-top:10px"><strong>The question:</strong> the harms with the largest dollar figures receive the least enforcement attention. Why?</p>
+        <ol class="qs" style="margin-top:12px">
+          <li>Open with the gap in your own words, using at least two figures from this page. Say which comparison surprised you and which one did not.</li>
+          <li>Bring one real case as evidence. Find a news story from the past year about a white-collar, corporate, cyber, or organized crime case. ProPublica and the Marshall Project are linked in the module and are good hunting grounds. Summarize it in two or three sentences and classify it with this chapter's vocabulary: is it occupational or corporate, entrepreneurial or ideological?</li>
+          <li>Answer the measurement question directly. Would your offender appear anywhere in the crime rate? If not, where would the case show up instead, and who would have to decide to pursue it before it appeared anywhere at all?</li>
+          <li>Take a position on why. Use the consensus and conflict perspectives from Chapter 1 by name. The strongest posts make the best case for one and then say honestly what the other explains better. The weakest posts pick a side and stop.</li>
+        </ol>
+        <p class="teach"><strong>For your replies:</strong> push on the causal claim rather than the outrage. If a classmate says the powerful write the rules, ask what evidence would distinguish that from ordinary public fear of violence, which is real and not manufactured. If a classmate says the public simply cares more about violence, ask why wage theft is handled by a civil agency while shoplifting the same dollar amount is handled by police. Both readings have real evidence, and the point of the forum is to make you say what would settle it.</p>
+        <p class="teach"><strong>Looking ahead:</strong> Exam 1 covers Chapters 1 through 5 and there is no forum during exam week. A good study move this week is a one-page comparison sheet of the data systems from Chapter 2, since every chapter since has leaned on it, including this one.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for SOC 3333 Criminology, Midwestern State University. All figures are from the published sources cited on each tab, retrieved August 2026. Your guesses and clicks stay on this page and are never recorded or transmitted.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  function animateBars(c){
+    c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); });
+  }
+  animateBars(document.getElementById('sec-who'));
+
+  // ---------- tab 1 ----------
+  (function(){
+    const slider = $('yrSlider'), val = $('yrVal'), lock = $('yrLock');
+    slider.addEventListener('input', () => { val.textContent = slider.value + ' yrs'; });
+    function doLock(){
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = 54, d = g - a;
+      let t = 'You guessed ' + g + ' years. The arithmetic gives about 54 years. ';
+      if (Math.abs(d) <= 8) t += 'You were within 8 years. Close.';
+      else if (d > 0) t += 'You were ' + Math.abs(d) + ' years high.';
+      else t += 'You were ' + Math.abs(d) + ' years low.';
+      $('yrVerdict').textContent = t;
+      $('yrReveal').style.display = 'block';
+      animateBars($('yrReveal'));
+    }
+    lock.addEventListener('click', doLock);
+    window.__lockYr = doLock;
+  })();
+
+  // ---------- tab 2 ----------
+  const HARMS = [
+    { t: 'A man threatens a convenience store clerk with a knife and takes $200 from the register.',
+      inRate: true,
+      v: '<strong>Yes, this is robbery.</strong> It is one of the four violent offenses in the headline total, and it is exactly the event the counting system was designed around: one offender, one victim, force, and a police report.' },
+    { t: 'A staffing company pays 500 warehouse workers below the legal minimum wage for two years.',
+      inRate: false,
+      v: '<strong>No.</strong> Wage theft is unlawful, and it is handled as a civil or administrative matter by labor agencies rather than as a crime by police. Nobody is arrested, no offense is recorded, and the money involved here likely exceeds a lifetime of local robberies. Compare this with the first item and hold the comparison, because it is the single sharpest illustration of the conflict perspective in this course.' },
+    { t: 'Someone breaks into a house through a back window while the owners are on vacation.',
+      inRate: true,
+      v: '<strong>Yes, this is burglary</strong>, one of the property offenses in the total. Note again what makes it countable: a location, a time, a police report, and a victim who knows immediately that it happened.' },
+    { t: 'An investment adviser runs a fake trading platform and takes $2 million from forty clients.',
+      inRate: false,
+      v: '<strong>No.</strong> Fraud is not part of the violent or property crime totals. It may be recorded in incident-based police data if local police handle it, and it may be prosecuted federally or pursued by securities regulators, but it never enters the number the news calls the crime rate. Forty victims, two million dollars, invisible.' },
+    { t: 'A shoplifter walks out of a store with $80 of merchandise.',
+      inRate: true,
+      v: '<strong>Yes, this is larceny-theft.</strong> Eighty dollars, fully counted. Put this next to the previous item and the previous wage theft item, and the shape of the counting system becomes hard to miss.' },
+    { t: 'A chemical plant knowingly dumps untreated waste into a river for years, and downstream cancer rates rise.',
+      inRate: false,
+      v: '<strong>No.</strong> Environmental offenses are handled by regulators through fines and consent decrees. There is rarely an arrest, almost never a homicide charge, and no line in the crime rate. Criminologists who study corporate harm point out that the body count here can exceed that of homicide, which is precisely why they insist the field study more than street crime.' },
+    { t: 'A man assaults a stranger and shouts a racial slur while doing it.',
+      inRate: true,
+      v: '<strong>Yes, the assault is counted</strong> as an assault, in the violent crime total, and the bias motivation is recorded separately in the FBI hate crime program. The bias does not create a new offense, it enhances the penalty for the existing one. Worth noting that hate crime data has its own double undercount, since victims report at low rates and many agencies submit no hate crime data at all.' },
+    { t: 'A hospital chain bills Medicare for tens of millions of dollars of services never provided.',
+      inRate: false,
+      v: '<strong>No.</strong> Health care fraud is one of the largest categories of federal white-collar enforcement and none of it appears in the crime rate. It is Sutherland\'s original point, made with a modern balance sheet: respectable organizations commit serious crime, and the machinery built to count crime was never pointed at them.' },
+  ];
+  const harmsEl = $('harms');
+  const hstate = HARMS.map(() => null);
+  HARMS.forEach((h, i) => {
+    const d = document.createElement('div');
+    d.className = 'harm';
+    d.innerHTML = '<div class="harmtop"><div class="harmtext">' + h.t + '</div>' +
+      '<div class="yn"><button class="ynb" data-h="'+i+'" data-a="yes" type="button">In the crime rate</button>' +
+      '<button class="ynb" data-h="'+i+'" data-a="no" type="button">Not in it</button></div></div>' +
+      '<div class="harmv" id="hv'+i+'"></div>';
+    harmsEl.appendChild(d);
+  });
+  function answerHarm(i, a){
+    const btns = harmsEl.querySelectorAll('[data-h="'+i+'"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => { b.disabled = true; if (b.dataset.a === a) b.classList.add('sel'); });
+    hstate[i] = (a === 'yes') === HARMS[i].inRate;
+    const el = $('hv'+i);
+    el.innerHTML = '<div class="tagline ' + (HARMS[i].inRate ? 'yes' : 'no') + '">' +
+      (HARMS[i].inRate ? 'counted' : 'not counted') + (hstate[i] ? ' · you were right' : '') + '</div>' + HARMS[i].v;
+    el.style.display = 'block';
+    if (hstate.every(v => v !== null)) {
+      $('cScore').textContent = hstate.filter(Boolean).length + ' of 8';
+      $('countWrap').style.display = 'block';
+    }
+  }
+  harmsEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-h]');
+    if (b) answerHarm(Number(b.dataset.h), b.dataset.a);
+  });
+
+  // ---------- tab 3 ----------
+  let agePicked = null;
+  document.querySelectorAll('#sec-who .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (agePicked) return;
+      agePicked = btn.dataset.age;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-who .pick').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.age === 'a60') b.classList.add('answer');
+      });
+      $('ageVerdict').textContent = agePicked === 'a60'
+        ? 'Right. Victims age 60 and over reported the largest total losses by a wide margin.'
+        : 'The answer is victims age 60 and over, who reported $7.75 billion in losses.';
+      $('ageReveal').style.display = 'block';
+      animateBars($('ageReveal'));
+    });
+  });
+
+  window.__S = {
+    activate,
+    lockYr: () => window.__lockYr(),
+    answerHarm,
+    pickAge: (k) => { const b = document.querySelector('#sec-who .pick[data-age="'+k+'"]'); if (b) b.click(); },
+    state: () => ({ hstate, agePicked })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

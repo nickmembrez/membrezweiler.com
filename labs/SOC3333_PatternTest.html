@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pattern Test · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 215px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+  .brow.total .blabel, .brow.total .bval { color: var(--text-primary); font-weight: 700; }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .chartwrap { margin: 8px 0 4px; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); margin: 6px 0 2px; }
+  .legend .k { display: inline-block; width: 22px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+
+  .grid { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; margin: 12px 0 4px; max-width: 560px; }
+  .cellx { aspect-ratio: 1; border-radius: 2px; background: var(--grid); }
+  .cellx.hot { background: var(--warn); }
+
+  .q { border-top: 1px solid var(--border); padding: 14px 0; }
+  .q:first-of-type { border-top: none; padding-top: 2px; }
+  .qtext { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .qv { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 8px; }
+  .qv strong { color: var(--text-primary); }
+
+  .checklist { list-style: none; display: flex; flex-direction: column; gap: 9px; counter-reset: c; margin-top: 10px; }
+  .checklist li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: c; }
+  .checklist li::before { content: counter(c); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Pattern Test <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Crime is patterned, not random, and those patterns are the reason criminological theory exists.</strong> Everything in the second half of this course is an attempt to explain the regularities on this page. Work through the five patterns, guessing before each reveal, and then take the self-check at the end, which covers everything from the first unit. There is no forum this week, so this page is a study tool rather than an assignment. Nothing you click is recorded, which also means nobody sees your quiz score but you.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-age" type="button">Age</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sex" type="button">Sex</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-place" type="button">Place</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-decline" type="button">The decline</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-check" type="button">Self-check</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-list" type="button">The checklist</button>
+    </div>
+
+    <!-- TAB 1: AGE -->
+    <div class="section active" id="sec-age">
+      <div class="card">
+        <h2>The age-crime curve, and the news about it</h2>
+        <p class="lede">For a century the age-crime curve was the most reliable finding in criminology. Offending rises sharply in adolescence, peaks in the late teens, and declines for the rest of life. It showed up across eras, countries, and offense types, and it created the field's deepest puzzle: most offenders stop on their own, with no arrest, treatment, or punishment.</p>
+        <div class="guessbox">
+          <p class="gq">In the FBI's 2024 arrest data, at roughly what age does the total arrest rate now peak?</p>
+          <div class="gr">
+            <input type="range" id="ageSlider" min="14" max="50" step="1" value="19">
+            <span class="gval" id="ageVal">19</span>
+            <button class="gbtn" id="ageLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="ageVerdict"></p>
+        </div>
+        <div class="veiled" id="ageReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">~32</div><div class="l">Age of peak total arrest rate in the 2024 data</div></div>
+            <div class="stat"><div class="v">18 to 19</div><div class="l">Where the peak sat for most of the twentieth century</div></div>
+            <div class="stat good"><div class="v">18</div><div class="l">Peak age for murder arrests, which did not move</div></div>
+          </div>
+          <p class="teach"><strong>The curve did not disappear. It moved, because the young end fell out from under it.</strong> Arrest rates for teenagers have collapsed. For 15 to 19 year olds, aggravated assault arrest rates fell more than 43 percent since 2006. Burglary arrests for that group fell nearly 89 percent. Larceny-theft arrests for 10 to 14 year olds fell nearly 82 percent. Meanwhile, arrest rates for people 30 and older stayed flat or rose modestly. Subtract a collapsing left side and the peak slides right.</p>
+          <p class="teach"><strong>Why this is the perfect thing to study during an exam week.</strong> It forces you to use three things from this unit at once. From Chapter 1, remember that a good theory has to be falsifiable, and a theory built on teenage peak offending just met evidence it has to answer for. From Chapter 2, remember that these are arrest data, so part of any change could be a change in policing rather than a change in behavior. From Chapter 5, remember that a correlate is not a cause and the two classic readings of the curve, maturation and cohort differences, make different predictions about exactly this. Maturation says everyone ages out, so the curve should be stable. Cohort thinking says each generation is different, so the curve can move. One of those just got better evidence.</p>
+          <div class="note"><strong>Handle with care.</strong> This is recent work on one year of arrest data, and arrest data are not offending data. The finding is real and it has been published, but it is not yet the settled consensus that the classic curve became over a century. Say that when you write about it.</div>
+        </div>
+        <p class="srcnote">Sources: analysis of the FBI's 2024 arrest data reporting a total arrest rate peaking near age 32, with murder arrests peaking at 18 and motor vehicle theft at 15, published in a 2025 examination of the age-crime curve. Percent declines since 2006 for ages 15 to 19 and 10 to 14 are from the same analysis. The classic late-teen peak is the long-standing finding described in criminology textbooks including Zito, Chapter 5. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: SEX -->
+    <div class="section" id="sec-sex">
+      <div class="card">
+        <h2>The gender gap, and what scales it</h2>
+        <p class="lede">Men out-offend women in every society for which we have data, and the gap is largest for the most serious offenses. Before you look at the numbers, put one down yourself.</p>
+        <div class="guessbox">
+          <p class="gq">Across all offenses combined, what percent of arrests in the United States are of men?</p>
+          <div class="gr">
+            <input type="range" id="sexSlider" min="50" max="100" step="1" value="75">
+            <span class="gval" id="sexVal">75%</span>
+            <button class="gbtn" id="sexLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="sexVerdict"></p>
+        </div>
+        <div class="veiled" id="sexReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Murder</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="88%"></div></div><span class="bval">88.0%</span></div>
+            <div class="brow"><span class="blabel">Robbery</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="84.2%"></div></div><span class="bval">84.2%</span></div>
+            <div class="brow"><span class="blabel">Burglary</span><div class="btrack"><div class="bfill" style="width:0%" data-w="79.3%"></div></div><span class="bval">79.3%</span></div>
+            <div class="brow"><span class="blabel">Motor vehicle theft</span><div class="btrack"><div class="bfill" style="width:0%" data-w="76.8%"></div></div><span class="bval">76.8%</span></div>
+            <div class="brow"><span class="blabel">Aggravated assault</span><div class="btrack"><div class="bfill" style="width:0%" data-w="76.5%"></div></div><span class="bval">76.5%</span></div>
+            <div class="brow total"><span class="blabel">All offenses</span><div class="btrack"><div class="bfill" style="width:0%" data-w="72.5%"></div></div><span class="bval">72.5%</span></div>
+            <div class="brow"><span class="blabel">Larceny-theft</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="57.4%"></div></div><span class="bval">57.4%</span></div>
+            <div class="brow"><span class="blabel">Embezzlement</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="49.8%"></div></div><span class="bval">49.8%</span></div>
+          </div>
+          <p class="teach"><strong>The gap scales with the seriousness of the offense.</strong> Nearly nine in ten murder arrests are of men. Larceny-theft is close to even. Embezzlement is essentially even, which is worth sitting with, because embezzlement is a crime of workplace access rather than physical force. When the offense requires a position rather than a body, the gap closes almost completely. That single comparison does more explanatory work than most sentences in this chapter.</p>
+          <p class="teach"><strong>Three explanations to keep separate, because the exam will not blend them for you.</strong> The first is opportunity: different lives create different access to different offenses, which is exactly what the embezzlement row suggests. The second is gender performance, the idea that some offending is a way of doing masculinity, which you will meet again in the subcultural theories of Chapter 9. The third is a measurement question rather than a behavioral one. The chivalry hypothesis asks whether the system arrests and charges women more leniently, which would mean part of this gap is a gap in enforcement rather than in conduct. Chapter 2 taught you to always ask that question, and here it has a name.</p>
+        </div>
+        <p class="srcnote">Source: FBI Uniform Crime Reports, Table 42, Arrests by Sex, 2019 (10,831 agencies, estimated population 229,735,355). Percent male: total all offenses 72.5, murder and nonnegligent manslaughter 88.0, robbery 84.2, burglary 79.3, motor vehicle theft 76.8, aggravated assault 76.5, larceny-theft 57.4, embezzlement 49.8. Remember Chapter 2: these are arrests, not offenses, so they measure enforcement as well as behavior. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: PLACE -->
+    <div class="section" id="sec-place">
+      <div class="card">
+        <h2>Crime concentrates, and it concentrates hard</h2>
+        <p class="lede">Ask where crime happens and most people answer with a neighborhood. The research says the right unit is far smaller than that: the street segment, meaning one block face between two intersections. Below is a grid standing in for 400 street segments in a city.</p>
+        <div class="guessbox">
+          <p class="gq">What share of a city's street segments do you think produce about half of all its crime?</p>
+          <div class="gr">
+            <input type="range" id="plSlider" min="1" max="60" step="1" value="25">
+            <span class="gval" id="plVal">25%</span>
+            <button class="gbtn" id="plLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="plVerdict"></p>
+        </div>
+        <div class="veiled" id="plReveal">
+          <p class="lede" style="margin-top:6px">Every square is a street segment. The highlighted ones produce roughly half the crime in the city.</p>
+          <div class="grid" id="cityGrid"></div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">~5%</div><div class="l">Of street segments produce about half of a city's crime</div></div>
+            <div class="stat"><div class="v">4.7 to 6.1%</div><div class="l">The range across 16 years in the Seattle study, even as crime fell more than 20 percent</div></div>
+            <div class="stat"><div class="v">2.1 to 6.0%</div><div class="l">The range across eight additional cities</div></div>
+          </div>
+          <p class="teach"><strong>This is Weisburd's law of crime concentration, and its most surprising feature is stability.</strong> In Seattle, the share of segments producing half the crime stayed inside a narrow band for sixteen years while the city's overall crime rate fell by more than twenty percent. Hot spots stayed hot. The finding has since replicated in cities of very different sizes, including suburban ones where two percent of segments produced half the crime.</p>
+          <p class="teach"><strong>What it does to theory, which is the point of this whole page.</strong> If crime concentrates this tightly at addresses, then explanations built entirely around the characteristics of offenders are incomplete, because offenders are mobile and street corners are not. Something about particular places keeps generating crime across decades and across the people who pass through them. Chapter 14 takes this seriously enough to build a whole prevention strategy on it, and asks the question this pattern implies: what happens if you treat the place instead of the person?</p>
+        </div>
+        <p class="srcnote">Sources: Weisburd's longitudinal study of Seattle street segments, which found 50 percent of crime incidents at between 4.7 and 6.1 percent of street segments across 16 years. Weisburd's law of crime concentration, with a range of 2.1 to 6.0 percent of streets producing 50 percent of crime across eight additional cities, and 0.4 to 1.6 percent producing 25 percent. The grid above is an illustration of the proportion, not a map of any real city. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4: THE DECLINE -->
+    <div class="section" id="sec-decline">
+      <div class="card">
+        <h2>The biggest pattern of all</h2>
+        <p class="lede">The single most important fact about crime in your lifetime is that there is much less of it than there used to be. Drag through the decades and watch the homicide rate, the best-measured crime there is.</p>
+        <div class="legend"><span><span class="k" style="background:var(--warn)"></span>U.S. homicide rate per 100,000</span></div>
+        <div class="chartwrap" id="declineChart"></div>
+        <div class="gr" style="margin-top:6px">
+          <input type="range" id="decSlider" min="0" max="14" step="1" value="0">
+        </div>
+        <div class="statrow">
+          <div class="stat"><div class="v" id="decY">1960</div><div class="l">Year</div></div>
+          <div class="stat warn"><div class="v" id="decR">5.1</div><div class="l">Homicides per 100,000 people</div></div>
+        </div>
+        <p class="teach" id="decNote"></p>
+        <p class="teach"><strong>Two families of explanation, and a lesson in humility.</strong> The first family points at specific opportunity changes: engine immobilizers in cars, less cash carried in pockets, better emergency medicine turning some homicides into aggravated assaults, security technology everywhere. The second points at broad shifts in how people live: an aging population, more time indoors and online, changes in policing and incarceration. Both have evidence and neither is settled. What matters more than picking a side is noticing that almost nobody predicted the decline, and that the criminology of the early 1990s confidently expected the opposite. Every theory you meet starting in Chapter 6 should be held with that in mind.</p>
+        <p class="srcnote">Sources: FBI Uniform Crime Reports historical homicide rates per 100,000 for 1960 through 2019 (1960: 5.1, 1970: 7.9, 1975: 9.6, 1980: 10.2, 1985: 8.0, 1990: 9.4, 1991: 9.8, 1995: 8.2, 2000: 5.5, 2005: 5.6, 2010: 4.8, 2014: 4.4, 2015: 4.9, 2019: 5.0). FBI and BJS published estimates for 2020 through 2024 (2020: 6.5, 2022: 6.5, 2024: 5.0). Every point plotted above is a published figure. The following year is not plotted because only preliminary estimates exist for it: the FBI reported an estimated 18.1 percent decline in murder, and the Council on Criminal Justice projected a rate near 4.0, which would be the lowest ever recorded in data reaching back to 1900. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 5: SELF-CHECK -->
+    <div class="section" id="sec-check">
+      <div class="card">
+        <h2>Self-check: Chapters 1 through 5</h2>
+        <p class="lede">Ten questions in the style of the exam, drawn from the whole unit. Answer each one, then read the explanation whether or not you got it right, because the explanation is where the studying happens. Nothing is recorded and no score leaves this page.</p>
+        <div id="quiz"></div>
+        <div class="veiled" id="quizWrap">
+          <div class="statrow">
+            <div class="stat ok"><div class="v" id="qScore">0 of 10</div><div class="l">Your score on this run</div></div>
+          </div>
+          <p class="teach"><strong>How to read your score.</strong> If you missed questions about data sources, go back to the Chapter 2 comparison table first, because those concepts appear in every chapter after it. If you missed definition questions, the fix is the offense definitions in Chapter 3 and the vocabulary slides in each deck. If you missed the pattern questions, this page is the review. Take it again later in the week and see what changed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: CHECKLIST -->
+    <div class="section" id="sec-list">
+      <div class="card">
+        <h2>The checklist every theory has to pass</h2>
+        <p class="lede">This is the payoff of the whole first unit. Starting with the next chapter, every theory you meet gets graded against this list. A theory that explains one item and contradicts three is not a good theory, however satisfying it sounds.</p>
+        <ol class="checklist">
+          <li>Why offending rises in adolescence and fades with age, and why most people stop without any intervention at all.</li>
+          <li>Why the peak of the arrest curve appears to be moving later as youth offending collapses.</li>
+          <li>Why men out-offend women in serious violence in every society we can measure, and why that gap nearly closes for offenses of workplace access.</li>
+          <li>Why crime concentrates on a tiny share of street segments, and why those same segments stay hot for decades.</li>
+          <li>Why crime follows daily and seasonal rhythms, peaking at night, after school for juveniles, and in summer for violence.</li>
+          <li>Why immigration does not raise crime rates, contrary to what most people assume.</li>
+          <li>Why crime fell by half after the early 1990s, rose sharply in 2020, and then fell again at record speed.</li>
+          <li>Why unemployment and crime do not move together in the simple way folk theory expects, as the Great Recession showed.</li>
+          <li>Why so much youthful offending happens in groups rather than alone.</li>
+        </ol>
+        <p class="teach"><strong>Use this in two places.</strong> On the exam, a short answer question that asks you to evaluate a theory is really asking whether you can hold it up against a pattern like these. In your term paper, Part 3 asks for exactly this kind of pattern evidence about your chosen offense: who offends, who is victimized, and where and when it happens. Same skill, two assignments.</p>
+        <p class="teach"><strong>One discipline to carry with you.</strong> Every item above is a statement about rates and groups. None of them is a statement about any individual person, and none of them is a claim about a cause. Say associated with, not causes, until you have the evidence that earns the stronger word. Chapter 1 gave you the three requirements for that upgrade: association, temporal order, and non-spuriousness.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for SOC 3333 Criminology, Midwestern State University. All figures are from the published sources cited on each tab, retrieved August 2026. Your guesses, clicks, and quiz answers stay on this page and are never recorded or transmitted.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+    if (sec === 'sec-decline') drawDecline();
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+    drawDecline();
+  });
+
+  function animateBars(c){
+    c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); });
+  }
+
+  function setupGuess(cfg){
+    const slider = $(cfg.slider), val = $(cfg.val), lock = $(cfg.lock);
+    const unit = cfg.unit === undefined ? '%' : cfg.unit;
+    slider.addEventListener('input', () => { val.textContent = slider.value + unit; });
+    function doLock(){
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = cfg.answer, d = g - a;
+      let t = 'You guessed ' + g + unit + '. ' + cfg.answerText + ' ';
+      if (Math.abs(d) <= cfg.close) t += 'You were close.';
+      else if (d > 0) t += 'You were ' + Math.abs(d) + ' ' + cfg.units + ' high.';
+      else t += 'You were ' + Math.abs(d) + ' ' + cfg.units + ' low.';
+      $(cfg.verdict).textContent = t;
+      $(cfg.reveal).style.display = 'block';
+      animateBars($(cfg.reveal));
+      if (cfg.after) cfg.after();
+    }
+    lock.addEventListener('click', doLock);
+    return doLock;
+  }
+
+  const lockAge = setupGuess({ slider:'ageSlider', val:'ageVal', lock:'ageLock', verdict:'ageVerdict', reveal:'ageReveal',
+    answer:32, close:3, unit:'', units:'years', answerText:'The published figure is about age 32.' });
+  const lockSex = setupGuess({ slider:'sexSlider', val:'sexVal', lock:'sexLock', verdict:'sexVerdict', reveal:'sexReveal',
+    answer:72.5, close:5, units:'points', answerText:'The published figure is 72.5 percent.' });
+
+  // ---------- place grid ----------
+  function buildGrid(){
+    const g = $('cityGrid');
+    if (g.childElementCount) return;
+    const hot = new Set([23, 24, 44, 45, 87, 88, 107, 141, 161, 162, 205, 225, 226, 267, 268, 289, 311, 331, 352, 373]);
+    for (let i = 0; i < 400; i++) {
+      const d = document.createElement('div');
+      d.className = 'cellx' + (hot.has(i) ? ' hot' : '');
+      g.appendChild(d);
+    }
+  }
+  const lockPl = setupGuess({ slider:'plSlider', val:'plVal', lock:'plLock', verdict:'plVerdict', reveal:'plReveal',
+    answer:5, close:4, units:'points', answerText:'The research says about 5 percent.', after: buildGrid });
+
+  // ---------- decline chart ----------
+  const YEARS = [1960,1970,1975,1980,1985,1990,1995,2000,2005,2010,2015,2019,2020,2022,2024];
+  const RATES = [5.1,7.9,9.6,10.2,8.0,9.4,8.2,5.5,5.6,4.8,4.9,5.0,6.5,6.5,5.0];
+  const NOTES = {
+    1960: 'The starting point. Crime is about to rise for three decades, and nobody watching in 1960 expected it.',
+    1970: 'The long rise is underway. Rates have already climbed more than half since 1960.',
+    1975: 'Climbing steeply. Criminology in this era is largely a science of explaining increases.',
+    1980: 'The first peak, at 10.2 per 100,000. This is the highest rate in the modern record.',
+    1985: 'A brief dip that turned out to be temporary. The crack era is about to push rates back up.',
+    1990: 'Rising again, and hard. Public fear and policy are both about to change permanently.',
+    1995: 'The great decline has begun, and almost no one has noticed yet.',
+    2000: 'Nearly cut in half in a decade. This is one of the largest crime declines ever recorded anywhere.',
+    2005: 'The new normal holds. A generation is growing up in a much safer country than their parents did.',
+    2010: 'Below 5 per 100,000 for the first time in decades, and still falling.',
+    2015: 'Near the lowest rate ever recorded to that point. Then a small uptick begins.',
+    2019: 'Pre-pandemic. The rate has been roughly flat for a decade.',
+    2020: 'The largest one-year rise ever recorded. Real, sudden, and still argued about.',
+    2022: 'The spike has peaked and started to reverse, though most Americans do not believe it yet.',
+    2024: 'Back to the pre-pandemic level, after two of the fastest declines on record. The following year fell further still.'
+  };
+  function css(name){ return getComputedStyle(document.querySelector('.viz-root')).getPropertyValue(name).trim(); }
+  let decIdx = 0;
+  function drawDecline(){
+    const W = 960, H = 300, L = 46, R = 20, T = 16, B = 34;
+    const iw = W - L - R, ih = H - T - B;
+    const x = i => L + iw * (YEARS[i] - YEARS[0]) / (YEARS[YEARS.length-1] - YEARS[0]);
+    const y = v => T + ih * (1 - v/11);
+    const warn = css('--warn'), grid = css('--grid'), muted = css('--text-muted');
+    let s = '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+    for (let v = 0; v <= 10; v += 2){
+      s += '<line x1="'+L+'" y1="'+y(v)+'" x2="'+(W-R)+'" y2="'+y(v)+'" stroke="'+grid+'" stroke-width="1"/>';
+      s += '<text x="'+(L-8)+'" y="'+(y(v)+4)+'" font-size="11" fill="'+muted+'" text-anchor="end">'+v+'</text>';
+    }
+    [1960,1970,1980,1990,2000,2010,2020].forEach(yr => {
+      const xx = L + iw * (yr - YEARS[0]) / (YEARS[YEARS.length-1] - YEARS[0]);
+      s += '<text x="'+xx+'" y="'+(H-10)+'" font-size="11" fill="'+muted+'" text-anchor="middle">'+yr+'</text>';
+    });
+    s += '<polyline points="'+YEARS.map((_,i)=>x(i)+','+y(RATES[i])).join(' ')+'" fill="none" stroke="'+warn+'" stroke-width="3" stroke-linejoin="round"/>';
+    s += '<line x1="'+x(decIdx)+'" y1="'+T+'" x2="'+x(decIdx)+'" y2="'+(T+ih)+'" stroke="'+muted+'" stroke-width="1.5" stroke-dasharray="4 4"/>';
+    YEARS.forEach((_,i) => { s += '<circle cx="'+x(i)+'" cy="'+y(RATES[i])+'" r="'+(i===decIdx?6:3.5)+'" fill="'+warn+'"/>'; });
+    s += '</svg>';
+    $('declineChart').innerHTML = s;
+  }
+  function setDec(i){
+    decIdx = Math.max(0, Math.min(YEARS.length-1, i));
+    $('decSlider').value = String(decIdx);
+    $('decY').textContent = YEARS[decIdx];
+    $('decR').textContent = RATES[decIdx].toFixed(1);
+    $('decNote').innerHTML = '<strong>' + YEARS[decIdx] + ':</strong> ' + NOTES[YEARS[decIdx]];
+    drawDecline();
+  }
+  $('decSlider').addEventListener('input', e => setDec(Number(e.target.value)));
+
+  // ---------- quiz ----------
+  const QUIZ = [
+    { q: 'A researcher wants the most trustworthy long-run trend in American lethal violence. Which source?',
+      opts: ['Police data (UCR/NIBRS)','The victim survey (NCVS)','A self-report survey','Arrest data by age'], a: 0,
+      v: 'Police data. Homicide has almost no dark figure and the UCR has recorded it nationally since 1930. The victim survey cannot measure homicide at all.' },
+    { q: 'Under the old summary UCR hierarchy rule, an offender commits burglary, rape, and larceny in one incident. How many offenses were counted?',
+      opts: ['All three','Two, the rape and the burglary','One, the rape','One, the burglary'], a: 2,
+      v: 'One, the rape, because it sits highest on the hierarchy. Motor vehicle theft and arson were the standing exceptions that were always counted in addition, and neither is present here.' },
+    { q: 'A man punches someone outside a bar and takes their phone off the ground afterward. Robbery or not?',
+      opts: ['Robbery, because property was taken','Not robbery, this is assault plus larceny','Burglary','Not a crime in the UCR'], a: 1,
+      v: 'Not robbery. Robbery requires property taken from a person by force or threat. Here the force and the taking were separate events, so it is an aggravated assault plus a larceny.' },
+    { q: 'Which offense is reported to police at the LOWEST rate?',
+      opts: ['Motor vehicle theft','Robbery','Rape and sexual assault','Burglary'], a: 2,
+      v: 'Rape and sexual assault, at 23.6 percent in the most recent victimization data. Motor vehicle theft is the highest at 75 percent, because insurance claims require a police report.' },
+    { q: 'What does a hate crime law actually do?',
+      opts: ['Creates a new category of offense','Enhances the penalty for an existing offense','Moves the case to federal court automatically','Requires the FBI to prosecute'], a: 1,
+      v: 'It enhances the penalty for an existing offense when bias is proven as motive. No new offense is created, which is why the underlying assault still appears in the violent crime total.' },
+    { q: 'Which of these appears in the number people call the crime rate?',
+      opts: ['A $2 million investment fraud','Wage theft from 500 workers','An $80 shoplifting','A hospital chain billing Medicare fraudulently'], a: 2,
+      v: 'The shoplifting, as larceny-theft. The other three are unlawful and cost far more, and none of them appears in the violent or property crime totals. That is the counting problem from Chapter 4.' },
+    { q: 'Causation requires association, temporal order, and one more thing. What?',
+      opts: ['A large sample','Non-spuriousness, meaning no lurking third variable','Statistical significance','Replication'], a: 1,
+      v: 'Non-spuriousness. Ice cream sales and violence rise together, and heat is the lurking variable that explains both. This is the standard every theory in the second half of the course gets held to.' },
+    { q: 'The gender gap in arrests is narrowest for which offense?',
+      opts: ['Murder','Robbery','Aggravated assault','Embezzlement'], a: 3,
+      v: 'Embezzlement, at roughly half male. It is a crime of workplace access rather than physical force, which is the strongest single piece of evidence for the opportunity explanation of the gender gap.' },
+    { q: 'Roughly what share of a city\'s street segments produce about half of its crime?',
+      opts: ['About 5 percent','About 20 percent','About 35 percent','About half'], a: 0,
+      v: 'About 5 percent. This is Weisburd\'s law of crime concentration, and the share stayed stable in Seattle across sixteen years even while the city\'s crime rate fell more than 20 percent.' },
+    { q: 'What does the research consistently find about immigration and crime?',
+      opts: ['Immigration raises crime rates','Immigration lowers crime rates or has no effect','The evidence is evenly split','It has never been studied properly'], a: 1,
+      v: 'Immigration lowers crime rates somewhat or has no effect, and immigrants are incarcerated at lower rates than the native-born. It is one of the most replicated and least known findings in the field.' },
+  ];
+  const quizEl = $('quiz');
+  const qstate = QUIZ.map(() => null);
+  QUIZ.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'q';
+    d.innerHTML = '<div class="qtext">' + (i+1) + '. ' + item.q + '</div>' +
+      '<div class="pickrow">' + item.opts.map((o, j) =>
+        '<button class="pick" data-q="'+i+'" data-o="'+j+'" type="button">' + o + '</button>').join('') + '</div>' +
+      '<div class="qv" id="qv'+i+'"></div>';
+    quizEl.appendChild(d);
+  });
+  function answerQ(i, j){
+    const btns = quizEl.querySelectorAll('[data-q="'+i+'"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.o) === j) b.classList.add('chosen');
+      if (Number(b.dataset.o) === QUIZ[i].a) b.classList.add('answer');
+    });
+    qstate[i] = (j === QUIZ[i].a);
+    const el = $('qv'+i);
+    el.innerHTML = '<strong>' + (qstate[i] ? 'Right. ' : 'The answer is ' + QUIZ[i].opts[QUIZ[i].a] + '. ') + '</strong>' + QUIZ[i].v;
+    el.style.display = 'block';
+    if (qstate.every(v => v !== null)) {
+      $('qScore').textContent = qstate.filter(Boolean).length + ' of 10';
+      $('quizWrap').style.display = 'block';
+    }
+  }
+  quizEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-q]');
+    if (b) answerQ(Number(b.dataset.q), Number(b.dataset.o));
+  });
+
+  setDec(0);
+
+  window.__S = {
+    activate, lockAge, lockSex, lockPl, setDec, answerQ,
+    state: () => ({ decIdx, qstate })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

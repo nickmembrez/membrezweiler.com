@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Lie with a Chart · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;
+    --series-2: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+    --good: #137a55;
+    --ghost: #d3d2ca;
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+    --good: #199e70;
+    --ghost: #3a3a37;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+
+  .tricktabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tricktab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tricktab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .subtabs { display: flex; gap: 8px; margin: 0 0 14px; flex-wrap: wrap; }
+  .subtab { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .subtab[aria-selected="true"] { background: var(--series-1); color: #fff; border-color: var(--series-1); }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+
+  .headline { font-size: 23px; font-weight: 800; line-height: 1.25; margin-bottom: 4px; }
+  .headline.alarm { color: var(--series-2); }
+  .headline.calm { color: var(--good); }
+  .headline.neutral { color: var(--text-secondary); }
+  .headline-tag { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .truth-note { font-size: 13.5px; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+
+  svg { display: block; width: 100%; height: auto; user-select: none; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axisline { stroke: var(--baseline); stroke-width: 1; }
+  .ticklabel { fill: var(--text-muted); font-size: 12.5px; }
+  .axistitle { fill: var(--text-secondary); font-size: 13px; font-weight: 600; }
+
+  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; padding: 9px 18px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .btn.active { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .btn.answer { font-weight: 600; }
+  .btn.correct { background: var(--good); border-color: var(--good); color: #fff; }
+  .btn.wrong { background: var(--series-2); border-color: var(--series-2); color: #fff; }
+  .sliderwrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 240px; }
+  .sliderwrap label { font-size: 13.5px; color: var(--text-secondary); white-space: nowrap; }
+  input[type=range] { flex: 1; accent-color: var(--series-1); }
+  .axisval { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 3.5ch; }
+
+  .factline { margin-top: 12px; font-size: 14px; color: var(--text-secondary); background: var(--wash); border-radius: 10px; padding: 10px 14px; line-height: 1.5; }
+  .factline strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  .twochart { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .twochart { grid-template-columns: 1fr; } }
+  .minihead { font-size: 13px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+  .mininote { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.45; }
+
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .flags { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .flags li { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.5; }
+  .flags .dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--series-2); margin-top: 7px; }
+  .flags li.demo .dot { background: var(--series-1); }
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+  .table-toggle { background: none; border: none; color: var(--text-muted); font: inherit; font-size: 13.5px; text-decoration: underline; cursor: pointer; padding: 0; }
+  table { border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  th, td { padding: 4px 12px; text-align: right; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-secondary); }
+  .tablebox { display: none; max-height: 260px; overflow: auto; }
+  .tablebox.show { display: block; }
+
+  .quiztop { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .quizcount { font-size: 14px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .quiztitle { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+  .answers { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .quizfeed { display: none; margin-top: 12px; font-size: 14.5px; line-height: 1.55; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .quizfeed.show { display: block; }
+  .quizfeed .verdict { font-weight: 800; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>How to Lie with a Chart <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every chart on this page plots real, published data, and the numbers never change.</strong> The controls change only how the numbers are drawn: where the axis starts, which way it points, which years you see, the shape of the frame, how much averaging is applied, whether you see totals or rates, and whether the curve is a running sum. Seven presentation choices, seven different stories, the same data every time. When you can name the trick, you can catch it.</p>
+    </div>
+
+    <div class="tricktabs" id="trickTabs" role="tablist"></div>
+
+    <!-- ================= SECTION: AXIS ================= -->
+    <div class="section" id="sec-axis">
+      <div class="subtabs" id="axisTabs" role="tablist"></div>
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="axHeadline"></div>
+        <div class="truth-note" id="axTruth"></div>
+      </div>
+      <div class="card">
+        <div class="twochart">
+          <div>
+            <div class="minihead" id="axTitle"></div>
+            <svg id="axSvg" viewBox="0 0 660 360"></svg>
+            <div class="controls">
+              <button class="btn" id="axZeroBtn" type="button">Start the axis at zero</button>
+              <button class="btn" id="axTruncBtn" type="button">Start it just below the data</button>
+              <div class="sliderwrap">
+                <label for="axSlider">Axis starts at</label>
+                <input type="range" id="axSlider" min="0" max="100" step="1" value="0">
+                <span class="axisval" id="axVal">0</span>
+              </div>
+            </div>
+            <div class="factline" id="axFact"></div>
+          </div>
+          <div>
+            <div class="minihead">The whole series, axis at zero</div>
+            <svg id="axMini" viewBox="0 0 300 200"></svg>
+            <p class="mininote" id="axMiniNote"></p>
+            <p class="mininote"><button class="table-toggle" id="axTableBtn" type="button">View the data table</button></p>
+            <div class="tablebox" id="axTableBox"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: WINDOW ================= -->
+    <div class="section" id="sec-window">
+      <div class="card">
+        <div class="headline-tag">The headline this window supports</div>
+        <div class="headline" id="winHeadline"></div>
+        <div class="truth-note">Every window is cut from the same series: the U.S. homicide rate, 1960 to 2025, axis at zero the whole time. The gray line is everything your window leaves out.</div>
+      </div>
+      <div class="card">
+        <div class="minihead">U.S. homicide rate, your window in blue</div>
+        <svg id="winSvg" viewBox="0 0 960 380"></svg>
+        <div class="controls">
+          <div class="sliderwrap">
+            <label for="winStart">Start year</label>
+            <input type="range" id="winStart" min="1960" max="2018" step="1" value="1960">
+            <span class="axisval" id="winStartVal">1960</span>
+          </div>
+          <div class="sliderwrap">
+            <label for="winEnd">End year</label>
+            <input type="range" id="winEnd" min="1967" max="2025" step="1" value="2025">
+            <span class="axisval" id="winEndVal">2025</span>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn" id="scaryBtn" type="button">Make it look scary</button>
+          <button class="btn" id="calmBtn" type="button">Make it look reassuring</button>
+          <button class="btn" id="wholeBtn" type="button">Show the whole series</button>
+        </div>
+        <div class="factline" id="winFact"></div>
+      </div>
+      <div class="card">
+        <h2>How the buttons choose</h2>
+        <p class="lede">Nothing hidden: the scary button searches every window at least seven years long for the largest percent rise between its endpoints. The reassuring button does the same for the largest percent fall. Both buttons find real windows in real data. That is the point. A motivated chartmaker can nearly always find a window that says what they need, without touching a single number.</p>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: INVERT ================= -->
+    <div class="section" id="sec-invert">
+      <div class="card">
+        <div class="headline-tag" id="ivTag">The headline this chart supports</div>
+        <div class="headline" id="ivHeadline"></div>
+        <div class="truth-note" id="ivTruth"></div>
+      </div>
+      <div class="card">
+        <div class="twochart">
+          <div>
+            <div class="minihead">U.S. homicide rate, 2014 to 2021</div>
+            <svg id="ivSvg" viewBox="0 0 660 360"></svg>
+            <div class="controls">
+              <button class="btn" id="ivNormalBtn" type="button">Axis pointing up</button>
+              <button class="btn" id="ivFlipBtn" type="button">Flip the axis</button>
+            </div>
+            <div class="factline" id="ivFact"></div>
+          </div>
+          <div>
+            <div class="minihead">The one trick that produces a false picture</div>
+            <p class="lede" style="font-size:14px">Every other tab on this page slants a true story. An upside-down axis is different: the picture itself says the opposite of the data. The numbers on the axis are still printed correctly, which is the fig leaf. A real news graphic once showed gun deaths this way, and readers saw a decline where there was a rise.</p>
+            <p class="mininote">Check the tick labels. If the numbers get smaller as they go up, the chart is upside down.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: FRAME ================= -->
+    <div class="section" id="sec-frame">
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="frHeadline"></div>
+        <div class="truth-note">Same series, same axes, same years. The only thing the slider changes is the shape of the frame the chart is drawn in.</div>
+      </div>
+      <div class="card">
+        <div class="minihead">U.S. total fertility rate, 1960 to 2024</div>
+        <svg id="frSvg" viewBox="0 0 960 300"></svg>
+        <div class="controls">
+          <div class="sliderwrap">
+            <label for="frSlider">Frame shape</label>
+            <input type="range" id="frSlider" min="0" max="100" step="1" value="20">
+            <span class="axisval" id="frVal"></span>
+          </div>
+          <button class="btn" id="frWideBtn" type="button">Wide and calm</button>
+          <button class="btn" id="frTallBtn" type="button">Tall and steep</button>
+        </div>
+        <div class="factline">A steep-feeling line and a flat-feeling line can be the same line. Newspapers pick the frame that fits the story, and nothing on the chart discloses the choice. When a trend feels dramatic, ask how the same data would look drawn twice as wide.</div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: SMOOTH ================= -->
+    <div class="section" id="sec-smooth">
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="smHeadline"></div>
+        <div class="truth-note" id="smTruth"></div>
+      </div>
+      <div class="card">
+        <div class="minihead">U.S. homicide rate, 1960 to 2025, with averaging applied</div>
+        <svg id="smSvg" viewBox="0 0 960 380"></svg>
+        <div class="controls">
+          <div class="sliderwrap">
+            <label for="smSlider">Averaging window</label>
+            <input type="range" id="smSlider" min="1" max="9" step="2" value="1">
+            <span class="axisval" id="smVal">1</span>
+          </div>
+        </div>
+        <div class="factline" id="smFact"></div>
+      </div>
+      <div class="card">
+        <h2>When smoothing is honest work</h2>
+        <p class="lede">Averaging is a legitimate tool for seeing a long trend through noisy years, and analysts use it constantly. It becomes a trick in two situations: when the smoothing is not labeled, and when the window is chosen to erase the exact year the argument is about. The gray line stays on this chart for a reason. Ask any smoothed chart where its raw data went.</p>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: DUAL ================= -->
+    <div class="section" id="sec-dual">
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="duHeadline"></div>
+        <div class="truth-note" id="duTruth"></div>
+      </div>
+      <div class="card">
+        <div class="twochart">
+          <div>
+            <div class="minihead">Marriage rate and homicide rate, 1990 to 2023</div>
+            <svg id="duSvg" viewBox="0 0 660 360"></svg>
+            <div class="controls">
+              <button class="btn" id="duFitBtn" type="button">Two axes, fitted to overlap</button>
+              <button class="btn" id="duSharedBtn" type="button">One shared scale</button>
+            </div>
+            <div class="factline" id="duFact"></div>
+          </div>
+          <div>
+            <div class="minihead">Why two axes are a blank check</div>
+            <p class="lede" style="font-size:14px">Each line gets its own y-axis, and each axis can be stretched and shifted independently. With two free axes, almost any two series that drift the same general direction can be made to lie on top of each other. The overlap is manufactured by the axes, not found in the data, and the picture whispers a causal story no one would say out loud.</p>
+            <p class="mininote">Marriage is per 1,000 people. Homicide is per 100,000. They do not even share units.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: COUNTS ================= -->
+    <div class="section" id="sec-counts">
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="ctHeadline"></div>
+        <div class="truth-note" id="ctTruth"></div>
+      </div>
+      <div class="card">
+        <div class="twochart">
+          <div>
+            <div class="minihead" id="ctTitle"></div>
+            <svg id="ctSvg" viewBox="0 0 660 360"></svg>
+            <div class="controls">
+              <button class="btn" id="ctCountBtn" type="button">Show total homicides</button>
+              <button class="btn" id="ctRateBtn" type="button">Show the rate</button>
+            </div>
+            <div class="factline" id="ctFact"></div>
+          </div>
+          <div>
+            <div class="minihead">Why the two views differ</div>
+            <p class="lede" style="font-size:14px">The population roughly doubled, from <strong>180.7 million</strong> in 1960 to <strong>330.2 million</strong> in 2019. A flat rate spread over far more people produces far more total events. Totals answer how much. Rates answer how likely. A chart that shows totals when the question is about risk is answering a question nobody asked.</p>
+            <p class="mininote">Totals here are computed from the official rate and World Bank population figures, so they track the true counts closely. Both source series are published and linked below.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: CUMULATIVE ================= -->
+    <div class="section" id="sec-cumulative">
+      <div class="card">
+        <div class="headline-tag">The headline this chart supports</div>
+        <div class="headline" id="cuHeadline"></div>
+        <div class="truth-note" id="cuTruth"></div>
+      </div>
+      <div class="card">
+        <div class="twochart">
+          <div>
+            <div class="minihead" id="cuTitle"></div>
+            <svg id="cuSvg" viewBox="0 0 660 360"></svg>
+            <div class="controls">
+              <button class="btn" id="cuCumBtn" type="button">Total weddings since 1960</button>
+              <button class="btn" id="cuRateBtn" type="button">Weddings per 1,000 people, each year</button>
+            </div>
+            <div class="factline" id="cuFact"></div>
+          </div>
+          <div>
+            <div class="minihead">The tell</div>
+            <p class="lede" style="font-size:14px">A running total of anything that cannot go below zero can only rise. "All-time high" is true of a cumulative curve in every single year, by construction. It sounds like news and contains none. When a chart shows a total "since" some year, ask what the annual number is doing.</p>
+            <p class="mininote">Annual wedding counts are computed from the official marriage rate and World Bank population figures.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SECTION: QUIZ ================= -->
+    <div class="section" id="sec-quiz">
+      <div class="card">
+        <div class="quiztop">
+          <span class="quiztitle">Ten charts. Name what each one is doing.</span>
+          <span class="quizcount" id="quizCount"></span>
+        </div>
+        <p class="lede" style="margin-bottom:10px">Each round draws one of this page's real series with one presentation choice applied, or none at all. Nothing is fabricated. Read the axis, the years, and the units before you answer.</p>
+        <div class="minihead" id="qzTitle"></div>
+        <svg id="qzSvg" viewBox="0 0 780 340"></svg>
+        <div class="answers" id="qzAnswers"></div>
+        <div class="quizfeed" id="qzFeed"></div>
+        <div class="controls">
+          <button class="btn" id="qzNext" type="button" style="display:none">Next chart</button>
+          <button class="btn" id="qzRestart" type="button" style="display:none">Start over</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SHARED CARDS ================= -->
+    <div class="card">
+      <h2>With one exception, every headline on this page is true</h2>
+      <p class="lede">That is the uncomfortable part. Apart from the upside-down axis, whose picture is simply false, none of these tricks requires a false number. They change how big a change feels, which years count, which quantity answers the question, and what connection the eye infers. The defense is a habit, not a fact-check: read the axis, the window, and the units before you read the line.</p>
+    </div>
+
+    <div class="card">
+      <h2>When a zoomed axis is the honest choice</h2>
+      <p class="lede">Sometimes small differences are the whole point. A hospital fever chart never starts at zero degrees, because a two-degree change in body temperature matters and every reader knows the scale. A zoomed axis is defensible when the meaningful range is well known and the chart says clearly what it is doing. It turns into a trick when the zoom is chosen to manufacture drama for readers who never look at the axis.</p>
+    </div>
+
+    <div class="card">
+      <h2>The checklist</h2>
+      <ul class="flags">
+        <li class="demo"><span class="dot"></span><span><strong>A y-axis that does not start at zero.</strong> The Axis tab. Small changes fill the whole frame.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>An upside-down axis.</strong> The Upside down tab. Tick labels that shrink going up mean the picture points the wrong way.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>A cherry-picked time window.</strong> The Window tab, buttons included. Ask what the full series shows.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>A frame shaped for drama.</strong> The Frame tab. Tall and narrow makes any slope a cliff.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>Unlabeled smoothing.</strong> The Average tab. Ask a smooth line where its raw data went.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>Two fitted axes.</strong> The Second axis tab. Free axes can make almost any two drifting lines coincide.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>Counts where rates belong.</strong> The Counts tab. Totals rise with population even when risk does not.</span></li>
+        <li class="demo"><span class="dot"></span><span><strong>A cumulative curve.</strong> The Cumulative tab. A running total can only go up.</span></li>
+        <li><span class="dot"></span><span><strong>No source and no sample size.</strong> The one this page cannot demonstrate for you. A chart that will not say where its numbers came from has not earned your trust.</span></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Questions to take with you</h2>
+      <ol class="qs">
+        <li>Every headline on this page is factually accurate. What exactly made the alarming ones feel more alarming?</li>
+        <li>Who benefits when a small change looks big? Think of a seller, a political campaign, and a news outlet, and name what each one gains.</li>
+        <li>The axis trick can hide change as well as exaggerate it. How would you set up a chart to make a real rise look flat?</li>
+        <li>The scary and reassuring buttons both search the same series. What does that say about arguments that begin with "just look at the trend since"?</li>
+        <li>Totals or rates: which one answers "is flying getting safer," and which one answers "how many crashes were there"? Why do the two get swapped?</li>
+        <li>If two free axes can make almost any two declining lines overlap, what should a two-line chart have to show before you believe the connection?</li>
+        <li>Nearly every trick here has an honest use: zooming, smoothing, windowing, even dual axes. What separates the honest use from the trick, in one sentence?</li>
+        <li>When is a zoomed axis the honest choice, and what does the chart owe its reader in that case?</li>
+      </ol>
+    </div>
+
+    <footer role="presentation">Sources: Homicide rate: FBI Uniform Crime Reports and CDC, 1960 to 2024, with the 2025 value a Council on Criminal Justice mid-year estimate. Marriage rate: CDC National Vital Statistics System, marriages per 1,000 total population, 1960 to 2023. Total fertility rate: CDC National Center for Health Statistics, 1960 to 2024. Population: World Bank, SP.POP.TOTL, United States, 1960 to 2024. Homicide and wedding totals are computed from the published rates and population. All values as published. This page changes only how they are drawn.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ DATA (real, published series) ============ */
+const HOMICIDE = { start: 1960, values: [5.1,4.8,4.6,4.6,4.9,5.1,5.6,6.2,6.9,7.3,7.9,8.6,9.0,9.4,9.8,9.6,8.7,8.8,9.0,9.8,10.2,9.8,9.1,8.3,7.9,8.0,8.6,8.3,8.5,8.7,9.4,9.8,9.3,9.5,9.0,8.2,7.4,6.8,6.3,5.7,5.5,5.6,5.6,5.7,5.5,5.6,5.8,5.7,5.4,5.0,4.8,4.7,4.7,4.5,4.4,4.9,5.4,5.3,5.0,5.1,6.5,6.8,6.3,5.7,4.9,4.0] };
+const MARRIAGE = { start: 1960, values: [8.5,8.5,8.5,8.8,9.0,9.3,9.5,9.7,10.4,10.6,10.6,10.6,10.9,10.8,10.5,10.0,9.9,9.9,10.3,10.4,10.6,10.6,10.6,10.5,10.5,10.1,10.0,9.9,9.8,9.7,9.8,9.4,9.3,9.0,9.1,8.9,8.8,8.9,8.4,8.6,8.2,8.2,7.8,7.7,7.8,7.6,7.5,7.3,7.1,6.8,6.8,6.8,6.8,6.8,6.9,6.9,6.9,6.9,6.5,6.1,5.1,6.0,6.2,6.1] };
+const TFR = { start: 1960, values: [3.65,3.62,3.46,3.32,3.19,2.91,2.72,2.56,2.46,2.46,2.48,2.27,2.01,1.88,1.84,1.77,1.74,1.79,1.76,1.81,1.84,1.81,1.83,1.80,1.81,1.84,1.84,1.87,1.93,2.01,2.08,2.06,2.05,2.02,2.00,1.98,1.98,1.97,2.00,2.01,2.06,2.03,2.01,2.04,2.05,2.05,2.10,2.12,2.07,2.00,1.93,1.89,1.88,1.86,1.86,1.84,1.82,1.77,1.73,1.71,1.64,1.66,1.65,1.62,1.60] };
+// World Bank SP.POP.TOTL, United States, in thousands
+const POP = { start: 1960, values: [180671,183691,186538,189242,191889,194303,196560,198712,200706,202677,205052,207661,209896,211909,213854,215973,218035,220239,222585,225055,227225,229466,231664,233792,235825,237924,240133,242289,244499,246819,249623,252981,256514,259919,263126,266278,269394,272657,275854,279040,282162,284969,287625,290108,292805,295517,298380,301231,304094,306772,309378,311839,314339,316726,319258,321815,324353,326609,328530,330226,331578,332100,333996,336755,340004] };
+
+function slice(d, y0, y1) {
+  const out = [];
+  for (let y = y0; y <= y1; y++) {
+    const v = d.values[y - d.start];
+    if (v != null) out.push({ year: y, value: v });
+  }
+  return out;
+}
+function popOf(year) { const v = POP.values[year - POP.start]; return v != null ? v : null; }
+// homicide counts (rate per 100k x pop in thousands / 100)
+const H_COUNTS = { start: 1960, values: HOMICIDE.values.map((r, i) => { const p = POP.values[i]; return p == null ? null : Math.round(r * p / 100); }) };
+// annual weddings in thousands (rate per 1,000 x pop in thousands / 1000)
+const W_COUNTS = { start: 1960, values: MARRIAGE.values.map((r, i) => { const p = POP.values[i]; return (p == null || r == null) ? null : Math.round(r * p / 1000); }) };
+const W_CUM = { start: 1960, values: (() => { let t = 0; return W_COUNTS.values.map(v => v == null ? null : (t += v)); })() };
+
+function el(svg, name, attrs) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  svg.appendChild(e);
+  return e;
+}
+function niceCeil(v) {
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  const step = mag / 2;
+  return Math.ceil(v / step) * step;
+}
+function fmtBig(v) {
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return Math.round(v / 1e3) + 'k';
+  return String(Math.round(v));
+}
+
+/* generic line chart renderer */
+function drawChart(svg, opts) {
+  svg.innerHTML = '';
+  const VB = svg.getAttribute('viewBox').split(' ').map(Number);
+  const CW = VB[2], CH = VB[3];
+  const m = opts.margin || { top: 18, right: 20, bottom: 34, left: 62 };
+  const iw = CW - m.left - m.right, ih = CH - m.top - m.bottom;
+  const pts = opts.points;
+  const yMin = opts.yMin ?? 0;
+  const yMax = opts.yMax;
+  const y0 = pts[0].year, y1 = pts[pts.length - 1].year;
+  const xOf = yr => m.left + (yr - y0) / Math.max(1, y1 - y0) * iw;
+  const yOf = opts.invert
+    ? (v => m.top + (v - yMin) / (yMax - yMin) * ih)
+    : (v => m.top + (1 - (v - yMin) / (yMax - yMin)) * ih);
+  for (let i = 0; i <= 4; i++) {
+    const v = yMin + (yMax - yMin) * i / 4;
+    el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: yOf(v), y2: yOf(v), class: 'gridline' });
+    el(svg, 'text', { x: m.left - 8, y: yOf(v) + 4, 'text-anchor': 'end', class: 'ticklabel' }).textContent = opts.fmt(v);
+  }
+  el(svg, 'line', { x1: m.left, x2: m.left, y1: m.top, y2: CH - m.bottom, class: 'axisline' });
+  el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: CH - m.bottom, y2: CH - m.bottom, class: 'axisline' });
+  const span = y1 - y0;
+  const tick = span > 40 ? 10 : span > 16 ? 5 : span > 8 ? 2 : 1;
+  for (let yr = Math.ceil(y0 / tick) * tick; yr <= y1; yr += tick) {
+    el(svg, 'text', { x: xOf(yr), y: CH - m.bottom + 20, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+  }
+  el(svg, 'text', { x: m.left, y: 12, class: 'axistitle' }).textContent = opts.unit;
+  if (opts.ghost) {
+    el(svg, 'path', { d: 'M' + opts.ghost.map(p => [xOf(p.year), yOf(p.value)].join(',')).join('L'), fill: 'none', stroke: 'var(--ghost)', 'stroke-width': 2 });
+  }
+  const XY = pts.map(p => [xOf(p.year), yOf(p.value)]);
+  if (opts.area !== false) {
+    el(svg, 'path', { d: 'M' + XY.map(p => p.join(',')).join('L') + 'L' + XY[XY.length - 1][0] + ',' + (CH - m.bottom) + 'L' + XY[0][0] + ',' + (CH - m.bottom) + 'Z', fill: 'var(--wash)' });
+  }
+  el(svg, 'path', { d: 'M' + XY.map(p => p.join(',')).join('L'), fill: 'none', stroke: opts.color || 'var(--series-1)', 'stroke-width': 3 });
+  if (opts.endLabels !== false) {
+    const f = pts[0], l = pts[pts.length - 1];
+    [[f, 'start'], [l, 'end']].forEach(([p, a]) => {
+      el(svg, 'circle', { cx: xOf(p.year), cy: yOf(p.value), r: 4.5, fill: opts.color || 'var(--series-1)' });
+      el(svg, 'text', { x: xOf(p.year) + (a === 'start' ? 8 : -8), y: yOf(p.value) - 10, 'text-anchor': a === 'start' ? 'start' : 'end', class: 'axistitle' }).textContent = opts.fmt(p.value);
+    });
+  }
+}
+
+/* ================= SECTION: AXIS ================= */
+const AX_DATASETS = [
+  { id: 'crime', tab: 'Crime', full: HOMICIDE, w0: 2014, w1: 2021, unit: 'homicides per 100,000 people', fmt: v => v.toFixed(1),
+    mainTitle: 'U.S. homicide rate, 2014 to 2021',
+    alarm: 'Homicide rate soars more than 50% in seven years',
+    calm: 'Homicide rises to 6.8 per 100,000, below every year from 1970 through 1997',
+    truth: 'Both of these headlines are accurate. The rise from 4.4 in 2014 to 6.8 in 2021 is real, and so is the longer history around it. The 2020 to 2021 jump receded: the rate fell back to an estimated 4.0 by 2025.',
+    miniNote: 'The full series, 1960 to 2025, with the 2014 to 2021 window in orange. The 2025 value is a Council on Criminal Justice mid-year estimate.' },
+  { id: 'marriage', tab: 'Marriage', full: MARRIAGE, w0: 2008, w1: 2023, unit: 'marriages per 1,000 people', fmt: v => v.toFixed(1),
+    mainTitle: 'U.S. marriage rate, 2008 to 2023',
+    alarm: 'Marriage rate collapses to record lows',
+    calm: 'Marriage rate drifts down about one wedding per 1,000 people over fifteen years',
+    truth: 'Both headlines fit the same numbers. The decline from 7.1 to 6.1 per 1,000 is real and steady. The sharp 2020 spike downward is COVID postponing weddings, and the rate mostly rebounded the next year.',
+    miniNote: 'The full series, 1960 to 2023, with the 2008 to 2023 window in orange.' },
+  { id: 'fertility', tab: 'Fertility', full: TFR, w0: 2007, w1: 2024, unit: 'births per woman (total fertility rate)', fmt: v => v.toFixed(2),
+    mainTitle: 'U.S. total fertility rate, 2007 to 2024',
+    alarm: 'Birth rate plunges to lowest level ever recorded',
+    calm: 'Fertility eases from 2.12 to a record low 1.60 births per woman over seventeen years',
+    truth: 'Both headlines describe the same slide. The fall since 2007 is real and continuing, and it is also a slow drift of about three hundredths of a child per year, not a cliff. The U.S. has been near or below replacement (2.1) since 1971.',
+    miniNote: 'The full series, 1960 to 2024, with the 2007 to 2024 window in orange.' },
+];
+let axDs = AX_DATASETS[0];
+let axFrac = 0;
+
+function axRender() {
+  const win = slice(axDs.full, axDs.w0, axDs.w1);
+  const lo = Math.min(...win.map(p => p.value));
+  const hi = Math.max(...win.map(p => p.value));
+  const yMin = axFrac * lo * 0.96;
+  const yMaxZero = niceCeil(hi * 1.04);
+  const yMaxTight = hi + (hi - lo) * 0.06;
+  const yMax = yMaxZero - (yMaxZero - yMaxTight) * axFrac;
+  drawChart(document.getElementById('axSvg'), { points: win, yMin, yMax, unit: axDs.unit, fmt: axDs.fmt });
+  document.getElementById('axTitle').textContent = axDs.mainTitle;
+
+  const truncated = axFrac >= 0.5;
+  const headEl = document.getElementById('axHeadline');
+  headEl.textContent = truncated ? axDs.alarm : axDs.calm;
+  headEl.className = 'headline ' + (truncated ? 'alarm' : 'calm');
+  document.getElementById('axTruth').textContent = axDs.truth;
+
+  const fillHere = (hi - lo) / (yMax - yMin);
+  const fillZero = (hi - lo) / yMaxZero;
+  document.getElementById('axFact').innerHTML = axFrac === 0
+    ? 'The axis starts at zero. The change from ' + axDs.fmt(lo) + ' to ' + axDs.fmt(hi) + ' fills <strong>' + Math.round(fillZero * 100) + '%</strong> of the chart’s height. Move the slider and watch that number climb.'
+    : 'The change from ' + axDs.fmt(lo) + ' to ' + axDs.fmt(hi) + ' fills <strong>' + Math.round(fillHere * 100) + '%</strong> of the chart’s height with this axis. With the axis at zero it fills <strong>' + Math.round(fillZero * 100) + '%</strong>. Same numbers, different feeling.';
+  document.getElementById('axVal').textContent = axDs.fmt(axFrac * lo * 0.96);
+  document.getElementById('axZeroBtn').className = 'btn' + (axFrac === 0 ? ' active' : '');
+  document.getElementById('axTruncBtn').className = 'btn' + (axFrac === 1 ? ' active' : '');
+}
+function axRenderMini() {
+  const svg = document.getElementById('axMini');
+  svg.innerHTML = '';
+  const mw = 300, mh = 200, m = { top: 10, right: 8, bottom: 22, left: 38 };
+  const iw = mw - m.left - m.right, ih = mh - m.top - m.bottom;
+  const all = slice(axDs.full, axDs.full.start, axDs.full.start + axDs.full.values.length - 1);
+  const hi = niceCeil(Math.max(...all.map(p => p.value)) * 1.04);
+  const y0 = all[0].year, y1 = all[all.length - 1].year;
+  const xOf = yr => m.left + (yr - y0) / (y1 - y0) * iw;
+  const yOf = v => m.top + (1 - v / hi) * ih;
+  for (let i = 0; i <= 2; i++) {
+    const v = hi * i / 2;
+    el(svg, 'line', { x1: m.left, x2: mw - m.right, y1: yOf(v), y2: yOf(v), class: 'gridline' });
+    el(svg, 'text', { x: m.left - 5, y: yOf(v) + 3.5, 'text-anchor': 'end', class: 'ticklabel', 'font-size': 10 }).textContent = axDs.fmt(v);
+  }
+  for (let yr = Math.ceil(y0 / 20) * 20; yr <= y1; yr += 20) {
+    el(svg, 'text', { x: xOf(yr), y: mh - 6, 'text-anchor': 'middle', class: 'ticklabel', 'font-size': 10 }).textContent = yr;
+  }
+  el(svg, 'path', { d: 'M' + all.map(p => [xOf(p.year), yOf(p.value)].join(',')).join('L'), fill: 'none', stroke: 'var(--series-1)', 'stroke-width': 2 });
+  const win = all.filter(p => p.year >= axDs.w0 && p.year <= axDs.w1);
+  el(svg, 'path', { d: 'M' + win.map(p => [xOf(p.year), yOf(p.value)].join(',')).join('L'), fill: 'none', stroke: 'var(--series-2)', 'stroke-width': 2.5 });
+  document.getElementById('axMiniNote').textContent = axDs.miniNote;
+}
+function axRenderTable() {
+  const all = slice(axDs.full, axDs.full.start, axDs.full.start + axDs.full.values.length - 1);
+  let html = '<table><tr><th>Year</th><th>' + axDs.unit + '</th></tr>';
+  all.forEach(p => { html += '<tr><td>' + p.year + '</td><td>' + axDs.fmt(p.value) + '</td></tr>'; });
+  document.getElementById('axTableBox').innerHTML = html + '</table>';
+}
+function axLoad(next) {
+  axDs = next; axFrac = 0;
+  document.getElementById('axSlider').value = 0;
+  axRender(); axRenderMini(); axRenderTable();
+}
+const axTabs = document.getElementById('axisTabs');
+AX_DATASETS.forEach((cfg, i) => {
+  const b = document.createElement('button');
+  b.className = 'subtab'; b.setAttribute('role', 'tab');
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = cfg.tab;
+  b.addEventListener('click', () => {
+    axTabs.querySelectorAll('.subtab').forEach(t => t.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    axLoad(cfg);
+  });
+  axTabs.appendChild(b);
+});
+document.getElementById('axSlider').addEventListener('input', e => { axFrac = e.target.value / 100; axRender(); });
+document.getElementById('axZeroBtn').addEventListener('click', () => { axFrac = 0; document.getElementById('axSlider').value = 0; axRender(); });
+document.getElementById('axTruncBtn').addEventListener('click', () => { axFrac = 1; document.getElementById('axSlider').value = 100; axRender(); });
+document.getElementById('axTableBtn').addEventListener('click', () => document.getElementById('axTableBox').classList.toggle('show'));
+
+/* ================= SECTION: WINDOW ================= */
+const H_ALL = slice(HOMICIDE, 1960, 2025);
+let winA = 1960, winB = 2025;
+function pct(a, b) { return (b - a) / a * 100; }
+function winRender() {
+  const win = H_ALL.filter(p => p.year >= winA && p.year <= winB);
+  const yMax = niceCeil(Math.max(...H_ALL.map(p => p.value)) * 1.04);
+  drawChart(document.getElementById('winSvg'), {
+    points: win, ghost: H_ALL, yMin: 0, yMax,
+    unit: 'homicides per 100,000 people', fmt: v => v.toFixed(1),
+    margin: { top: 18, right: 20, bottom: 34, left: 62 },
+  });
+  const a = H_ALL.find(p => p.year === winA).value;
+  const b = H_ALL.find(p => p.year === winB).value;
+  const change = pct(a, b);
+  const head = document.getElementById('winHeadline');
+  if (change >= 15) { head.textContent = 'Homicide up ' + Math.round(change) + '% since ' + winA; head.className = 'headline alarm'; }
+  else if (change <= -15) { head.textContent = 'Homicide down ' + Math.abs(Math.round(change)) + '% since ' + winA; head.className = 'headline calm'; }
+  else { head.textContent = 'Homicide roughly flat since ' + winA + ' (' + (change >= 0 ? '+' : '') + Math.round(change) + '%)'; head.className = 'headline neutral'; }
+  document.getElementById('winStartVal').textContent = winA;
+  document.getElementById('winEndVal').textContent = winB;
+  document.getElementById('winStart').value = winA;
+  document.getElementById('winEnd').value = winB;
+  document.getElementById('winFact').innerHTML =
+    'Your window: <strong>' + winA + '</strong> (' + a.toFixed(1) + ') to <strong>' + winB + '</strong> (' + b.toFixed(1) + '), a change of <strong>' + (change >= 0 ? '+' : '') + Math.round(change) + '%</strong>. Across the whole series, 1960 (5.1) to 2025 (4.0) is a change of <strong>−22%</strong>, with a peak of 10.2 in 1980 in between.';
+}
+function bestWindow(direction) {
+  let best = null;
+  for (let i = 0; i < H_ALL.length; i++) {
+    for (let j = i + 7; j < H_ALL.length; j++) {
+      const c = pct(H_ALL[i].value, H_ALL[j].value) * direction;
+      if (!best || c > best.c) best = { c, a: H_ALL[i].year, b: H_ALL[j].year };
+    }
+  }
+  return best;
+}
+document.getElementById('winStart').addEventListener('input', e => {
+  winA = Math.min(Number(e.target.value), winB - 5); winRender();
+});
+document.getElementById('winEnd').addEventListener('input', e => {
+  winB = Math.max(Number(e.target.value), winA + 5); winRender();
+});
+document.getElementById('scaryBtn').addEventListener('click', () => { const w = bestWindow(1); winA = w.a; winB = w.b; winRender(); });
+document.getElementById('calmBtn').addEventListener('click', () => { const w = bestWindow(-1); winA = w.a; winB = w.b; winRender(); });
+document.getElementById('wholeBtn').addEventListener('click', () => { winA = 1960; winB = 2025; winRender(); });
+
+/* ================= SECTION: INVERT ================= */
+let ivFlipped = false;
+function ivRender() {
+  const win = slice(HOMICIDE, 2014, 2021);
+  const yMax = niceCeil(Math.max(...win.map(p => p.value)) * 1.15);
+  drawChart(document.getElementById('ivSvg'), {
+    points: win, yMin: 0, yMax, invert: ivFlipped, area: false,
+    unit: 'homicides per 100,000 people', fmt: v => v.toFixed(1),
+  });
+  const head = document.getElementById('ivHeadline');
+  const tag = document.getElementById('ivTag');
+  if (ivFlipped) {
+    tag.textContent = 'The headline this picture falsely invites';
+    head.textContent = 'Homicide plunges after 2014';
+    head.className = 'headline alarm';
+    document.getElementById('ivTruth').textContent = 'That headline is false. The rate rose from 4.4 to 6.8. The line only points down because the axis has been flipped, with zero at the top. This is the one trick on this page that makes the picture contradict the data outright.';
+  } else {
+    tag.textContent = 'The headline this chart supports';
+    head.textContent = 'Homicide rose from 4.4 to 6.8 per 100,000 between 2014 and 2021';
+    head.className = 'headline neutral';
+    document.getElementById('ivTruth').textContent = 'Drawn normally, up means up. The rise is real, and the fuller context lives on the other tabs: the rate fell back to an estimated 4.0 by 2025.';
+  }
+  document.getElementById('ivFact').innerHTML = ivFlipped
+    ? 'Read the tick labels on the left: <strong>they get smaller going up</strong>. The data are printed correctly. Only the direction of the picture lies.'
+    : 'The axis runs the normal way: zero at the bottom, larger values higher.';
+  document.getElementById('ivNormalBtn').className = 'btn' + (!ivFlipped ? ' active' : '');
+  document.getElementById('ivFlipBtn').className = 'btn' + (ivFlipped ? ' active' : '');
+}
+document.getElementById('ivNormalBtn').addEventListener('click', () => { ivFlipped = false; ivRender(); });
+document.getElementById('ivFlipBtn').addEventListener('click', () => { ivFlipped = true; ivRender(); });
+
+/* ================= SECTION: FRAME ================= */
+let frFrac = 0.2;
+function frRender() {
+  const svg = document.getElementById('frSvg');
+  const height = Math.round(180 + frFrac * 500); // 180 (wide) to 680 (tall)
+  svg.setAttribute('viewBox', '0 0 960 ' + height);
+  const all = slice(TFR, 1960, 2024);
+  drawChart(svg, {
+    points: all, yMin: 0, yMax: 4,
+    unit: 'births per woman', fmt: v => v.toFixed(1),
+    margin: { top: 18, right: 20, bottom: 30, left: 56 },
+  });
+  const head = document.getElementById('frHeadline');
+  if (frFrac >= 0.55) { head.textContent = 'Birth rate falls off a cliff after the Baby Boom'; head.className = 'headline alarm'; }
+  else if (frFrac <= 0.3) { head.textContent = 'Fertility drifts gently downward across six decades'; head.className = 'headline calm'; }
+  else { head.textContent = 'Fertility declines from 3.65 to 1.60 births per woman since 1960'; head.className = 'headline neutral'; }
+  const ratio = (960 / height).toFixed(1);
+  document.getElementById('frVal').textContent = ratio + ':1';
+  document.getElementById('frSlider').value = Math.round(frFrac * 100);
+}
+document.getElementById('frSlider').addEventListener('input', e => { frFrac = e.target.value / 100; frRender(); });
+document.getElementById('frWideBtn').addEventListener('click', () => { frFrac = 0.05; frRender(); });
+document.getElementById('frTallBtn').addEventListener('click', () => { frFrac = 1; frRender(); });
+
+/* ================= SECTION: SMOOTH ================= */
+let smWin = 1;
+function movingAvg(pts, w) {
+  if (w <= 1) return pts;
+  const half = Math.floor(w / 2);
+  return pts.map((p, i) => {
+    let sum = 0, n = 0;
+    for (let j = i - half; j <= i + half; j++) {
+      if (j >= 0 && j < pts.length) { sum += pts[j].value; n++; }
+    }
+    return { year: p.year, value: sum / n };
+  });
+}
+function smRender() {
+  const raw = slice(HOMICIDE, 1960, 2025);
+  const smoothed = movingAvg(raw, smWin);
+  drawChart(document.getElementById('smSvg'), {
+    points: smoothed, ghost: smWin > 1 ? raw : null, yMin: 0,
+    yMax: niceCeil(Math.max(...raw.map(p => p.value)) * 1.05),
+    unit: 'homicides per 100,000 people' + (smWin > 1 ? ' (' + smWin + '-year average)' : ''),
+    fmt: v => v.toFixed(1), area: false, endLabels: false,
+  });
+  const head = document.getElementById('smHeadline');
+  if (smWin === 1) {
+    head.textContent = '2020 saw the largest one-year homicide jump in the series';
+    head.className = 'headline alarm';
+    document.getElementById('smTruth').textContent = 'Raw annual data. The 2020 jump from 5.1 to 6.5 is the sharpest single-year rise since 1960, and the fall back to 4.0 by 2025 is just as visible.';
+  } else {
+    head.textContent = 'A ' + smWin + '-year average shows a long arc with hardly any 2020 spike';
+    head.className = 'headline calm';
+    document.getElementById('smTruth').textContent = 'True of the averaged line, which is the gray raw line run through a ' + smWin + '-year moving average. The spike is still in the data. The average spread it across its neighbors.';
+  }
+  const rawJump = ((6.5 - 5.1) / 5.1 * 100).toFixed(0);
+  const sm2020 = smoothed.find(p => p.year === 2020).value;
+  document.getElementById('smFact').innerHTML = smWin === 1
+    ? 'The raw 2020 value is <strong>6.5</strong>, a one-year rise of <strong>' + rawJump + '%</strong>. Increase the averaging window and watch it melt.'
+    : 'The raw 2020 value is <strong>6.5</strong>. The ' + smWin + '-year average at 2020 is <strong>' + sm2020.toFixed(1) + '</strong>. Same year, same data, ' + Math.round((6.5 - sm2020) * 10) / 10 + ' points of spike absorbed by the window.';
+  document.getElementById('smVal').textContent = smWin;
+}
+document.getElementById('smSlider').addEventListener('input', e => { smWin = Number(e.target.value); smRender(); });
+
+/* ================= SECTION: DUAL ================= */
+let duFit = true;
+function drawDual(svg, fitted) {
+  svg.innerHTML = '';
+  const CW = 660, CH = 360;
+  const m = { top: 18, right: 62, bottom: 34, left: 62 };
+  const iw = CW - m.left - m.right, ih = CH - m.top - m.bottom;
+  const A = slice(MARRIAGE, 1990, 2023);   // per 1,000
+  const B = slice(HOMICIDE, 1990, 2023);   // per 100,000
+  const y0 = 1990, y1 = 2023;
+  const xOf = yr => m.left + (yr - y0) / (y1 - y0) * iw;
+  let aMin, aMax, bMin, bMax;
+  if (fitted) {
+    aMin = Math.min(...A.map(p => p.value)) * 0.98; aMax = Math.max(...A.map(p => p.value)) * 1.02;
+    bMin = Math.min(...B.map(p => p.value)) * 0.98; bMax = Math.max(...B.map(p => p.value)) * 1.02;
+  } else {
+    aMin = 0; aMax = 12; bMin = 0; bMax = 12;
+  }
+  const yA = v => m.top + (1 - (v - aMin) / (aMax - aMin)) * ih;
+  const yB = v => m.top + (1 - (v - bMin) / (bMax - bMin)) * ih;
+  for (let i = 0; i <= 4; i++) {
+    const y = m.top + ih * i / 4;
+    el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: y, y2: y, class: 'gridline' });
+    const va = aMax - (aMax - aMin) * i / 4;
+    const vb = bMax - (bMax - bMin) * i / 4;
+    el(svg, 'text', { x: m.left - 8, y: y + 4, 'text-anchor': 'end', class: 'ticklabel', fill: 'var(--series-1)' }).textContent = va.toFixed(1);
+    el(svg, 'text', { x: CW - m.right + 8, y: y + 4, 'text-anchor': 'start', class: 'ticklabel', fill: 'var(--series-2)' }).textContent = vb.toFixed(1);
+  }
+  el(svg, 'line', { x1: m.left, x2: m.left, y1: m.top, y2: CH - m.bottom, class: 'axisline' });
+  el(svg, 'line', { x1: CW - m.right, x2: CW - m.right, y1: m.top, y2: CH - m.bottom, class: 'axisline' });
+  el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: CH - m.bottom, y2: CH - m.bottom, class: 'axisline' });
+  for (let yr = 1990; yr <= 2023; yr += 5) {
+    el(svg, 'text', { x: xOf(yr), y: CH - m.bottom + 20, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+  }
+  el(svg, 'text', { x: m.left, y: 12, class: 'axistitle', fill: 'var(--series-1)' }).textContent = 'marriages per 1,000';
+  el(svg, 'text', { x: CW - m.right, y: 12, 'text-anchor': 'end', class: 'axistitle', fill: 'var(--series-2)' }).textContent = 'homicides per 100,000';
+  el(svg, 'path', { d: 'M' + A.map(p => [xOf(p.year), yA(p.value)].join(',')).join('L'), fill: 'none', stroke: 'var(--series-1)', 'stroke-width': 3 });
+  el(svg, 'path', { d: 'M' + B.map(p => [xOf(p.year), yB(p.value)].join(',')).join('L'), fill: 'none', stroke: 'var(--series-2)', 'stroke-width': 3 });
+}
+function duRender() {
+  drawDual(document.getElementById('duSvg'), duFit);
+  const head = document.getElementById('duHeadline');
+  if (duFit) {
+    head.textContent = 'As marriage declined, murder declined with it';
+    head.className = 'headline alarm';
+    document.getElementById('duTruth').textContent = 'Both series did decline after the early 1990s. The near-perfect overlap, though, is manufactured: each axis has been stretched and shifted until the lines coincide. The picture implies a connection the data do not establish.';
+    document.getElementById('duFact').innerHTML = 'Each line is drawn against its own min-to-max axis, so <strong>any two broadly declining series would overlap this way</strong>. That is the trick: the fit is a property of the axes, not the world.';
+  } else {
+    head.textContent = 'Two declining lines with different units and different shapes';
+    head.className = 'headline neutral';
+    document.getElementById('duTruth').textContent = 'On one shared 0 to 12 scale the resemblance loosens. Both fell, at different times and different speeds, and nothing about the chart suggests one causes the other.';
+    document.getElementById('duFact').innerHTML = 'The shared scale is only possible because these two rates happen to have similar magnitudes. The honest versions of this chart are two separate panels.';
+  }
+  document.getElementById('duFitBtn').className = 'btn' + (duFit ? ' active' : '');
+  document.getElementById('duSharedBtn').className = 'btn' + (!duFit ? ' active' : '');
+}
+document.getElementById('duFitBtn').addEventListener('click', () => { duFit = true; duRender(); });
+document.getElementById('duSharedBtn').addEventListener('click', () => { duFit = false; duRender(); });
+
+/* ================= SECTION: COUNTS ================= */
+let ctMode = 'count';
+function ctRender() {
+  const isCount = ctMode === 'count';
+  const series = isCount ? slice(H_COUNTS, 1960, 2024) : slice(HOMICIDE, 1960, 2024);
+  const yMax = niceCeil(Math.max(...series.map(p => p.value)) * 1.06);
+  drawChart(document.getElementById('ctSvg'), {
+    points: series, yMin: 0, yMax,
+    unit: isCount ? 'total homicides per year' : 'homicides per 100,000 people',
+    fmt: isCount ? fmtBig : (v => v.toFixed(1)),
+    endLabels: false,
+  });
+  document.getElementById('ctTitle').textContent = isCount ? 'Total U.S. homicides per year, 1960 to 2024' : 'U.S. homicide rate, 1960 to 2024';
+  const head = document.getElementById('ctHeadline');
+  if (isCount) { head.textContent = 'Homicides top 16,000 in 2019, up more than 80% from 1960'; head.className = 'headline alarm'; }
+  else { head.textContent = 'The 2019 homicide rate was 5.0 per 100,000, essentially the same as 1960'; head.className = 'headline calm'; }
+  document.getElementById('ctTruth').textContent = 'Both statements are true of the same country in the same years. The totals grew because the population did. The risk to any one person barely moved between those two endpoints.';
+  const c60 = H_COUNTS.values[1960 - 1960], c19 = H_COUNTS.values[2019 - 1960];
+  document.getElementById('ctFact').innerHTML = isCount
+    ? '1960: about <strong>' + c60.toLocaleString() + '</strong> homicides. 2019: about <strong>' + c19.toLocaleString() + '</strong>. The count rose <strong>' + Math.round(pct(c60, c19)) + '%</strong> while the rate went from 5.1 to 5.0.'
+    : '1960: <strong>5.1</strong> per 100,000. 2019: <strong>5.0</strong>. Flip to totals and the same era reads as an 80% increase.';
+  document.getElementById('ctCountBtn').className = 'btn' + (isCount ? ' active' : '');
+  document.getElementById('ctRateBtn').className = 'btn' + (!isCount ? ' active' : '');
+}
+document.getElementById('ctCountBtn').addEventListener('click', () => { ctMode = 'count'; ctRender(); });
+document.getElementById('ctRateBtn').addEventListener('click', () => { ctMode = 'rate'; ctRender(); });
+
+/* ================= SECTION: CUMULATIVE ================= */
+let cuMode = 'cum';
+function cuRender() {
+  const isCum = cuMode === 'cum';
+  const series = isCum ? slice(W_CUM, 1960, 2023) : slice(MARRIAGE, 1960, 2023);
+  const yMax = niceCeil(Math.max(...series.map(p => p.value)) * 1.06);
+  drawChart(document.getElementById('cuSvg'), {
+    points: series, yMin: 0, yMax,
+    unit: isCum ? 'total weddings since 1960 (thousands)' : 'marriages per 1,000 people',
+    fmt: isCum ? fmtBig : (v => v.toFixed(1)),
+    endLabels: false,
+  });
+  document.getElementById('cuTitle').textContent = isCum ? 'Cumulative U.S. weddings since 1960' : 'U.S. marriage rate, 1960 to 2023';
+  const head = document.getElementById('cuHeadline');
+  if (isCum) { head.textContent = 'Total American weddings reach an all-time high'; head.className = 'headline alarm'; }
+  else { head.textContent = 'The marriage rate is near the lowest on record'; head.className = 'headline calm'; }
+  document.getElementById('cuTruth').textContent = 'The first headline has been true every year since 1960 and always will be, because a running total cannot fall. The second describes what is actually changing.';
+  const total = W_CUM.values[2023 - 1960];
+  document.getElementById('cuFact').innerHTML = isCum
+    ? 'About <strong>' + (total / 1000).toFixed(0) + ' million</strong> weddings since 1960, and the curve rises every single year by construction. Note what the smooth climb hides: the annual rate fell from 8.5 to 6.1 over the same span.'
+    : 'The annual view: <strong>8.5</strong> per 1,000 in 1960 down to <strong>6.1</strong> in 2023, with the 2020 COVID dip and rebound visible. This is the number the cumulative curve buries.';
+  document.getElementById('cuCumBtn').className = 'btn' + (isCum ? ' active' : '');
+  document.getElementById('cuRateBtn').className = 'btn' + (!isCum ? ' active' : '');
+}
+document.getElementById('cuCumBtn').addEventListener('click', () => { cuMode = 'cum'; cuRender(); });
+document.getElementById('cuRateBtn').addEventListener('click', () => { cuMode = 'rate'; cuRender(); });
+
+/* ================= SECTION: QUIZ ================= */
+const QUIZ_TOTAL = 10;
+const ANSWERS = [
+  { id: 'axis', label: 'Truncated axis' },
+  { id: 'invert', label: 'Upside-down axis' },
+  { id: 'window', label: 'Cherry-picked window' },
+  { id: 'dual', label: 'Two fitted axes' },
+  { id: 'counts', label: 'Counts, not rates' },
+  { id: 'cum', label: 'Cumulative curve' },
+  { id: 'none', label: 'Nothing misleading' },
+];
+let quizRound = 0, quizRight = 0, quizCurrent = null, quizAnswered = false;
+
+function makeQuizChart() {
+  const kinds = ['axis', 'window', 'counts', 'cum', 'none', 'invert', 'dual', 'axis', 'window', 'none'];
+  const kind = kinds[Math.floor(Math.random() * kinds.length)];
+  const pickSeries = () => {
+    const r = Math.floor(Math.random() * 3);
+    return r === 0 ? { d: HOMICIDE, name: 'U.S. homicide rate', unit: 'per 100,000 people', fmt: v => v.toFixed(1), last: 2025 }
+         : r === 1 ? { d: MARRIAGE, name: 'U.S. marriage rate', unit: 'per 1,000 people', fmt: v => v.toFixed(1), last: 2023 }
+         : { d: TFR, name: 'U.S. fertility rate', unit: 'births per woman', fmt: v => v.toFixed(2), last: 2024 };
+  };
+  if (kind === 'axis') {
+    const s = pickSeries();
+    const w0 = s.last - (8 + Math.floor(Math.random() * 8));
+    const win = slice(s.d, w0, s.last);
+    const lo = Math.min(...win.map(p => p.value)), hi = Math.max(...win.map(p => p.value));
+    return { kind, points: win, yMin: lo * 0.96, yMax: hi + (hi - lo) * 0.06, unit: s.unit, fmt: s.fmt,
+      title: s.name + ', ' + w0 + ' to ' + s.last,
+      explain: 'The y-axis starts at ' + s.fmt(lo * 0.96) + ', not zero, so the change fills nearly the whole chart.' };
+  }
+  if (kind === 'window') {
+    const scary = Math.random() < 0.5;
+    const w = bestWindow(scary ? 1 : -1);
+    const win = H_ALL.filter(p => p.year >= w.a && p.year <= w.b);
+    return { kind, points: win, yMin: 0, yMax: niceCeil(Math.max(...win.map(p => p.value)) * 1.1), unit: 'per 100,000 people', fmt: v => v.toFixed(1),
+      title: 'U.S. homicide rate, ' + w.a + ' to ' + w.b,
+      explain: 'The axis is honest, but the years are chosen. The full series runs 1960 to 2025 and tells a different story than this ' + (w.b - w.a) + '-year slice.' };
+  }
+  if (kind === 'counts') {
+    const series = slice(H_COUNTS, 1960, 2024);
+    return { kind, points: series, yMin: 0, yMax: niceCeil(Math.max(...series.map(p => p.value)) * 1.06), unit: 'total homicides per year', fmt: fmtBig,
+      title: 'Total U.S. homicides per year, 1960 to 2024',
+      explain: 'These are totals, not rates. The population roughly doubled over the span, so totals rise even in years when the per-person risk did not.' };
+  }
+  if (kind === 'cum') {
+    const series = slice(W_CUM, 1960, 2023);
+    return { kind, points: series, yMin: 0, yMax: niceCeil(Math.max(...series.map(p => p.value)) * 1.06), unit: 'total weddings since 1960 (thousands)', fmt: fmtBig,
+      title: 'Cumulative U.S. weddings since 1960',
+      explain: 'A running total since 1960. It can only rise, whatever the annual number does. The annual marriage rate actually fell across this span.' };
+  }
+  if (kind === 'invert') {
+    const s = pickSeries();
+    const w0 = s.last - (8 + Math.floor(Math.random() * 8));
+    const win = slice(s.d, w0, s.last);
+    return { kind, points: win, yMin: 0, yMax: niceCeil(Math.max(...win.map(p => p.value)) * 1.15), invert: true, area: false, unit: s.unit, fmt: s.fmt,
+      title: s.name + ', ' + w0 + ' to ' + s.last,
+      explain: 'The axis is flipped: the tick labels shrink as they go up, so the line points the opposite way from the data. The one trick where the picture is outright false.' };
+  }
+  if (kind === 'dual') {
+    return { kind, dual: true,
+      title: 'Marriage rate and homicide rate, 1990 to 2023',
+      explain: 'Two lines, two independently fitted y-axes. The overlap is a property of the axis scaling, not of the data. Any two broadly declining series can be made to coincide this way.' };
+  }
+  const s = pickSeries();
+  const all = slice(s.d, 1960, s.last);
+  return { kind: 'none', points: all, yMin: 0, yMax: niceCeil(Math.max(...all.map(p => p.value)) * 1.06), unit: s.unit, fmt: s.fmt,
+    title: s.name + ', 1960 to ' + s.last,
+    explain: 'Full series, axis at zero, a rate rather than a total, no running sum. This is the honest baseline the tricks get measured against.' };
+}
+
+function quizNext() {
+  if (quizRound >= QUIZ_TOTAL) { quizFinish(); return; }
+  quizRound++;
+  quizAnswered = false;
+  quizCurrent = makeQuizChart();
+  document.getElementById('qzTitle').textContent = quizCurrent.title;
+  if (quizCurrent.dual) {
+    const qs = document.getElementById('qzSvg');
+    qs.setAttribute('viewBox', '0 0 660 360');
+    drawDual(qs, true);
+  } else {
+    const qs = document.getElementById('qzSvg');
+    qs.setAttribute('viewBox', '0 0 780 340');
+    drawChart(qs, { points: quizCurrent.points, yMin: quizCurrent.yMin, yMax: quizCurrent.yMax, unit: quizCurrent.unit, fmt: quizCurrent.fmt, endLabels: false, invert: quizCurrent.invert, area: quizCurrent.area });
+  }
+  document.getElementById('quizCount').textContent = 'Chart ' + quizRound + ' of ' + QUIZ_TOTAL + ' · named correctly: ' + quizRight;
+  const box = document.getElementById('qzAnswers');
+  box.innerHTML = '';
+  ANSWERS.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn answer'; b.type = 'button'; b.textContent = a.label;
+    b.addEventListener('click', () => quizAnswer(a.id, b));
+    box.appendChild(b);
+  });
+  document.getElementById('qzFeed').classList.remove('show');
+  document.getElementById('qzNext').style.display = 'none';
+  document.getElementById('qzRestart').style.display = 'none';
+}
+function quizAnswer(id, btn) {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  const right = id === quizCurrent.kind;
+  if (right) quizRight++;
+  btn.className = 'btn answer ' + (right ? 'correct' : 'wrong');
+  if (!right) {
+    const want = ANSWERS.find(a => a.id === quizCurrent.kind).label;
+    Array.from(document.getElementById('qzAnswers').children).forEach(b => { if (b.textContent === want) b.className = 'btn answer correct'; });
+  }
+  const feed = document.getElementById('qzFeed');
+  feed.innerHTML = '<span class="verdict">' + (right ? 'Named it. ' : 'Not this one. ') + '</span>' + quizCurrent.explain;
+  feed.classList.add('show');
+  document.getElementById('quizCount').textContent = 'Chart ' + quizRound + ' of ' + QUIZ_TOTAL + ' · named correctly: ' + quizRight;
+  document.getElementById('qzNext').style.display = quizRound < QUIZ_TOTAL ? 'inline-block' : 'none';
+  if (quizRound >= QUIZ_TOTAL) quizFinish(true);
+}
+function quizFinish(keepChart) {
+  const feed = document.getElementById('qzFeed');
+  const summary = 'Done: you named ' + quizRight + ' of ' + QUIZ_TOTAL + ' correctly. The count is just the number of right answers, nothing weighted, nothing hidden.';
+  if (keepChart) { feed.innerHTML += '<br><br><span class="verdict">' + summary + '</span>'; }
+  else { feed.innerHTML = '<span class="verdict">' + summary + '</span>'; feed.classList.add('show'); }
+  document.getElementById('qzRestart').style.display = 'inline-block';
+}
+document.getElementById('qzNext').addEventListener('click', quizNext);
+document.getElementById('qzRestart').addEventListener('click', () => { quizRound = 0; quizRight = 0; quizNext(); });
+
+/* ================= TRICK TABS ================= */
+const TRICKS = [
+  { id: 'sec-axis', label: 'The axis' },
+  { id: 'sec-invert', label: 'Upside down' },
+  { id: 'sec-window', label: 'The window' },
+  { id: 'sec-frame', label: 'The frame' },
+  { id: 'sec-smooth', label: 'The average' },
+  { id: 'sec-dual', label: 'The second axis' },
+  { id: 'sec-counts', label: 'Counts, not rates' },
+  { id: 'sec-cumulative', label: 'The cumulative curve' },
+  { id: 'sec-quiz', label: 'Test yourself' },
+];
+const trickBox = document.getElementById('trickTabs');
+TRICKS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tricktab'; b.setAttribute('role', 'tab');
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => {
+    trickBox.querySelectorAll('.tricktab').forEach(x => x.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(t.id).classList.add('active');
+    if (t.id === 'sec-quiz' && quizRound === 0) quizNext();
+  });
+  trickBox.appendChild(b);
+});
+document.getElementById('sec-axis').classList.add('active');
+
+/* ================= THEME ================= */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+/* ================= INIT ================= */
+axLoad(AX_DATASETS[0]);
+winRender();
+ivRender();
+frRender();
+smRender();
+duRender();
+ctRender();
+cuRender();
+
+/* test hook */
+window.__S = { axRender, winRender, ivRender, frRender, smRender, duRender, ctRender, cuRender, quizNext, get state() { return { axFrac, winA, winB, ivFlipped, frFrac, smWin, duFit, ctMode, cuMode, quizRound, quizRight }; } };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

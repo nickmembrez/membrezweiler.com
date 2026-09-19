@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pay Gap, Taken Apart · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 200px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .mythblock { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+  .mythblock:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+  .step { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+  .step .sh { display: flex; align-items: center; gap: 10px; }
+  .step .snum { width: 26px; height: 26px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step .stitle { font-size: 15px; font-weight: 700; }
+  .step .sbody { margin-top: 10px; }
+  .step.locked { opacity: 0.5; }
+  .step.locked .sbody { display: none; }
+  .openbtn { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; margin-left: auto; }
+  .openbtn:hover { filter: brightness(1.1); }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Pay Gap, Taken Apart <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Everyone has heard that women earn less than men. Almost everyone is wrong about why.</strong> This page holds the published numbers: the gap itself, what survives when you compare identical jobs, who works where, and how far women rise. Every figure is hidden until you commit a guess, and the tab most worth arguing with is the second one, where the gap comes apart into pieces that point at the structure of work itself. That is the finding that won Claudia Goldin the Nobel Prize, and by the end of the page you will know what she meant.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ THE GAP ============ -->
+    <div class="section active" id="sec-gap">
+      <div class="card">
+        <h2>The gap itself</h2>
+        <p class="lede">Among full-time workers, for every dollar a man earns in median weekly pay, how much does a woman earn?</p>
+        <div class="guessbox" id="gapBox">
+          <div class="gq">Drag your guess in cents, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="gapSlider" min="40" max="100" value="70" step="1">
+            <span class="gval" id="gapSliderVal">70¢</span>
+            <button class="gbtn" id="gapLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gapVerdict"></div>
+        </div>
+        <div class="veiled" id="gapReveal">
+          <h3 style="margin-top:14px">Women's median earnings per men's dollar, full-time weekly, BLS</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1979</span><div class="btrack"><div class="bfill then" style="width:62%"></div></div><span class="bval">62¢</span></div>
+            <div class="brow"><span class="blabel">2024</span><div class="btrack"><div class="bfill" style="width:83%"></div></div><span class="bval">83¢</span></div>
+            <div class="brow" id="gapGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="gapGuessFill" style="width:0%"></div></div><span class="bval" id="gapGuessVal"></span></div>
+          </div>
+          <h3 style="margin-top:14px">The same ratio by age, Pew, 2022</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Ages 25 to 34</span><div class="btrack"><div class="bfill" style="width:92%"></div></div><span class="bval">92¢</span></div>
+            <div class="brow"><span class="blabel">Ages 35 to 44</span><div class="btrack"><div class="bfill" style="width:83%"></div></div><span class="bval">83¢</span></div>
+            <div class="brow"><span class="blabel">Ages 45 to 54</span><div class="btrack"><div class="bfill" style="width:83%"></div></div><span class="bval">83¢</span></div>
+            <div class="brow"><span class="blabel">Ages 55 to 64</span><div class="btrack"><div class="bfill warn" style="width:79%"></div></div><span class="bval">79¢</span></div>
+          </div>
+          <div class="teach"><strong>Two things to read off this tab.</strong> First, the gap closed fast for two decades and then mostly stalled: the move from 62 to about 80 happened by the early 2000s, and the twenty years since have added pennies. Second, the age rows: young women start near parity and lose ground through the career years. Whatever is driving this operates in mid-career, not at the door. Hold that thought for the next tab.</div>
+          <p class="srcnote">Sources: Bureau of Labor Statistics, Highlights of Women's Earnings in 2024 (median usual weekly earnings, full-time wage and salary workers: 83% in 2024, 62% in 1979). Pew Research Center, The Enduring Grip of the Gender Pay Gap (2023): median hourly earnings ratio 82 cents overall in 2022, with the age breakdown shown, and little change from 20 years earlier.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TAKEN APART ============ -->
+    <div class="section" id="sec-apart">
+      <div class="card">
+        <h2>Taking it apart</h2>
+        <p class="lede">The 83-cent figure compares all working women with all working men, whatever jobs they hold. Here is the question that separates the popular story from the measured one.</p>
+        <div class="guessbox" id="ctrlBox">
+          <div class="gq">Compare a woman and a man in the same job, same title, same qualifications, same experience. Now how much does she earn per his dollar? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="ctrlSlider" min="40" max="100" value="70" step="1">
+            <span class="gval" id="ctrlSliderVal">70¢</span>
+            <button class="gbtn" id="ctrlLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="ctrlVerdict"></div>
+        </div>
+        <div class="veiled" id="apartSteps">
+          <div class="bars" style="margin-top:14px">
+            <div class="brow"><span class="blabel">All workers (uncontrolled)</span><div class="btrack"><div class="bfill warn" style="width:83%"></div></div><span class="bval">83¢</span></div>
+            <div class="brow"><span class="blabel">Same job, same qualifications</span><div class="btrack"><div class="bfill" style="width:99%"></div></div><span class="bval">99¢</span></div>
+            <div class="brow"><span class="blabel">your guess on the controlled gap</span><div class="btrack"><div class="bfill ghost" id="ctrlGuessFill" style="width:0%"></div></div><span class="bval" id="ctrlGuessVal"></span></div>
+          </div>
+          <div class="step" id="step1">
+            <div class="sh"><span class="snum">1</span><span class="stitle">The gap mostly is not same-job, same-pay</span></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">Payscale's 2025 analysis: controlling for job, qualifications, and experience, women earn 99 cents on the male dollar. That last cent is real and it is illegal, but it cannot explain a 17-cent gap. So the interesting question moves: if it is not mostly unequal pay for equal work, where do the other 16 cents live?</p>
+            </div>
+          </div>
+          <div class="step locked" id="step2">
+            <div class="sh"><span class="snum">2</span><span class="stitle">They live in which jobs, and which hours</span><button class="openbtn" id="open2" type="button">Open step 2</button></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">Men and women hold different jobs (next tab measures how different), and the female-skewed ones pay less. On top of the sorting sits the hours structure: the highest-paying roles pay a premium for long, inflexible, always-available time. Goldin calls them greedy jobs. Anyone who cannot promise the always turns down the premium, whatever their talent.</p>
+            </div>
+          </div>
+          <div class="step locked" id="step3">
+            <div class="sh"><span class="snum">3</span><span class="stitle">The timing gives it away</span><button class="openbtn" id="open3" type="button">Open step 3</button></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">Remember the age rows on the first tab: near parity in the 20s, then the slide. The gap opens exactly when caregiving arrives, and it opens asymmetrically. Payscale 2025: mothers earn 75 cents per fathers' dollar, while fathers out-earn even men without children at home, the fatherhood premium Pew documents. The same event moves the two sexes' earnings in opposite directions. That is a structure operating, not a talent difference appearing at age 30 on schedule.</p>
+            </div>
+          </div>
+          <div class="step locked" id="step4">
+            <div class="sh"><span class="snum">4</span><span class="stitle">The verdict</span><button class="openbtn" id="open4" type="button">Open step 4</button></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">The pay gap is mostly not a story about biased managers writing unequal paychecks for identical work. It is a story about which occupations sort whom, how the biggest rewards attach to inflexible hours, and who absorbs caregiving when it collides with those hours. That is why Goldin's Nobel-winning conclusion is structural: redesign how work rewards time, and the gap moves. Wait for attitudes to improve, and it stalls, which is exactly what the last twenty years look like.</p>
+              <div class="teach"><strong>Both mistakes are wrong.</strong> The gap is not a myth: 83 cents compounds across a career into hundreds of thousands of dollars, and the 1-cent controlled gap is still measurable discrimination. And the gap is not proof that every employer pays women less for the same work: the data say most of it is built earlier, in the sorting and the hours. Keeping both halves of that sentence is the exam skill.</div>
+            </div>
+          </div>
+          <p class="srcnote">Sources: Payscale, 2025 Gender Pay Gap Report (uncontrolled 83 cents, controlled 99 cents, mothers 75 cents per fathers' dollar). Pew Research Center 2023 (fatherhood premium). Claudia Goldin, Nobel lecture and Career and Family, on greedy work. The uncontrolled BLS and Payscale figures land on the same 83 cents by different methods, which is worth a sentence in class.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ WHO DOES WHICH JOBS ============ -->
+    <div class="section" id="sec-jobs">
+      <div class="card">
+        <h2>Who does which jobs</h2>
+        <p class="lede">Step 2 said the gap lives partly in the sorting. Measure the sorting yourself: for each occupation, guess the share of its workers who are women.</p>
+
+        <div class="mythblock">
+          <h3>Registered nurses</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="rnSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="rnSliderVal">50%</span>
+              <button class="gbtn" id="rnLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="rnVerdict"></div>
+          </div>
+        </div>
+        <div class="mythblock">
+          <h3>Software developers</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="swSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="swSliderVal">50%</span>
+              <button class="gbtn" id="swLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="swVerdict"></div>
+          </div>
+        </div>
+        <div class="mythblock">
+          <h3>Chief executives</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="ceSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="ceSliderVal">50%</span>
+              <button class="gbtn" id="ceLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="ceVerdict"></div>
+          </div>
+        </div>
+        <div class="mythblock">
+          <h3>Construction and extraction</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="cnSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="cnSliderVal">50%</span>
+              <button class="gbtn" id="cnLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="cnVerdict"></div>
+          </div>
+        </div>
+
+        <div class="veiled" id="jobsReveal">
+          <h3 style="margin-top:14px">Share of workers who are women, BLS 2024</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Registered nurses</span><div class="btrack"><div class="bfill" style="width:85%"></div></div><span class="bval">~85%</span></div>
+            <div class="brow"><span class="blabel">Elementary and middle school teachers</span><div class="btrack"><div class="bfill" style="width:77%"></div></div><span class="bval">~77%</span></div>
+            <div class="brow"><span class="blabel">Chief executives</span><div class="btrack"><div class="bfill warn" style="width:35%"></div></div><span class="bval">~35%</span></div>
+            <div class="brow"><span class="blabel">Software developers</span><div class="btrack"><div class="bfill warn" style="width:21%"></div></div><span class="bval">~21%</span></div>
+            <div class="brow"><span class="blabel">Construction and extraction</span><div class="btrack"><div class="bfill warn" style="width:4%"></div></div><span class="bval">~4%</span></div>
+          </div>
+          <div class="teach"><strong>Two findings hide in these bars.</strong> First, the sorting is enormous, and Chapter 5 explained how it starts: toys, praise, channeled interests, agents of socialization steering the doors people walk through long before any hiring manager appears. Structure shapes the choices, so choice and structure are not opposites. Second, the female-skewed jobs pay less at similar skill levels, and the sharpest evidence is longitudinal: sociologists tracking occupations across decades (Levanon, England, and Allison, using census data from 1950 to 2000) found that when a field's gender mix shifts toward women, its relative pay tends to fall. The wage follows who is doing the work, not just the work.</div>
+          <p class="srcnote">Source: Bureau of Labor Statistics, women as a share of each occupation's employed workers, 2024 annual averages. Percentages are computed from BLS published counts and rounded, marked with a tilde. Devaluation finding: Levanon, England, and Allison (2009), Social Forces.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE LADDER ============ -->
+    <div class="section" id="sec-ladder">
+      <div class="card">
+        <h2>The ladder</h2>
+        <p class="lede">Women are the majority of college graduates and nearly half the workforce. Now the top of the ladder: the Fortune 500, the five hundred biggest American companies by revenue.</p>
+        <div class="guessbox" id="ceoBox">
+          <div class="gq">What share of Fortune 500 chief executives are women? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="ceoSlider" min="0" max="100" value="30" step="1">
+            <span class="gval" id="ceoSliderVal">30%</span>
+            <button class="gbtn" id="ceoLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="ceoVerdict"></div>
+        </div>
+        <div class="veiled" id="ladderReveal">
+          <h3 style="margin-top:14px">Women's share at each altitude</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Bachelor's degrees earned</span><div class="btrack"><div class="bfill" style="width:58.5%"></div></div><span class="bval">58.5%</span></div>
+            <div class="brow"><span class="blabel">The labor force</span><div class="btrack"><div class="bfill" style="width:47%"></div></div><span class="bval">47%</span></div>
+            <div class="brow"><span class="blabel">C-suite executives</span><div class="btrack"><div class="bfill warn" style="width:29%"></div></div><span class="bval">29%</span></div>
+            <div class="brow"><span class="blabel">Fortune 500 chief executives</span><div class="btrack"><div class="bfill warn" style="width:10.6%"></div></div><span class="bval">10.6%</span></div>
+            <div class="brow" id="ceoGuessRow"><span class="blabel">your guess on the last one</span><div class="btrack"><div class="bfill ghost" id="ceoGuessFill" style="width:0%"></div></div><span class="bval" id="ceoGuessVal"></span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">93</div><div class="l">women promoted to manager for every 100 men, the broken rung at the ladder's first step (Women in the Workplace 2025)</div></div>
+            <div class="stat"><div class="v">2015</div><div class="l">the year the New York Times reported that fewer women ran big companies than men named John</div></div>
+          </div>
+          <div class="teach"><strong>Read the ladder against the first rung.</strong> The pipeline starts female-majority and thins at every altitude, and the thinning starts at the very first promotion: 93 women per 100 men, repeated at every level for a career's worth of levels, compounds into the top rows. Notice what this is not: it is not a qualifications story, because the qualifications are the first bar. The Ch 10 vocabulary applies: each rung is a place where cultural capital, networks, greedy hours, and the caregiving collision do their quiet work.</div>
+          <p class="srcnote">Sources: NCES: women earned 58.5% of bachelor's degrees, 2021-22. BLS: women were 47% of the civilian labor force, 2023. McKinsey and LeanIn, Women in the Workplace 2025: women hold 29% of C-suite roles, 93 women promoted to manager per 100 men. Fortune 500: 53 women CEOs, 10.6%, in 2023. Justin Wolfers, New York Times, 2015, on the Johns. Figures come from different years and definitions, so the ladder is a composite picture, not one dataset.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS ============ -->
+    <div class="section" id="sec-questions">
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Which guess missed by the most, and in which direction? The controlled-gap guess is the revealing one: what story had you been carrying about where the gap lives?</li>
+          <li>Explain to a skeptical friend why "99 cents in the same job" and "the pay gap is real and large" are both true in one paragraph, without contradicting yourself.</li>
+          <li>Run the occupational sorting through Chapter 5: name the agents of socialization that steered you toward or away from a career door, and one moment you can actually remember it happening.</li>
+          <li>The devaluation finding says pay follows who does the work. What does that predict for nursing and teaching as more men enter them, and for software as more women do? How would you test it?</li>
+          <li>Goldin says redesigning how work rewards time would shrink the gap. Name one concrete redesign in your intended field, and who would resist it.</li>
+          <li>Intersectionality check: this page mostly compares all women with all men. Which numbers would you want broken out by race to see whose gap is widest, and what do you predict?</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Bureau of Labor Statistics, Highlights of Women's Earnings in 2024 (83 cents full-time weekly, 62 cents in 1979; occupation shares computed from published BLS counts and rounded). Pew Research Center, The Enduring Grip of the Gender Pay Gap, 2023 (82 cents hourly 2022, age breakdown, fatherhood premium). Payscale, 2025 Gender Pay Gap Report (uncontrolled 83 cents, controlled 99 cents, mothers 75 cents per fathers' dollar). Levanon, England, and Allison 2009 on occupational devaluation. NCES 2021-22 degrees. McKinsey and LeanIn, Women in the Workplace 2025. Fortune 500 CEO count for 2023. Justin Wolfers, New York Times, 2015. Reference years differ across sources and are labeled. Your guesses stay on this page and are not recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TABS = [
+  { id: 'sec-gap', label: 'The gap' },
+  { id: 'sec-apart', label: 'Taking it apart' },
+  { id: 'sec-jobs', label: 'Who does which jobs' },
+  { id: 'sec-ladder', label: 'The ladder' },
+  { id: 'sec-questions', label: 'Questions' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// Generic cents/percent guess slider.
+function setupGuess(cfg) {
+  const slider = document.getElementById(cfg.slider);
+  const sliderVal = document.getElementById(cfg.sliderVal);
+  const lockBtn = document.getElementById(cfg.lock);
+  const unit = cfg.unit || '%';
+  slider.addEventListener('input', () => { sliderVal.textContent = slider.value + unit; });
+  function lock(valOverride) {
+    if (lockBtn.disabled) return;
+    const guess = valOverride == null ? +slider.value : valOverride;
+    lockBtn.disabled = true;
+    slider.disabled = true;
+    sliderVal.textContent = guess + unit;
+    if (cfg.guessFill) {
+      document.getElementById(cfg.guessFill).style.width = guess + '%';
+      document.getElementById(cfg.guessVal).textContent = guess + unit;
+    }
+    const diff = guess - cfg.actual;
+    const unitWord = cfg.unit === '¢' ? 'cents' : 'points';
+    let msg;
+    if (diff === 0) msg = 'You guessed it exactly: ' + cfg.actualText + '.';
+    else msg = 'You guessed ' + guess + unit + '. The published figure is ' + cfg.actualText + '. You were ' + Math.abs(diff) + ' ' + (Math.abs(diff) === 1 ? unitWord.slice(0, -1) : unitWord) + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    document.getElementById(cfg.verdict).textContent = msg;
+    if (cfg.reveal) document.getElementById(cfg.reveal).classList.remove('veiled');
+    if (cfg.onLock) cfg.onLock();
+  }
+  lockBtn.addEventListener('click', () => lock());
+  return lock;
+}
+
+const lockGap = setupGuess({
+  slider: 'gapSlider', sliderVal: 'gapSliderVal', lock: 'gapLock', unit: '¢',
+  guessFill: 'gapGuessFill', guessVal: 'gapGuessVal', verdict: 'gapVerdict',
+  reveal: 'gapReveal', actual: 83, actualText: '83 cents (2024)',
+});
+const lockCtrl = setupGuess({
+  slider: 'ctrlSlider', sliderVal: 'ctrlSliderVal', lock: 'ctrlLock', unit: '¢',
+  guessFill: 'ctrlGuessFill', guessVal: 'ctrlGuessVal', verdict: 'ctrlVerdict',
+  reveal: 'apartSteps', actual: 99, actualText: '99 cents',
+});
+function openStep(n) {
+  const el = document.getElementById('step' + n);
+  el.classList.remove('locked');
+  const btn = document.getElementById('open' + n);
+  if (btn) btn.remove();
+}
+[2, 3, 4].forEach(n => {
+  document.getElementById('open' + n).addEventListener('click', () => openStep(n));
+});
+
+// Who does which jobs: four sliders, reveal after all four lock.
+let jobsLocked = 0;
+function jobDone() {
+  jobsLocked++;
+  if (jobsLocked >= 4) document.getElementById('jobsReveal').classList.remove('veiled');
+}
+const lockRN = setupGuess({ slider: 'rnSlider', sliderVal: 'rnSliderVal', lock: 'rnLock', verdict: 'rnVerdict', actual: 85, actualText: 'about 85%', onLock: jobDone });
+const lockSW = setupGuess({ slider: 'swSlider', sliderVal: 'swSliderVal', lock: 'swLock', verdict: 'swVerdict', actual: 21, actualText: 'about 21%', onLock: jobDone });
+const lockCE = setupGuess({ slider: 'ceSlider', sliderVal: 'ceSliderVal', lock: 'ceLock', verdict: 'ceVerdict', actual: 35, actualText: 'about 35%', onLock: jobDone });
+const lockCN = setupGuess({ slider: 'cnSlider', sliderVal: 'cnSliderVal', lock: 'cnLock', verdict: 'cnVerdict', actual: 4, actualText: 'about 4%', onLock: jobDone });
+
+const lockCEO = setupGuess({
+  slider: 'ceoSlider', sliderVal: 'ceoSliderVal', lock: 'ceoLock',
+  guessFill: 'ceoGuessFill', guessVal: 'ceoGuessVal', verdict: 'ceoVerdict',
+  reveal: 'ladderReveal', actual: 11, actualText: '10.6% (53 of 500, 2023)',
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, lockGap, lockCtrl, openStep, lockRN, lockSW, lockCE, lockCN, lockCEO };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

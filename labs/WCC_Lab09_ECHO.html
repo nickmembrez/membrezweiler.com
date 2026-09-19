@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECHO · White-Collar Crime · Crime Lab 9</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 16px; }
+  .fgrid .rq { margin-top: 8px; }
+  .fgrid .qt { font-size: 13px; }
+  .chartwrap svg { width: 100%; height: auto; display: block; background: var(--wash); border-radius: 10px; }
+  .tablewrap { overflow-x: auto; }
+  .runlog { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .runlog th, .runlog td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; white-space: nowrap; }
+  .runlog th { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>ECHO <span class="sub">White-Collar Crime · Crime Lab 9 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>The EPA keeps a public record of every facility it or a state regulates under the major environmental laws, what inspectors found there, and what was done about it. It is called Enforcement and Compliance History Online, ECHO, and anyone can search it.</strong> This lab has you do that: for Wichita Falls, for your hometown, and for a city you choose to compare, you will pull the counts of facilities, violations, inspections, enforcement actions, and penalties, and then set them against 23 cities pulled the same way in September 2026. The pattern you will find is the one in the readings. Prechel and Zheng showed that among the largest U.S. corporations, penalties did not reduce toxic emissions and that firms headquartered in states with weaker standards emitted more. Stretesky, Long, and Lynch found the same for the largest penalties. Michalowski and Brown argued in 2020 that regulatory rollback was itself a form of state-facilitated corporate crime, and by 2026 there is a record to test that against. ECHO is where the record lives, and the lab ends with what it can and cannot show.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-what" type="button">What ECHO counts</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-search" type="button">Your search</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-cities" type="button">Twenty-three cities</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-treadmill" type="button">Does enforcement work</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: WHAT -->
+    <div class="section active" id="sec-what">
+      <div class="card">
+        <h2>The record and its units</h2>
+        <p class="lede">ECHO draws on the EPA's data systems for the Clean Air Act, the Clean Water Act (discharge permits, including stormwater), the Resource Conservation and Recovery Act (hazardous waste), and the Safe Drinking Water Act, plus the Toxics Release Inventory. Most of the data are entered by state agencies, in Texas by the Texas Commission on Environmental Quality, because the states run most of the permitting and inspection under delegated authority. The units matter, and ECHO's summary counts use these.</p>
+        <div class="defs">
+          <div class="def"><div class="who">Facility</div><div class="hinge">A regulated site with at least one permit or identifier. A city's count includes wastewater plants, gas stations with underground tanks, construction sites with stormwater permits, hospitals, and factories. Most facilities in most cities are small.</div></div>
+          <div class="def"><div class="who">Violation, quarter in noncompliance</div><div class="hinge">A finding that a facility broke a permit condition or standard, tracked by calendar quarter. "Violations in the last 3 years" counts facilities with at least one quarter in noncompliance in the last 12 quarters.</div></div>
+          <div class="def"><div class="who">Significant noncompliance</div><div class="hinge">The serious category: significant noncompliance under the water and waste programs, high priority violator under the air program. These are the cases the EPA expects to be addressed with formal action.</div></div>
+          <div class="def"><div class="who">Informal and formal action</div><div class="hinge">An informal action is a notice of violation or a warning letter. A formal action is an order, a consent agreement, or a court case, and it is the only kind that can carry a penalty. ECHO counts both over the last five years.</div></div>
+          <div class="def"><div class="who">Inspection</div><div class="hinge">A site visit or evaluation by a state or federal inspector, counted over the last five years. Facilities that are never inspected have no violations, which is not the same as complying.</div></div>
+          <div class="def"><div class="who">Penalty</div><div class="hinge">Dollars assessed in formal actions over the last five years, federal and state. A nationwide settlement with a chain can be assigned to each of its local stores, which is one of the things you will see below.</div></div>
+        </div>
+        <p class="srcnote">Source: U.S. Environmental Protection Agency, ECHO, Facility Search and Detailed Facility Report documentation (echo.epa.gov/help). Time windows are ECHO's defaults: three years for violations, five years for inspections, actions, and penalties.</p>
+      </div>
+
+      <div class="card">
+        <h2>Wichita Falls, September 7, 2026</h2>
+        <p class="lede">The counts below were pulled through ECHO's data service for active facilities with a Wichita Falls, Texas address. Before you see the rest, guess one of them.</p>
+        <div class="statrow">
+          <div class="stat"><div class="v">189</div><div class="l">active regulated facilities</div></div>
+          <div class="stat"><div class="v">118 · 75 · 13</div><div class="l">under the Clean Water Act, the hazardous waste law, and the Clean Air Act (a facility can be under more than one)</div></div>
+          <div class="stat"><div class="v">12</div><div class="l">facilities with a violation in the last three years</div></div>
+          <div class="stat warn"><div class="v">2</div><div class="l">in significant noncompliance now</div></div>
+        </div>
+        <div class="guessbox">
+          <p class="gq">Of the 189 facilities, how many had any inspection in the last five years?</p>
+          <div class="pickrow">
+            <button class="pick" data-i="20" type="button">About 20</button>
+            <button class="pick" data-i="60" type="button">About 60</button>
+            <button class="pick" data-i="120" type="button">About 120</button>
+            <button class="pick" data-i="180" type="button">About 180</button>
+          </div>
+          <p class="verdict" id="iVerdict"></p>
+        </div>
+        <div class="veiled" id="iReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">20</div><div class="l">facilities inspected in five years, about one in nine</div></div>
+            <div class="stat"><div class="v">9 · 6</div><div class="l">facilities with an informal action and with a formal action in five years</div></div>
+            <div class="stat"><div class="v">$976,718</div><div class="l">penalties assessed in five years, all facilities</div></div>
+            <div class="stat"><div class="v">5</div><div class="l">facilities reporting to the Toxics Release Inventory</div></div>
+          </div>
+          <p class="teach"><strong>Where the penalties came from.</strong> Two of the six facilities with a formal action are a Home Depot and a Lowe's. Each shows a hazardous waste consent agreement dated November 2022 with a case penalty, $285,363 and $141,730 respectively; those are the shares of nationwide multi-site settlements with the two chains that ECHO assigns to each store, for conduct that happened everywhere the chains operate. The clearest local case is Arrowhead Ranch Estates, a small wastewater treatment plant: 11 of the last 12 quarters in noncompliance, 20 effluent limit exceedances in 13 quarters, currently in significant noncompliance, one state penalty order of $14,625 in January 2023, two inspections, the most recent in December 2025. Several entries with the most quarters in noncompliance are small rural water systems run by the Red River Authority, which has a Wichita Falls mailing address; they are in the count because ECHO searched by address. Read the city's $976,718 with all of that in mind.</p>
+          <p class="teach"><strong>The shape of the record.</strong> Of 189 facilities, 169 were not inspected at all in five years and therefore have no violations on file. Twelve have a violation on record; six drew a formal action; the penalties are dominated by two nationwide settlements. This is what enforcement looks like in one mid-sized city, and it is why the readings ask whether the enforcement that exists changes anything.</p>
+          <p class="srcnote">Source: ECHO data service, facility search for city WICHITA FALLS, state TX, active facilities, and Detailed Facility Reports for registry IDs 110005112207 (Home Depot), 110037565569 (Lowe's), and 110009774574 (Arrowhead Ranch Estates WWTP, NPDES permit TX0101818), all retrieved September 7, 2026. Counts change as the states update their systems; rerun the search and expect small differences.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SEARCH -->
+    <div class="section" id="sec-search">
+      <div class="card">
+        <h2>Run three searches</h2>
+        <p class="lede">Open echo.epa.gov in another tab, choose Facility Search, leave the media at All Programs, enter a city and state, and search. The results page shows a summary line with the counts you need: facilities found, with violations in the last three years, in current significant noncompliance, with formal enforcement actions in five years, inspected in five years, and penalties in five years. Enter them below for Wichita Falls (to compare with the September 2026 snapshot), for your hometown, and for one comparison city of your choice. If ECHO is slow or down, use the table on the next tab for any city it lists and say so on your sheet. The rates are computed as you type.</p>
+        <div id="cityForms"></div>
+        <h3 style="margin-top:18px">One facility in detail</h3>
+        <p class="lede">From any of your three searches, open the list view, sort by quarters in noncompliance, and open the Detailed Facility Report for the facility at the top. Record what it shows.</p>
+        <div class="fgrid">
+          <div class="rq"><div class="qt">Facility name and city</div><input type="text" id="f-name" placeholder="Name, city"></div>
+          <div class="rq"><div class="qt">Program (air, water, waste, drinking water)</div><input type="text" id="f-prog" placeholder="For example: Clean Water Act"></div>
+          <div class="rq"><div class="qt">Quarters in noncompliance (of 12)</div><input type="text" id="f-qnc" placeholder="0 to 12"></div>
+          <div class="rq"><div class="qt">Informal and formal actions (5 years)</div><input type="text" id="f-act" placeholder="For example: 1 informal, 0 formal"></div>
+          <div class="rq"><div class="qt">Penalties (5 years)</div><input type="text" id="f-pen" placeholder="$"></div>
+          <div class="rq"><div class="qt">Date of last inspection</div><input type="text" id="f-insp" placeholder="Month and year, or none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CITIES -->
+    <div class="section" id="sec-cities">
+      <div class="card">
+        <h2>Twenty-three cities, one query each</h2>
+        <p class="lede">The same search, run through ECHO's data service on September 7, 2026, for 21 Texas and Oklahoma cities plus two small neighbors of Wichita Falls. The rates on the right are computed from ECHO's counts: the share of facilities inspected in five years, the share with a violation in three years, and penalties per facility with a violation. Before you look at the last column, guess.</p>
+        <div class="guessbox">
+          <p class="gq">Which city assessed the most penalty dollars per facility with a violation?</p>
+          <div class="pickrow">
+            <button class="pick" data-c="houston" type="button">Houston</button>
+            <button class="pick" data-c="portarthur" type="button">Port Arthur</button>
+            <button class="pick" data-c="dallas" type="button">Dallas</button>
+            <button class="pick" data-c="wichita" type="button">Wichita Falls</button>
+          </div>
+          <p class="verdict" id="cVerdict"></p>
+        </div>
+        <div class="veiled" id="cReveal">
+          <div class="tablewrap"><table class="runlog" id="cityTable"><thead><tr><th>City</th><th>Facilities</th><th>Violation, 3 yrs</th><th>SNC now</th><th>Formal, 5 yrs</th><th>Inspected, 5 yrs</th><th>Penalties, 5 yrs</th><th>Inspected %</th><th>Violation %</th><th>$ per violator</th></tr></thead><tbody></tbody></table></div>
+          <h3 style="margin-top:14px">Share of facilities inspected in five years</h3>
+          <div class="chartwrap"><svg id="inspSvg" viewBox="0 0 1000 520" role="img" aria-label="Share of facilities inspected in five years, by city"></svg></div>
+          <p class="teach"><strong>Reading the table.</strong> Dallas and Tyler assessed about $285,000 per violating facility and Houston about $106,000, while Wichita Falls assessed $81,000, most of it the two chain-store settlements, and Lawton $33,000. The inspection share runs from 1 in 37 in Lubbock and 1 in 25 in Austin to about 1 in 6 in El Paso, Tyler, and Oklahoma City and 1 in 5 in Port Arthur; refinery and chemical cities are inspected more, and their penalties are larger, because the facilities are larger and the federal government takes some of those cases itself. Two cautions. The counts depend on what each state enters: Oklahoma shows a few dozen water permits and hundreds of air permits where Texas shows the reverse, which is a difference in reporting systems, not in rivers. And a penalty assigned to a city can be for conduct anywhere, as the Wichita Falls stores show. The numbers are a record of enforcement activity, not a measure of pollution.</p>
+          <p class="srcnote">Source: ECHO data service (echodata.epa.gov, get_facilities), active facilities by city and state, retrieved September 7, 2026. Rates computed by the lab. Houston's counts are so much larger than the others that the chart uses shares rather than counts.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TREADMILL -->
+    <div class="section" id="sec-treadmill">
+      <div class="card">
+        <h2>Prechel and Zheng: 175 corporations, eight years</h2>
+        <p class="lede">Prechel and Zheng took the parent company as the unit and asked what predicts its toxic emissions, using the Toxics Release Inventory for Standard and Poor's 500 manufacturers from 1994 to 2001 (175 firms, 1,269 firm-years), with emissions weighted by toxicity and divided by size. Six hypotheses from an organizational political economy framework, and a guess before the results.</p>
+        <div class="guessbox">
+          <p class="gq">Among these firms, what effect did the dollar amount of environmental penalties have on the firm's later pollution rate?</p>
+          <div class="pickrow">
+            <button class="pick" data-p="strong" type="button">A strong reduction</button>
+            <button class="pick" data-p="weak" type="button">A small reduction</button>
+            <button class="pick" data-p="none" type="button">No detectable effect</button>
+            <button class="pick" data-p="more" type="button">Higher pollution afterward</button>
+          </div>
+          <p class="verdict" id="pVerdict"></p>
+        </div>
+        <div class="veiled" id="pReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">One more layer of subsidiaries</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="28%"></div></div><span class="bval">+2.5% emissions</span></div>
+            <div class="brow"><span class="blabel">One more facility</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="17%"></div></div><span class="bval">+1.5%</span></div>
+            <div class="brow"><span class="blabel">Return on equity one point lower</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="6%"></div></div><span class="bval">+0.1%</span></div>
+            <div class="brow"><span class="blabel">Debt-to-assets one point higher</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="6%"></div></div><span class="bval">+0.1%</span></div>
+            <div class="brow"><span class="blabel">Headquarters state 100 points weaker on green policy</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">+9%</span></div>
+            <div class="brow"><span class="blabel">Dollar amount of penalties</span><div class="btrack"><div class="bfill" style="width:0%" data-w="2%"></div></div><span class="bval">no significant effect</span></div>
+          </div>
+          <p class="teach"><strong>No detectable effect, as they predicted.</strong> Hypothesis 5 was that penalties would not deter, and the data agreed: "there is no statistically significant relationship between penalties imposed on corporation for environmental violations and corporate pollution rates," which they read to mean that fines "did not offer sufficiently high cost incentives for corporations to invest in pollution abatement technologies" (p. 962). What did predict emissions was structure and position: more subsidiary layers (a firm with seven layers emitted 15 percent more than one with one layer), more facilities, lower profits, more debt, and a headquarters in a state with weaker environmental policy. On the last, a firm in Tennessee, at the weak end of the green-policy scale, "could have pollution rates that are twice as high" as an otherwise similar firm in California (p. 962). The subsidiary finding is the liability firewall from Lab 6 turned toward pollution: each layer keeps the parent's assets away from the damage a subsidiary does (pp. 951-953). Their Texas example: the Texas Commission on Environmental Quality set flexible-permit emission limits so low that the EPA invalidated the permits of more than 120 facilities in 2010 (p. 955).</p>
+          <p class="teach"><strong>Stretesky, Long, and Lynch ask the same question from the other end.</strong> Instead of all penalties, they took the largest monetary penalties the EPA had imposed and looked at the penalized corporations' toxic releases afterward, and found no evidence that the large penalties reduced them. Their frame is the treadmill of production: firms under competitive pressure expand throughput and treat ecosystems as inputs and sinks, and enforcement that leaves the treadmill running does not change the releases. Read together with Prechel and Zheng, the two articles say that the number ECHO reports as penalties is real money and not a measure of anything that happened next.</p>
+          <p class="srcnote">Sources: Prechel, H., and Zheng, L. (2012). Corporate characteristics, political embeddedness and environmental pollution by large U.S. corporations. Social Forces, 90(3), 947-970 (hypotheses pp. 952-955; results pp. 960-963; effect sizes from Table 2 as reported in the text). Stretesky, P. B., Long, M. A., and Lynch, M. J. (2013). Does environmental enforcement slow the treadmill of production? Journal of Crime and Justice, 36(2), 233-247 (library; the summary here is of the article's argument and main finding).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Michalowski and Brown in 2020, and the record since</h2>
+        <p class="lede">Michalowski and Brown wrote in 2020 that the Trump administration's regulatory rollbacks were "state facilitation of corporate crime": not the state committing harm, but the state removing the controls that made known corporate harms illegal, moving them, in their phrase, into "the space between laws," from unlawful to "lethal but legal" (p. 114). They counted 215 deregulatory actions taken or in process as of January 2020 (p. 120) and worked through examples: air enforcement slowed while fine particulate pollution rose 5.5 percent between 2016 and 2018, a rise associated with 9,700 premature deaths in 2018 (p. 118); the Mercury and Air Toxics Standards, credited with preventing as many as 11,000 premature deaths a year, put up for revision (p. 118); the coal ash rule, the stream protection rule, methane leaks, meat inspection, and the cut in OSHA inspectors. Their claim was prospective. Six years on, guess one number from the record.</p>
+        <div class="guessbox">
+          <p class="gq">Federal EPA civil penalties in the last full year of the Biden administration were $68 million. What were they in fiscal year 2025, the first year of the second Trump administration, as counted by the Environmental Data and Governance Initiative?</p>
+          <div class="pickrow">
+            <button class="pick" data-e="20" type="button">About $20 million</button>
+            <button class="pick" data-e="54" type="button">About $54 million</button>
+            <button class="pick" data-e="68" type="button">About $68 million, unchanged</button>
+            <button class="pick" data-e="110" type="button">About $110 million</button>
+          </div>
+          <p class="verdict" id="eVerdict"></p>
+        </div>
+        <div class="veiled" id="eReveal">
+          <div class="defs">
+            <div class="def"><div class="who">What the EPA said, March 2026</div><div class="hinge">Its FY2025 enforcement report claimed "the strongest enforcement and compliance results in years": the most civil case conclusions in nine years, more than 2,300, "over 400 more than the final year of the Biden Administration," and the most criminal defendants charged since 2016.</div></div>
+            <div class="def"><div class="who">What the same data show, per EDGI</div><div class="hinge">Federal penalties fell from $68 million to $54 million. Two-thirds of concluded cases carried no federal penalty, up from 59 percent. Inspections fell under every major statute: Clean Air Act 1,897 to 1,662, hazardous waste 1,627 to 1,410, toxic substances 1,284 to 834, drinking water down 30 percent. Of the concluded cases, 87 percent rested on inspections done before January 2025. Completed Superfund enforcement instruments fell 23 percent to a ten-year low. Criminal case data were removed from the public databases.</div></div>
+            <div class="def"><div class="who">The rules</div><div class="hinge">On March 12, 2025, the EPA announced 31 deregulatory actions in one day, which it called the biggest in its history, including reconsideration of the 2024 mercury standards, the fine particulate standard, power plant carbon rules, and the 2009 endangerment finding for greenhouse gases. The endangerment finding and all vehicle greenhouse gas standards were rescinded by final rule published February 18, 2026, effective April 20, 2026, and challenged in the D.C. Circuit as American Public Health Association v. EPA.</div></div>
+          </div>
+          <p class="teach"><strong>The test Michalowski and Brown set.</strong> Their argument was not that penalties deter, which Prechel and Zheng and Stretesky and colleagues doubt, but that the existence of a rule and the possibility of an inspection are what keep a known harm on the illegal side of the line, and that removing them is a decision with a body count that can be estimated in advance. The 2026 record has both halves of the argument in it: the counts ECHO reports (cases concluded) rose while the counts that require someone to go and look (inspections) fell, and the rules that defined several of the harms were withdrawn. Whether that counts as crime depends on the definition you chose in Lab 1. Michalowski and Brown use the widest one: "all the ways corporate and political actors can threaten the health, well-being, and natural development of both humans and ecosystems, not just those prohibited by law" (p. 114).</p>
+          <p class="srcnote">Sources: Michalowski, R., and Brown, M. (2020). Poisoning for profit: Regulatory rollbacks, public health, and state-facilitated corporate crime. Journal of White Collar and Corporate Crime, 1(2), 113-122, at the pages cited. U.S. EPA, Enforcement and Compliance Assurance Annual Results for Fiscal Year 2025 (March 2026) and news release, "Trump EPA Releases Strongest Enforcement and Compliance Results in Years." Environmental Data and Governance Initiative, "EPA's Enforcement Report Press Release: Annotated" (2026). U.S. EPA, news release of March 12, 2025, on 31 deregulatory actions. Final rule rescinding the 2009 endangerment finding, published February 18, 2026, as summarized by Kirkland and Ellis (March 2026).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 9 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers, your three searches, and your facility record into one block of text, and paste that text into the Lab 9 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your three cities. Compare the inspection share, the violation share, and the penalties per violator across them, and say which of the differences you believe reflect the facilities and which reflect the agencies that report on them. Use the cautions on the third tab.</div>
+          <div class="qh">Three to five sentences. Use your numbers.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Your facility. From its Detailed Facility Report, describe what ECHO shows and what it does not: what was violated, how long it went on, what was done, and what you cannot tell from the record (who was harmed, whether the problem is fixed, why the state chose the action it chose).</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Prechel and Zheng found that penalties did not reduce emissions but that headquarters state and corporate structure did. Say what each of those findings implies for what ECHO's penalty column can and cannot tell you, and what you would want to measure instead if you wanted to know whether enforcement in a city changed what its facilities release.</div>
+          <div class="qh">Three to five sentences. Cite the article by page.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Is there an environmental record for your case's company or facility in ECHO, or in the equivalent public database for its industry (OSHA's establishment search, the SEC's EDGAR, the FDA's warning letters, a state licensing board)? Say what you searched, what you found, and how the record's time windows and reporting rules shape what it can show about your case.</div>
+          <div class="qh">Three to five sentences. Name the database and the search. This is material for Part 2 and Part 4.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the data</h2>
+      <p class="srcnote">All ECHO counts on this page were retrieved on September 7, 2026, through the EPA's ECHO data service, using the same facility search students run on echo.epa.gov, limited to active facilities. ECHO's data are entered by state and federal programs on their own schedules and are not real time; counts will differ when you run the search, usually by small amounts. Figures from the readings are cited by page on the fourth tab. The FY2025 enforcement comparison is from the EPA's own report and from the Environmental Data and Governance Initiative's analysis of the same data.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function usd(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function pct(a, b){ return b ? (100 * a / b).toFixed(1) + '%' : ''; }
+  function guess(sel, key, right, verdictId, revealId, yes, no, after){
+    let picked = null;
+    document.querySelectorAll(sel).forEach(btn => btn.addEventListener('click', () => {
+      if (picked) return; picked = btn.dataset[key]; btn.classList.add('chosen');
+      document.querySelectorAll(sel).forEach(b => { b.disabled = true; if (b.dataset[key] === right) b.classList.add('answer'); });
+      $(verdictId).textContent = picked === right ? yes : no;
+      $(revealId).style.display = 'block'; animateBars($(revealId)); if (after) after();
+    }));
+    return () => picked;
+  }
+  const gI = guess('#sec-what .pick[data-i]', 'i', '20', 'iVerdict', 'iReveal', 'Right. Twenty facilities, about one in nine.', 'Twenty facilities, about one in nine. See below.');
+  const gP = guess('#sec-treadmill .pick[data-p]', 'p', 'none', 'pVerdict', 'pReveal', 'Right. No detectable effect.', 'No detectable effect, as the authors predicted. See below.');
+  const gE = guess('#sec-treadmill .pick[data-e]', 'e', '54', 'eVerdict', 'eReveal', 'Right. About $54 million, down from $68 million.', 'About $54 million, down from $68 million, in a year the agency described as its strongest in years. See below.');
+
+  // ---------- city forms ----------
+  const FIELDS = [['fac', 'Facilities found'], ['v3', 'With violations, last 3 years'], ['snc', 'In significant noncompliance now'], ['fea', 'With formal actions, 5 years'], ['insp', 'Inspected, 5 years'], ['pen', 'Penalties, 5 years ($)']];
+  const CITYSLOTS = [['Wichita Falls, Texas', 'Wichita Falls, TX'], ['Your hometown', ''], ['A comparison city', '']];
+  const cf = $('cityForms');
+  CITYSLOTS.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">SEARCH ' + (i + 1) + '</span><span class="evtitle">' + esc(c[0]) + '</span></div>' +
+      '<div class="fgrid"><div class="rq"><div class="qt">City and state</div><input type="text" id="c' + i + '-name" value="' + esc(c[1]) + '" placeholder="City, state"></div>' + FIELDS.map(f => '<div class="rq"><div class="qt">' + esc(f[1]) + '</div><input type="text" inputmode="numeric" id="c' + i + '-' + f[0] + '" placeholder="number"></div>').join('') + '</div>' +
+      '<p class="verdict" id="c' + i + '-rates"></p>';
+    cf.appendChild(d);
+  });
+  function num(id){ const v = String($(id).value).replace(/[^0-9.]/g, ''); return v === '' ? null : Number(v); }
+  function rates(i){
+    const fac = num('c' + i + '-fac'), v3 = num('c' + i + '-v3'), insp = num('c' + i + '-insp'), pen = num('c' + i + '-pen'), fea = num('c' + i + '-fea');
+    const parts = [];
+    if (fac && insp !== null) parts.push('inspected ' + pct(insp, fac) + ' of facilities');
+    if (fac && v3 !== null) parts.push('violation at ' + pct(v3, fac));
+    if (v3 && fea !== null) parts.push('formal action for ' + pct(fea, v3) + ' of violators');
+    if (v3 && pen !== null) parts.push(usd(pen / v3) + ' in penalties per violator');
+    $('c' + i + '-rates').textContent = parts.length ? 'Rates: ' + parts.join('; ') + '.' : '';
+    if (i === 0 && fac !== null) { const ref = 'September 2026 snapshot: 189 facilities, 12 with violations, 2 SNC, 6 formal actions, 20 inspected, $976,718.'; $('c0-rates').textContent += ' ' + ref; }
+  }
+  cf.addEventListener('input', e => { const m = e.target.id.match(/^c(\d)-/); if (m) rates(Number(m[1])); });
+
+  // ---------- cities table ----------
+  const CITIES = [
+    ['Wichita Falls, TX', 189, 12, 2, 6, 20, 976718, 'wichita'], ['Burkburnett, TX', 14, 3, 1, 1, 3, 4500], ['Lawton, OK', 115, 13, 0, 6, 17, 429393], ['Sherman, TX', 243, 3, 0, 7, 7, 722158],
+    ['Abilene, TX', 509, 10, 3, 9, 28, 462293], ['Denton, TX', 509, 20, 2, 14, 29, 455777], ['Waco, TX', 520, 14, 4, 14, 40, 799504], ['Tyler, TX', 527, 25, 5, 22, 93, 7117188],
+    ['Amarillo, TX', 476, 25, 3, 15, 50, 1824002], ['Midland, TX', 618, 42, 9, 30, 62, 1511578], ['Odessa, TX', 756, 21, 1, 16, 33, 1016743], ['Lubbock, TX', 1649, 35, 4, 23, 44, 1572475],
+    ['Beaumont, TX', 594, 36, 6, 25, 89, 3965424], ['Port Arthur, TX', 267, 34, 6, 16, 57, 6864472, 'portarthur'], ['Corpus Christi, TX', 850, 55, 10, 37, 80, 7778507], ['El Paso, TX', 1404, 33, 7, 34, 238, 4216229],
+    ['Austin, TX', 2273, 215, 9, 59, 90, 3518445], ['Fort Worth, TX', 2367, 64, 5, 49, 80, 4033986], ['Dallas, TX', 2727, 76, 4, 98, 96, 21678695, 'dallas'], ['San Antonio, TX', 4420, 82, 7, 60, 153, 5613963],
+    ['Houston, TX', 7917, 762, 60, 309, 809, 80955861, 'houston'], ['Oklahoma City, OK', 1235, 85, 3, 40, 190, 5344188], ['Tulsa, OK', 1184, 57, 4, 48, 133, 2623995]
+  ];
+  function buildCities(){
+    const tb = $('cityTable').querySelector('tbody');
+    tb.innerHTML = CITIES.map(c => '<tr><td>' + esc(c[0]) + '</td><td>' + c[1].toLocaleString() + '</td><td>' + c[2] + '</td><td>' + c[3] + '</td><td>' + c[4] + '</td><td>' + c[5] + '</td><td>' + usd(c[6]) + '</td><td>' + pct(c[5], c[1]) + '</td><td>' + pct(c[2], c[1]) + '</td><td>' + usd(c[6] / c[2]) + '</td></tr>').join('');
+    const rows = CITIES.map(c => ({ n: c[0].replace(', TX', '').replace(', OK', ' (OK)'), r: c[5] / c[1] })).sort((a, b) => b.r - a.r);
+    const W = 1000, H = 520, L0 = 150, R0 = 60, T0 = 14, B0 = 14; const bh = (H - T0 - B0) / rows.length; const maxR = 0.2;
+    let svg = '';
+    [0.05, 0.1, 0.15, 0.2].forEach(v => { const x = L0 + (W - L0 - R0) * v / maxR; svg += '<line x1="' + x.toFixed(1) + '" y1="' + T0 + '" x2="' + x.toFixed(1) + '" y2="' + (H - B0) + '" stroke="#888" stroke-opacity="0.25"/><text x="' + x.toFixed(1) + '" y="' + (H - 2) + '" font-size="11" fill="#666" text-anchor="middle">' + Math.round(v * 100) + '%</text>'; });
+    rows.forEach((r, i) => { const y = T0 + i * bh; const w = (W - L0 - R0) * Math.min(r.r, maxR) / maxR; const wf = r.n.startsWith('Wichita'); svg += '<rect x="' + L0 + '" y="' + (y + 2).toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (bh - 4).toFixed(1) + '" fill="' + (wf ? '#840028' : '#2f5f9e') + '"><title>' + esc(r.n + ': ' + (100 * r.r).toFixed(1) + '% inspected in five years') + '</title></rect><text x="' + (L0 - 6) + '" y="' + (y + bh / 2 + 4).toFixed(1) + '" font-size="11.5" fill="' + (wf ? '#840028' : '#444') + '" text-anchor="end"' + (wf ? ' font-weight="700"' : '') + '>' + esc(r.n) + '</text><text x="' + (L0 + w + 5).toFixed(1) + '" y="' + (y + bh / 2 + 4).toFixed(1) + '" font-size="11" fill="#666">' + (100 * r.r).toFixed(1) + '%</text>'; });
+    $('inspSvg').innerHTML = svg;
+  }
+  const gC = guess('#sec-cities .pick[data-c]', 'c', 'dallas', 'cVerdict', 'cReveal', 'Right. Dallas, at about $285,000 per violating facility, with Tyler a few hundred dollars behind.', 'Dallas, at about $285,000 per violating facility, with Tyler a few hundred dollars behind. See the table.', buildCities);
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 9 · ECHO', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('GUESSES: inspected ' + (gI() || 'not answered') + ' (ref 20); top penalties per violator ' + (gC() || 'not answered') + ' (ref dallas); penalty effect ' + (gP() || 'not answered') + ' (ref none); FY2025 penalties ' + (gE() ? '$' + gE() + 'M' : 'not answered') + ' (ref $54M)');
+    lines.push('');
+    lines.push('THREE SEARCHES (city; facilities; violations 3 yrs; SNC; formal 5 yrs; inspected 5 yrs; penalties 5 yrs)');
+    for (let i = 0; i < 3; i++) { const v = ['name', ...FIELDS.map(f => f[0])].map(k => $('c' + i + '-' + k).value.trim() || '-'); lines.push((i + 1) + '. ' + v.join('; ')); const r = $('c' + i + '-rates').textContent; if (r) lines.push('   ' + r); }
+    lines.push('');
+    lines.push('ONE FACILITY: ' + ['f-name', 'f-prog', 'f-qnc', 'f-act', 'f-pen', 'f-insp'].map(id => $(id).value.trim() || '-').join('; '));
+    lines.push('');
+    lines.push('QUESTION 1 (your three cities)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (your facility)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (Prechel and Zheng)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 9 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 9 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 9 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, CITIES };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

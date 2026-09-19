@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Launch Control - SOC 1113</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;
+    --series-2: #ae4d26;
+    --series-3: #137a55;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+    --wash: rgba(42,120,214,0.06);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --series-3: #199e70;
+    --wash: rgba(57,135,229,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 18px; }
+  .frame { max-width: 880px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 13px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
+  .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+  .big { font-size: 20px; font-weight: 800; line-height: 1.3; }
+  .body-text { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .body-text strong { color: var(--text-primary); }
+  .body-text + .body-text { margin-top: 8px; }
+  .points-tag { display: inline-block; background: var(--wash); color: var(--series-1); font-weight: 800; font-size: 13.5px; border-radius: 999px; padding: 3px 12px; }
+  :root[data-theme="dark"] .viz-root .points-tag { color: #8ab8f0; }
+
+  /* meters */
+  .meters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .meter { flex: 1; min-width: 130px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .meter .m-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; }
+  .meter .m-value { font-size: 19px; font-weight: 800; margin: 2px 0 6px; }
+  .meter .m-bar { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .meter .m-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease, background 0.6s ease; }
+  .meter.score .m-value { color: var(--series-1); }
+
+  .crew-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .crew-chip { border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--text-secondary); }
+  .crew-chip strong { color: var(--text-primary); font-weight: 700; }
+  .cargo-note { font-size: 13.5px; color: var(--text-muted); margin-top: 8px; }
+
+  /* problem block */
+  .anomaly { border-left: 4px solid var(--status-warning); background: var(--wash); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 12px; }
+  .anomaly .a-name { font-weight: 800; font-size: 15px; }
+  .anomaly .a-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px; }
+  .anomaly .a-history { font-size: 13px; margin-top: 8px; font-weight: 600; }
+
+  /* rating */
+  .classify { margin-top: 14px; }
+  .classify .c-label { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .c-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .c-opt { font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .c-opt[aria-pressed="true"].c-high { border-color: var(--status-critical); color: var(--status-critical); }
+  .c-opt[aria-pressed="true"].c-med { border-color: var(--status-warning); color: #8a6100; }
+  :root[data-theme="dark"] .viz-root .c-opt[aria-pressed="true"].c-med { color: var(--status-warning); }
+  .c-opt[aria-pressed="true"].c-low { border-color: var(--status-good); color: var(--status-good); }
+
+  /* votes */
+  .votes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 16px; }
+  .vote-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .vote-box .v-who { font-weight: 800; font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .vote-box.eng .v-who { color: var(--series-1); }
+  .vote-box.mgmt .v-who { color: var(--series-2); }
+  .vote-box.fd .v-who { color: var(--series-3); }
+  .v-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .v-opt { font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .v-opt[aria-pressed="true"].v-fly { border-color: var(--series-1); color: var(--series-1); }
+  .v-opt[aria-pressed="true"].v-stand { border-color: var(--status-warning); color: #8a6100; }
+  :root[data-theme="dark"] .viz-root .v-opt[aria-pressed="true"].v-stand { color: var(--status-warning); }
+  .vote-box .v-note { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.4; }
+
+  /* decisions */
+  .decide { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+  .btn { font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; padding: 12px 22px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .btn.launch { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .decide-note { font-size: 12.5px; color: var(--text-muted); width: 100%; margin-top: 8px; }
+
+  /* memo */
+  .memo { border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-top: 12px; font-size: 14px; line-height: 1.55; background: var(--page); }
+  .memo .m-from { font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .memo .m-body { color: var(--text-secondary); }
+
+  .outcome-good { border-left: 4px solid var(--status-good); }
+  .outcome-bad { border-left: 4px solid var(--status-critical); }
+  .outcome-warn { border-left: 4px solid var(--status-warning); }
+  .score-delta { font-size: 16px; font-weight: 800; margin-top: 8px; }
+  .score-delta.up { color: var(--status-good); }
+  .score-delta.down { color: var(--status-critical); }
+
+  /* hearing */
+  .hearing-quote { border-left: 3px solid var(--baseline); padding: 8px 14px; margin: 10px 0; font-size: 14.5px; line-height: 1.55; color: var(--text-secondary); }
+  .hearing-quote .hq-tag { font-size: 12px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .hearing-quote strong { color: var(--text-primary); }
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .log-table th, .log-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+  .log-table th { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .pill.p-low { background: rgba(12,163,12,0.12); color: var(--status-good); }
+  .pill.p-med { background: rgba(250,178,25,0.15); color: #8a6100; }
+  :root[data-theme="dark"] .viz-root .pill.p-med { color: var(--status-warning); }
+  .pill.p-high { background: rgba(208,59,59,0.12); color: var(--status-critical); }
+  .pill.p-stood { background: var(--grid); color: var(--text-secondary); }
+  .final-score { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
+  .honest-yes { color: var(--status-good); font-weight: 700; }
+  .honest-no { color: var(--text-muted); }
+
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .ticklabel { fill: var(--text-muted); font-size: 12px; }
+  .axistitle { fill: var(--text-secondary); font-size: 12.5px; font-weight: 700; }
+
+  .concepts li { font-size: 15px; line-height: 1.55; padding: 9px 0; border-top: 1px solid var(--grid); list-style: none; color: var(--text-secondary); }
+  .concepts li:first-child { border-top: none; }
+  .concepts strong { color: var(--text-primary); }
+
+  input[type="text"] { font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); width: 100%; max-width: 320px; }
+  .setup-roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin: 12px 0; }
+  .setup-role { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+  .setup-role .sr-name { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+  .setup-role.eng .sr-name { color: var(--series-1); }
+  .setup-role.mgmt .sr-name { color: var(--series-2); }
+  .setup-role.fd .sr-name { color: var(--series-3); }
+  .rules-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+  .rules-box strong { color: var(--text-primary); }
+
+  footer { color: var(--text-muted); font-size: 12.5px; line-height: 1.6; padding: 8px 2px 20px; }
+  .fade-in { animation: fadeIn 0.45s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Launch Control<span class="sub">SOC 1113 · Why Good Organizations Do Bad Things</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div id="screen"></div>
+
+    <footer role="presentation">A fictional game built for SOC 1113, Introduction to Sociology, Midwestern State University.
+    Based on Diane Vaughan's research on the 1986 Challenger disaster.</footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const screen = $('screen');
+  const rnd = () => (window.__testRandom ? window.__testRandom() : Math.random());
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+  /* ============ CONTENT ============ */
+
+  const CREW_POOL = [
+    ['Cmdr. Dana Okafor', 'two kids; calls her mother before every launch'],
+    ['Maj. Luis Herrera', 'test pilot; this is his first spaceflight'],
+    ['Dr. Priya Raman', 'scientist; designed this mission’s experiment herself'],
+    ['Capt. Tom Whitfield', 'three flights; retiring after this one'],
+    ['Dr. Elena Marsh', 'flight doctor; the crew’s practical joker'],
+    ['Lt. Marcus Bell', 'youngest astronaut ever; his hometown threw him a parade'],
+    ['Dr. Yuki Tanaka', 'astronomer; waited eleven years for a seat'],
+    ['Cmdr. Rachel Voss', 'Navy pilot; her daughter watches every launch from the beach'],
+    ['Spec. David Achebe', 'wrote the software he’s flying with'],
+    ['Sarah Kinney', 'a high-school science teacher, picked from 11,000 applicants to teach lessons from space']
+  ];
+
+  const MISSIONS = [
+    { name: 'MERIDIAN-1 “Pathfinder”', type: 'cargo', pts: 100, desc: 'Practice flight. No people aboard, just instruments.' },
+    { name: 'MERIDIAN-2 “Relay”', type: 'cargo', pts: 150, desc: 'Launch a paying customer’s satellite. Your first money-making flight.' },
+    { name: 'MERIDIAN-3 “Vanguard”', type: 'crew', crew: 2, pts: 200, desc: 'First flight with people aboard. Two pilots, three laps around the Earth.' },
+    { name: 'MERIDIAN-4 “Courier”', type: 'cargo', pts: 150, desc: 'Supply run to the space station. This contract pays the bills.' },
+    { name: 'MERIDIAN-5 “Horizon”', type: 'crew', crew: 3, pts: 250, desc: 'A week of science in orbit, broadcast live to schools.' },
+    { name: 'MERIDIAN-6 “Keystone”', type: 'crew', crew: 4, pts: 250, desc: 'Crew swap at the station. A senator is watching from the stands.' },
+    { name: 'MERIDIAN-7 “Summit”', type: 'crew', crew: 4, pts: 300, desc: 'Your biggest flight yet: international crew, live press event from orbit.' },
+    { name: 'MERIDIAN-8 “Legacy”', type: 'crew', crew: 5, pts: 350, desc: 'The “Classroom in Space” flight. A teacher aboard; 40,000 schools watching live.' },
+    { name: 'MERIDIAN-9 “Century”', type: 'crew', crew: 4, pts: 400, desc: 'The finale. The program’s anniversary flight, timed for the State of the Union.' }
+  ];
+  const TEACHER_MISSION = 'MERIDIAN-8';
+
+  const ANOMALIES = [
+    { id: 'seal', name: 'Burn marks on a booster seal',
+      desc: 'After the last flight, inspectors found burn damage on a rubber seal inside a booster joint. The seal is not supposed to burn at all. There is a backup seal, but nobody knows if it works in cold weather.',
+      escal: ['Light burn marks on one seal.', 'Deeper burns than before, and soot between the main seal and the backup.', 'The main seal burned through on one joint, and the backup partly burned too. Engineering cannot explain what cold does to it.'],
+      cold: true, base: 0.025 },
+    { id: 'foam', name: 'Insulation breaking off during launch',
+      desc: 'Cameras show chunks of foam insulation breaking off and hitting the rocket on the way up. No real damage so far. The reports call the hits “acceptable.”',
+      escal: ['A few small pieces came off. No visible damage.', 'A briefcase-sized chunk hit near the wing. The photos are too blurry to be sure it’s fine.', 'The biggest hit yet. Engineers asked for better photos and were told it isn’t necessary.'],
+      cold: false, base: 0.02 },
+    { id: 'turbo', name: 'Engine pump shaking too much',
+      desc: 'A pump inside engine 2 is shaking harder than anything in the records. It has never failed in flight, but on the ground, pumps that shook like this have cracked apart.',
+      escal: ['Shaking 8% above anything seen before.', 'Shaking 15% above. A test pump was destroyed at this level last year.', 'The shaking gets worse every flight. Management signed a waiver to keep flying anyway.'],
+      cold: false, base: 0.022 },
+    { id: 'sensor', name: 'Fuel sensor keeps cutting out',
+      desc: 'One of the four sensors that tell the engines when to shut down keeps blinking out during fueling. The rules say all four must work. Management can sign a waiver making three the new rule.',
+      escal: ['One sensor cut out once, then came back.', 'Two cut-outs in a row. Nobody knows why.', 'It now fails every time. The proposed fix: change the rule, not the sensor.'],
+      cold: true, base: 0.012 },
+    { id: 'software', name: 'Computer glitch at booster separation',
+      desc: 'A rare glitch in the flight computer can drop steering data at the exact moment the boosters separate. A backup usually catches it. Usually.',
+      escal: ['Seen once in 4,000 practice runs.', 'Now reproduced on real hardware. The danger window is a tenth of a second wide.', 'The last flight had a close call now blamed on this glitch. The fix is “two flights away.”'],
+      cold: false, base: 0.015 },
+    { id: 'valve', name: 'Fuel valve freezing up',
+      desc: 'The main oxygen valve ices over in cold, damp weather and gets harder and harder to move. If it sticks during flight, the crew cannot escape.',
+      escal: ['The valve was stiff, but it worked.', 'On a cold morning it took 92% of the motor’s strength to move it. Engineers want stricter weather rules.', 'It froze solid during a practice countdown and had to be freed by hand. The “fix” is a heater borrowed from another system.'],
+      cold: true, base: 0.02 },
+    { id: 'chute', name: 'Parachute failure on the boosters',
+      desc: 'A parachute failed and a booster slammed into the ocean. Parachutes are officially “not safety critical.” The same parts fire the crew escape system.',
+      escal: ['One of three parachutes failed to open.', 'A part from the same batch failed a workbench test. The batch is still in use.', 'A second parachute failure in flight. The same parts are still installed in the crew escape system, “pending analysis.”'],
+      cold: false, base: 0.014 },
+    { id: 'crack', name: 'Tiny cracks in the engine mounts',
+      desc: 'Inspectors found hairline cracks in the metal fittings that hold the engines on. The math says the cracks grow slowly, but the math assumes gentler flights than the last three actually were.',
+      escal: ['Two hairline cracks, judged “fine to fly.”', 'New cracks in a second fitting, growing faster than predicted.', 'A fitting from a retired rocket snapped at 70% of its rated strength. Every rocket in the fleet uses the same part.'],
+      cold: false, base: 0.018 }
+  ];
+
+  const WEATHER = [
+    { desc: 'Clear and mild. Winds are fine.', cold: false },
+    { desc: 'High clouds. Winds near the limit higher up.', cold: false },
+    { desc: 'A cold front comes through tonight, near-record cold by morning. The ice team will check the pad at dawn.', cold: true },
+    { desc: 'Warm and humid. Storms possible in the afternoon.', cold: false },
+    { desc: 'The coldest launch morning in program history. There are icicles on the launch tower.', cold: true }
+  ];
+
+  const DELAY_MEMOS = [
+    ['Office of the CEO', 'Another delay. The board meets Thursday and all I have to show them is your caution. I need a launch.'],
+    ['VP, Government Relations', 'Senator Drummond’s office called. Quote: “If Meridian can’t fly, someone else can.” The funding vote is in three weeks.'],
+    ['Chief Financial Officer', 'Every stand-down costs us $41 million and a customer. Two more and we’re borrowing money to make payroll.'],
+    ['Communications', 'This morning’s paper: “MERIDIAN: THE ROCKET THAT WON’T FLY.” People in the factory are updating their résumés.'],
+    ['Office of the CEO', 'I approved your last delay because you promised it was the last one. Don’t make me choose between this program and you.']
+  ];
+
+  const SUCCESS_MEMOS = [
+    ['Communications', 'Front page, above the fold. The board is thrilled. Keep this pace and the funding vote is easy.'],
+    ['Office of the CEO', 'Beautiful flight. This is the program I promised the board. The next window is tight. Don’t lose the momentum.'],
+    ['VP, Government Relations', 'Senator Drummond quoted you in the hearing: “Meridian delivers.” Whatever you’re doing, keep doing it.'],
+    ['Chief Financial Officer', 'Money’s in. The credit line is untouched. Finance drops its objection to the spare-parts budget. Nice work.']
+  ];
+
+  const VAGUE = {
+    seal: 'After the last flight, inspectors flagged something on a seal inside a booster joint.',
+    foam: 'Cameras caught insulation coming off the tank during the last launch.',
+    turbo: 'A pump in engine 2 is running rougher than usual.',
+    sensor: 'A fuel sensor acted up during fueling.',
+    software: 'The flight computer showed a glitch in testing.',
+    valve: 'The main oxygen valve has been sticky in some conditions.',
+    chute: 'A recovery parachute failed on the last flight.',
+    crack: 'Inspectors found wear in the engine mount fittings.'
+  };
+
+  const MGMT_MEMOS = [
+    ['Office of the CEO', 'The board meets Thursday. Bring me a launch, not a schedule update.'],
+    ['VP, Government Relations', 'The funding vote is three weeks out and the count is close. A scrub tonight leads the evening news.'],
+    ['Chief Financial Officer', 'Cash is tight. A stand-down costs about $41 million and usually a customer with it.'],
+    ['Communications', 'A reporter has been calling around the factory. The story he wants to write is “the rocket that won’t fly.” A launch kills it.'],
+    ['Office of the CEO', 'I backed your last delay and told the board it was the final one. Help me keep my word.']
+  ];
+
+  const RATINGS = {
+    high: { label: 'High risk', pill: 'p-high' },
+    med: { label: 'Some risk', pill: 'p-med' },
+    low: { label: 'Low risk', pill: 'p-low' }
+  };
+
+  function honestCall(e) {
+    if (e.sev >= 4) return e.rating === 'high';
+    if (e.sev === 3) return e.rating === 'med';
+    return e.rating === 'low';
+  }
+
+  /* ============ STATE ============ */
+  let S = null;
+
+  function newGame(teamName) {
+    S = {
+      team: teamName || 'Flight Ops Team',
+      round: 0,
+      budget: 100, conf: 100, score: 0,
+      log: [],
+      launches: 0, delays: 0, consecDelays: 0,
+      cumSurvive: 1,
+      pendingAnomalies: [],
+      weather: null, crew: [],
+      over: false, ending: null, culprit: null, honestBonus: 0,
+      ledger: []
+    };
+    S._anoms = {};
+    ANOMALIES.forEach(a => { S._anoms[a.id] = { level: -1, flown: 0, fixed: false }; });
+    S.anom = id => S._anoms[id];
+  }
+
+  /* ============ ROUND GENERATION ============ */
+  function genRound() {
+    const m = MISSIONS[S.round];
+    S.weather = pick(WEATHER);
+    S.crew = [];
+    if (m.type === 'crew') {
+      const pool = CREW_POOL.slice();
+      const tIdx = pool.findIndex(c => c[0] === 'Sarah Kinney');
+      const teacher = pool.splice(tIdx, 1)[0];
+      for (let i = 0; i < m.crew; i++) {
+        if (m.name.startsWith(TEACHER_MISSION) && i === m.crew - 1) { S.crew.push(teacher); continue; }
+        const j = Math.floor(rnd() * pool.length);
+        S.crew.push(pool.splice(j, 1)[0]);
+      }
+    }
+    const unfixed = ANOMALIES.filter(a => !S.anom(a.id).fixed);
+    const inPlay = unfixed.filter(a => S.anom(a.id).level >= 0);
+    const fresh = unfixed.filter(a => S.anom(a.id).level < 0);
+    const count = S.round <= 1 ? 1 : (rnd() < 0.45 ? 2 : 1);
+    const chosen = [];
+    for (let i = 0; i < count; i++) {
+      let poolA;
+      if (inPlay.length && rnd() < 0.65) poolA = inPlay; else poolA = fresh.length ? fresh : inPlay;
+      poolA = poolA.filter(a => !chosen.includes(a));
+      if (!poolA.length) break;
+      let a;
+      if (S.weather.cold && poolA.some(x => x.cold) && rnd() < 0.6) a = pick(poolA.filter(x => x.cold));
+      else a = pick(poolA);
+      chosen.push(a);
+      const st = S.anom(a.id);
+      if (st.level < 0) st.level = 0;
+      else if (st.level < 2 && rnd() < 0.55) st.level += 1;
+    }
+    S.pendingAnomalies = chosen.map(a => a.id);
+    S.roundPayout = Math.round(m.pts * (0.75 + rnd() * 0.6) / 10) * 10;
+    S.roundDelayCost = Math.round((70 + rnd() * 60 + S.consecDelays * 25) / 10) * 10;
+  }
+
+  function presentedSeverity(a) {
+    const st = S.anom(a.id);
+    let sev = 2 + st.level;
+    if (a.cold && S.weather.cold) sev += 1;
+    return Math.min(5, sev);
+  }
+
+  function flightRisk(a) {
+    const st = S.anom(a.id);
+    let p = a.base * (1 + st.level * 0.9);
+    if (a.cold && S.weather.cold) p *= 2.2;
+    return Math.min(0.18, p);
+  }
+
+  /* ============ RENDER HELPERS ============ */
+  function meterColor(v) {
+    if (v > 60) return 'var(--status-good)';
+    if (v > 35) return 'var(--status-warning)';
+    if (v > 15) return 'var(--status-serious)';
+    return 'var(--status-critical)';
+  }
+
+  function metersHTML() {
+    return '<div class="meters fade-in">' +
+      '<div class="meter score"><div class="m-label">Score</div><div class="m-value">' + S.score + '</div><div class="m-bar"><div class="m-fill" style="width:' + Math.max(0, Math.min(100, S.score / 21.5)) + '%;background:var(--series-1)"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Missions flown</div><div class="m-value">' + S.launches + ' / 9</div><div class="m-bar"><div class="m-fill" style="width:' + Math.round(S.launches / 9 * 100) + '%;background:var(--series-3)"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Money</div><div class="m-value">' + Math.max(0, Math.round(S.budget)) + '</div><div class="m-bar"><div class="m-fill" style="width:' + Math.max(0, S.budget) + '%;background:' + meterColor(S.budget) + '"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Support</div><div class="m-value">' + Math.max(0, Math.round(S.conf)) + '</div><div class="m-bar"><div class="m-fill" style="width:' + Math.max(0, S.conf) + '%;background:' + meterColor(S.conf) + '"></div></div></div>' +
+      '</div>';
+  }
+
+  /* ============ SCREENS ============ */
+  function showSetup() {
+    screen.innerHTML =
+      '<div class="card fade-in">' +
+      '<div class="kicker">Meridian Aerospace · Mission Control</div>' +
+      '<div class="big">Your team runs a space program. Nine flights are on the schedule. The team with the highest score wins the prize.</div>' +
+      '<p class="body-text" style="margin-top:8px">Before each flight, Engineering and Management each take the laptop for a private briefing. Nobody else looks. What you share out loud, and how you say it, is up to you. Then the group rates the risk, votes, and the Flight Director makes the call: fly, or stand down and fix it. Flying earns points. Standing down costs points, money, and support.</p>' +
+      '<p class="body-text"><strong>Split your group into three jobs.</strong> These stay the same all game.</p>' +
+      '<div class="setup-roles">' +
+      '<div class="setup-role eng"><div class="sr-name">Engineering</div>Each round you read the technical briefing alone: the full problem report and its danger level. The group only learns what you tell them. You cast the engineering vote on every flight.</div>' +
+      '<div class="setup-role mgmt"><div class="sr-name">Management</div>Each round you read the business briefing alone: money, deadlines, and what the bosses want. Share it straight or spin it. You cast the management vote on every flight.</div>' +
+      '<div class="setup-role fd"><div class="sr-name">Flight Director</div>You never see the briefings. You hear two summaries and two votes, then make the final call. The launch button belongs to you alone.</div>' +
+      '</div>' +
+      '<div class="rules-box"><strong>Scoring</strong><br>' +
+      'Flights earn points. Delays and lost rockets cost points. How much? The numbers shift from flight to flight, and you never see a price in advance. You find out what a choice was worth right after you make it, and the full breakdown waits for the final review, where your log gets checked. Rate risks the way you actually see them. It matters there.<br><br>' +
+      '<strong>Two things are certain.</strong> Lose a crew, or run out of money or support, and the program is over. No more missions fly, for any points.</div>' +
+      '<div class="c-label" style="font-size:14px;font-weight:700;margin:10px 0 6px">Team name (this goes in the official record)</div>' +
+      '<input type="text" id="teamName" maxlength="40" placeholder="e.g., Group 3, Front Row Crew">' +
+      '<div class="decide"><button class="btn launch" id="startBtn">Start</button></div>' +
+      '</div>';
+    $('startBtn').addEventListener('click', () => {
+      newGame($('teamName').value.trim());
+      S.round = 0;
+      startRound();
+    });
+  }
+
+  function startRound() {
+    if (S.round >= MISSIONS.length) { endGame('completed'); return; }
+    genRound();
+    showRound();
+  }
+
+  function showRound() { showOverview(); }
+
+  function roundHeaderHTML(m) {
+    let crewHTML = '';
+    if (m.type === 'crew') {
+      crewHTML = '<div class="crew-list">' + S.crew.map(c =>
+        '<span class="crew-chip"><strong>' + c[0] + '</strong> \u00b7 ' + c[1] + '</span>').join('') + '</div>';
+    } else {
+      crewHTML = '<div class="cargo-note">No people aboard this one.</div>';
+    }
+    return '<div class="kicker">Mission ' + (S.round + 1) + ' of 9 \u00b7 ' + (m.type === 'crew' ? 'PEOPLE ABOARD' : 'NO CREW') + '</div>' +
+      '<div class="big">' + m.name + '</div>' +
+      '<p class="body-text" style="margin-top:6px">' + m.desc + '</p>' + crewHTML +
+      '<p class="body-text" style="margin-top:10px"><strong>Weather:</strong> ' + S.weather.desc + '</p>';
+  }
+
+  function problemSummaryHTML(a, withRating) {
+    const st = S.anom(a.id);
+    const hist = st.flown > 0
+      ? 'History: this problem has flown ' + st.flown + ' time' + (st.flown > 1 ? 's' : '') + ' and nothing bad happened.'
+      : 'History: first time this one has come up.';
+    let html = '<div class="anomaly" data-aid="' + a.id + '" data-sev="' + presentedSeverity(a) + '">' +
+      '<div class="a-name">\u26a0 ' + a.name + '</div>' +
+      '<div class="a-desc">' + VAGUE[a.id] + '</div>' +
+      '<div class="a-history">' + hist + '</div>';
+    if (withRating) {
+      html += '<div class="classify"><div class="c-label">How risky is it to fly with this? Engineering read the details. Your answer goes in the flight log.</div>' +
+        '<div class="c-options">' +
+        '<button class="c-opt c-high" data-aid="' + a.id + '" data-c="high" aria-pressed="false">High risk</button>' +
+        '<button class="c-opt c-med" data-aid="' + a.id + '" data-c="med" aria-pressed="false">Some risk</button>' +
+        '<button class="c-opt c-low" data-aid="' + a.id + '" data-c="low" aria-pressed="false">Low risk</button>' +
+        '</div></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function showOverview() {
+    const m = MISSIONS[S.round];
+    const anoms = S.pendingAnomalies.map(id => ANOMALIES.find(a => a.id === id));
+    S.ratings = {}; S.votes = { eng: null, mgmt: null };
+
+    if (!anoms.length) {
+      screen.innerHTML = metersHTML() +
+        '<div class="card fade-in">' + roundHeaderHTML(m) +
+        '<p class="body-text" style="margin-top:10px">No open problems tonight. Engineering is go, Management is go.</p>' +
+        '<div class="decide" style="margin-top:16px"><button class="btn launch" id="launchBtn">LAUNCH</button></div>' +
+        '</div>';
+      $('launchBtn').addEventListener('click', () => decide(true));
+      return;
+    }
+
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' + roundHeaderHTML(m) +
+      anoms.map(a => problemSummaryHTML(a, false)).join('') +
+      '<p class="body-text" style="margin-top:12px">The full reports are in the private briefings. What gets said out loud is up to the people who read them.</p>' +
+      '<div class="decide" style="margin-top:12px"><button class="btn launch" id="briefBtn">Hand the laptop to Engineering \u2192</button></div>' +
+      '</div>';
+    $('briefBtn').addEventListener('click', () => showPrivacyGate('eng'));
+  }
+
+  function showPrivacyGate(role) {
+    const who = role === 'eng' ? 'Engineering' : 'Management';
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' +
+      '<div class="kicker">Private briefing</div>' +
+      '<div class="big">' + who + ' only. Everyone else, look away.</div>' +
+      '<p class="body-text" style="margin-top:8px">This screen is for whoever holds the ' + who + ' job. When you pass the laptop back, the group only knows what you tell them.</p>' +
+      '<div class="decide"><button class="btn launch" id="showBriefBtn">It\u2019s just me. Show the briefing</button></div>' +
+      '</div>';
+    $('showBriefBtn').addEventListener('click', () => showBriefing(role));
+  }
+
+  function showBriefing(role) {
+    const m = MISSIONS[S.round];
+    const anoms = S.pendingAnomalies.map(id => ANOMALIES.find(a => a.id === id));
+    let body;
+    if (role === 'eng') {
+      body = anoms.map(a => {
+        const st = S.anom(a.id);
+        return '<div class="anomaly"><div class="a-name">\u26a0 ' + a.name +
+          ' <span style="color:var(--text-muted);font-weight:600;font-size:12.5px">(danger level ' + presentedSeverity(a) + ' of 5)</span></div>' +
+          '<div class="a-desc">' + a.desc + '<br><em>Latest report:</em> ' + a.escal[st.level] + '</div></div>';
+      }).join('');
+      if (S.weather.cold && anoms.some(a => a.cold)) {
+        body += '<p class="body-text" style="margin-top:10px">One more thing: tonight\u2019s cold is outside anything these systems have been tested in.</p>';
+      }
+    } else {
+      const memo = pick(MGMT_MEMOS);
+      const payWord = S.roundPayout >= 280 ? 'well above average' : S.roundPayout >= 180 ? 'about average' : 'on the smaller side';
+      const delayWord = S.roundDelayCost >= 110 ? 'a delay tonight stings more than usual' : 'a delay tonight is survivable, but not free';
+      const costs = 'Finance’s read, for your eyes only: this flight pays ' + payWord + ' if it lands, and ' + delayWord + '. It also costs money and support either way.';
+      let extra = '';
+      if (S.consecDelays > 0) extra += ' You have already delayed ' + S.consecDelays + ' time' + (S.consecDelays > 1 ? 's' : '') + ' in a row, and the costs climb each time.';
+      if (S.budget < 45 || S.conf < 45) extra += ' One more bad week could end the program.';
+      if (m.pts >= 300) extra += ' This flight is one of the biggest paydays on the schedule.';
+      body = '<div class="memo"><div class="m-from">Internal memo \u00b7 ' + memo[0] + '</div><div class="m-body">' + memo[1] + '</div></div>' +
+        '<p class="body-text" style="margin-top:10px">' + costs + extra + '</p>';
+    }
+    const who = role === 'eng' ? 'Engineering' : 'Management';
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' +
+      '<div class="kicker">' + who + ' briefing \u00b7 your eyes only</div>' +
+      body +
+      '<p class="body-text" style="margin-top:12px">Pass the laptop back and tell the group what you think they should know. In your own words. As much or as little as you decide.</p>' +
+      '<div class="decide"><button class="btn launch" id="hideBriefBtn">Hide this and pass it back</button></div>' +
+      '</div>';
+    $('hideBriefBtn').addEventListener('click', () => {
+      if (role === 'eng') showPrivacyGate('mgmt'); else showDecision();
+    });
+  }
+
+  function showDecision() {
+    const m = MISSIONS[S.round];
+    const anoms = S.pendingAnomalies.map(id => ANOMALIES.find(a => a.id === id));
+
+    const votesHTML =
+      '<div class="votes">' +
+      '<div class="vote-box eng"><div class="v-who">Engineering votes</div><div class="v-opts">' +
+      '<button class="v-opt v-fly" data-role="eng" data-v="fly" aria-pressed="false">Fly</button>' +
+      '<button class="v-opt v-stand" data-role="eng" data-v="stand" aria-pressed="false">Stand down</button>' +
+      '</div></div>' +
+      '<div class="vote-box mgmt"><div class="v-who">Management votes</div><div class="v-opts">' +
+      '<button class="v-opt v-fly" data-role="mgmt" data-v="fly" aria-pressed="false">Fly</button>' +
+      '<button class="v-opt v-stand" data-role="mgmt" data-v="stand" aria-pressed="false">Stand down</button>' +
+      '</div></div>' +
+      '<div class="vote-box fd"><div class="v-who">Flight director decides</div><div class="decide" style="margin-top:0">' +
+      '<button class="btn launch" id="launchBtn" disabled>LAUNCH</button>' +
+      '<button class="btn" id="standBtn" disabled>Stand down</button>' +
+      '</div><div class="v-note" id="decideNote">Ratings and both votes go in the log first.</div></div>' +
+      '</div>';
+
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' + roundHeaderHTML(m) +
+      anoms.map(a => problemSummaryHTML(a, true)).join('') +
+      votesHTML +
+      '</div>';
+
+    function maybeUnlock() {
+      const ready = Object.keys(S.ratings).length === anoms.length && S.votes.eng && S.votes.mgmt;
+      if (ready) {
+        $('launchBtn').disabled = false; $('standBtn').disabled = false;
+        $('decideNote').textContent = 'Logged under \u201c' + S.team + '.\u201d The call is yours.';
+      }
+    }
+
+    document.querySelectorAll('.c-opt').forEach(b => b.addEventListener('click', () => {
+      const aid = b.dataset.aid;
+      document.querySelectorAll('.c-opt[data-aid="' + aid + '"]').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      S.ratings[aid] = b.dataset.c;
+      maybeUnlock();
+    }));
+
+    document.querySelectorAll('.v-opt').forEach(b => b.addEventListener('click', () => {
+      const role = b.dataset.role;
+      document.querySelectorAll('.v-opt[data-role="' + role + '"]').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      S.votes[role] = b.dataset.v;
+      maybeUnlock();
+    }));
+
+    $('launchBtn').addEventListener('click', () => decide(true));
+    $('standBtn').addEventListener('click', () => decide(false));
+  }
+
+  function decide(launch) {
+    const m = MISSIONS[S.round];
+    const anoms = S.pendingAnomalies.map(id => ANOMALIES.find(a => a.id === id));
+
+    if (!launch) {
+      anoms.forEach(a => {
+        S.anom(a.id).fixed = true;
+        S.log.push(logEntry(m, a, 'Stood down'));
+      });
+      S.delays += 1; S.consecDelays += 1;
+      S.lastDelayCost = S.roundDelayCost;
+      S.score -= S.roundDelayCost;
+      S.ledger.push({ label: 'Stood down before ' + m.name, amount: -S.roundDelayCost });
+      S.budget -= 16 + S.consecDelays * 6;
+      S.conf -= 12 + S.consecDelays * 7;
+      if (S.budget <= 0 || S.conf <= 0) { endGame('cancelled'); return; }
+      showDelayInterstitial(anoms);
+      return;
+    }
+
+    let pFail = 0.004;
+    let riskiest = null, riskiestP = 0;
+    anoms.forEach(a => {
+      const p = flightRisk(a);
+      pFail += p;
+      if (p > riskiestP) { riskiestP = p; riskiest = a; }
+      S.anom(a.id).flown += 1;
+    });
+    pFail = Math.min(0.5, pFail);
+    S.cumSurvive *= (1 - pFail);
+
+    const failed = anoms.length ? rnd() < pFail : rnd() < 0.004;
+    anoms.forEach(a => { S.log.push(logEntry(m, a, 'LAUNCHED')); });
+
+    if (failed && anoms.length) {
+      S.culprit = riskiest;
+      S.failedMission = m; S.failedCrew = S.crew.slice();
+      if (m.type === 'crew') { S.score -= 1000; endGame('disaster'); }
+      else { cargoLoss(m, riskiest); }
+      return;
+    }
+
+    S.launches += 1; S.consecDelays = 0;
+    let trim = 0;
+    anoms.forEach(a => { if (S.ratings[a.id] === 'med') trim += 10; if (S.ratings[a.id] === 'high') trim += 20; });
+    const earned = Math.max(0, S.roundPayout - trim);
+    S.score += earned;
+    S.ledger.push({ label: m.name + ' landed' + (trim ? ' (payout reduced for the risks you logged)' : ''), amount: earned });
+    S.budget = Math.min(100, S.budget + 6);
+    S.conf = Math.min(100, S.conf + 9);
+    showSuccessInterstitial(m, anoms, earned, trim);
+  }
+
+  function logEntry(m, a, decision) {
+    return {
+      mission: S.round + 1, missionName: m.name, crewed: m.type === 'crew',
+      anomaly: a.name, aid: a.id, level: S.anom(a.id).level, sev: presentedSeverity(a),
+      rating: S.ratings[a.id], engVote: S.votes.eng, mgmtVote: S.votes.mgmt, decision
+    };
+  }
+
+  function showSuccessInterstitial(m, anoms, earned, trim) {
+    const memo = pick(SUCCESS_MEMOS);
+    const anomNote = anoms.length
+      ? '<p class="body-text">Post-flight inspection: ' + anoms.map(a => '<strong>' + a.name.toLowerCase() + '</strong> showed up again' + (S.anom(a.id).level < 2 ? '. The report says “keep watching it”' : ', worse than predicted')).join('; ') + '. The flight worked, so it goes in the books as a success.</p>'
+      : '';
+    S.round += 1;
+    screen.innerHTML = metersHTML() +
+      '<div class="card outcome-good fade-in">' +
+      '<div class="kicker">' + m.name + ' · Flight complete</div>' +
+      '<div class="big">A clean flight. Cheers in the control room.</div>' +
+      '<div class="score-delta up">+' + earned + ' points' + (trim ? ' <span style="font-size:13px;font-weight:600;color:var(--text-muted)">The company paid less than it might have. It read your risk log first.</span>' : '') + '</div>' +
+      anomNote +
+      '<div class="memo"><div class="m-from">Internal memo · ' + memo[0] + '</div><div class="m-body">' + memo[1] + '</div></div>' +
+      '<div class="decide"><button class="btn launch" id="nextBtn">Next mission →</button></div>' +
+      '</div>';
+    $('nextBtn').addEventListener('click', startRound);
+  }
+
+  function showDelayInterstitial(anoms) {
+    const memo = pick(DELAY_MEMOS);
+    screen.innerHTML = metersHTML() +
+      '<div class="card outcome-warn fade-in">' +
+      '<div class="kicker">Stand-down · The mission slips</div>' +
+      '<div class="big">The rockets stay on the ground while the problem gets torn apart and fixed.</div>' +
+      '<div class="score-delta down">−' + S.lastDelayCost + ' points</div>' +
+      '<p class="body-text">Fixed for good: ' + anoms.map(a => '<strong>' + a.name.toLowerCase() + '</strong>').join(', ') + '. That problem will never threaten a flight again. It cost you, and the schedule doesn’t care why.</p>' +
+      '<div class="memo"><div class="m-from">Internal memo · ' + memo[0] + '</div><div class="m-body">' + memo[1] + '</div></div>' +
+      '<div class="decide"><button class="btn launch" id="nextBtn">Back to the pad →</button></div>' +
+      '</div>';
+    $('nextBtn').addEventListener('click', () => { genRound(); showRound(); });
+  }
+
+  function cargoLoss(m, culprit) {
+    const lossCost = 300 + Math.round(rnd() * 20) * 10;
+    S.lastLossCost = lossCost;
+    S.score -= lossCost;
+    S.ledger.push({ label: m.name + ' lost over the ocean (no crew)', amount: -lossCost });
+    S.budget -= 30; S.conf -= 25; S.consecDelays = 0;
+    S.anom(culprit.id).fixed = true;
+    S.round += 1;
+    if (S.budget <= 0 || S.conf <= 0) { endGame('cancelled_after_loss'); return; }
+    screen.innerHTML = metersHTML() +
+      '<div class="card outcome-bad fade-in">' +
+      '<div class="kicker">' + m.name + ' · ROCKET LOST</div>' +
+      '<div class="big">73 seconds up, the rocket broke apart over the ocean.</div>' +
+      '<div class="score-delta down">−' + S.lastLossCost + ' points</div>' +
+      '<p class="body-text">Nobody was aboard. The rocket and its cargo are gone. The cause: <strong>' + culprit.name.toLowerCase() + '</strong>, the problem your log shows this program had flown with ' + S.anom(culprit.id).flown + ' time' + (S.anom(culprit.id).flown > 1 ? 's' : '') + '.</p>' +
+      '<p class="body-text">The board calls it a wake-up call. The schedule pressure is still there. What will your team do differently, if anything?</p>' +
+      '<div class="decide"><button class="btn launch" id="nextBtn">Keep the program going →</button></div>' +
+      '</div>';
+    $('nextBtn').addEventListener('click', startRound);
+  }
+
+  /* ============ ENDGAME ============ */
+  function endGame(ending) {
+    if (ending === 'disaster') {
+      S.ledger.push({ label: S.failedMission.name + ' lost with its crew', amount: -1000 });
+    }
+    if (ending === 'completed') {
+      const bonus = 150 + Math.round(rnd() * 15) * 10;
+      S.score += bonus;
+      S.ledger.push({ label: 'All nine missions flown', amount: bonus });
+    }
+    if (ending === 'cancelled' || ending === 'cancelled_after_loss') {
+      S.score -= 500;
+      S.ledger.push({ label: 'Program cancelled', amount: -500 });
+    }
+    const honestCount = S.log.filter(honestCall).length;
+    S.honestBonus = honestCount * 25;
+    S.score += S.honestBonus;
+    S.ledger.push({ label: 'Honest risk ratings (' + honestCount + ' of ' + S.log.length + ' matched the briefing)', amount: S.honestBonus });
+    S.over = true; S.ending = ending;
+    showHearing(ending);
+  }
+
+  function ratingPill(r) {
+    const cl = RATINGS[r];
+    return '<span class="pill ' + cl.pill + '">' + cl.label + '</span>';
+  }
+
+  function driftChartSVG() {
+    const byMission = {};
+    S.log.forEach(e => {
+      const k = e.mission;
+      if (!byMission[k] || e.sev > byMission[k].sev || (e.sev === byMission[k].sev && e.decision === 'LAUNCHED')) byMission[k] = e;
+    });
+    const entries = Object.values(byMission).sort((a, b) => a.mission - b.mission);
+    if (entries.length < 2) return '<p class="body-text">Not enough flights to draw a pattern. Your program never got the chance to get used to anything. Is that the same as being safe from it?</p>';
+    const W = 860, H = 300, M = { top: 30, right: 30, bottom: 40, left: 52 };
+    const IW = W - M.left - M.right, IH = H - M.top - M.bottom;
+    const xOf = i => M.left + (entries.length === 1 ? IW / 2 : i / (entries.length - 1) * IW);
+    const yOf = v => M.top + (1 - (v - 0.5) / 5) * IH;
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" aria-label="Risk chart">';
+    for (let v = 1; v <= 5; v++) {
+      svg += '<line x1="' + M.left + '" x2="' + (M.left + IW) + '" y1="' + yOf(v) + '" y2="' + yOf(v) + '" class="gridline"/>' +
+             '<text x="' + (M.left - 10) + '" y="' + (yOf(v) + 4) + '" text-anchor="end" class="ticklabel">' + v + '</text>';
+    }
+    svg += '<text x="' + M.left + '" y="16" class="axistitle">Danger level of the worst problem on each flight, colored by what your log called it</text>';
+    let d = '';
+    entries.forEach((e, i) => { d += (i ? 'L' : 'M') + xOf(i) + ',' + yOf(e.sev); });
+    svg += '<path d="' + d + '" fill="none" stroke="var(--baseline)" stroke-width="1.5" stroke-dasharray="3 4"/>';
+    const colors = { low: 'var(--status-good)', med: 'var(--status-warning)', high: 'var(--status-critical)' };
+    entries.forEach((e, i) => {
+      const stood = e.decision === 'Stood down';
+      const fill = stood ? 'var(--baseline)' : (colors[e.rating] || 'var(--baseline)');
+      svg += '<circle cx="' + xOf(i) + '" cy="' + yOf(e.sev) + '" r="9" fill="' + fill + '"' + (stood ? ' opacity="0.55"' : '') + '/>' +
+             '<text x="' + xOf(i) + '" y="' + (M.top + IH + 20) + '" text-anchor="middle" class="ticklabel">M' + e.mission + '</text>';
+    });
+    svg += '<text x="' + (M.left + IW / 2) + '" y="' + (H - 4) + '" text-anchor="middle" class="ticklabel">mission</text></svg>';
+    svg += '<div class="body-text" style="font-size:13px;margin-top:6px">Dot color = your rating: <span class="pill p-low">Low risk</span> <span class="pill p-med">Some risk</span> <span class="pill p-high">High risk</span> <span class="pill p-stood">Stood down</span></div>';
+    return svg;
+  }
+
+  function findDriftQuote() {
+    let early = null, late = null;
+    const rank = { high: 2, med: 1, low: 0 };
+    for (const e of S.log) {
+      for (const f of S.log) {
+        if (f.mission > e.mission && f.sev >= e.sev && rank[f.rating] < rank[e.rating] && f.decision === 'LAUNCHED') {
+          if (!early || (rank[e.rating] - rank[f.rating]) > (rank[early.rating] - rank[late.rating]) ||
+              ((rank[e.rating] - rank[f.rating]) === (rank[early.rating] - rank[late.rating]) && f.sev - e.sev > late.sev - early.sev)) {
+            early = e; late = f;
+          }
+        }
+      }
+    }
+    return early ? { early, late } : null;
+  }
+
+  function showHearing(ending) {
+    let headline, lede, crewPara = '';
+
+    if (ending === 'disaster') {
+      const m = S.failedMission;
+      headline = 'The official investigation into the ' + m.name + ' accident';
+      lede = '<p class="body-text">' + m.name + ' broke apart 73 seconds after liftoff. No one survived.</p>';
+      crewPara = '<p class="body-text">Lost: ' + S.failedCrew.map(c => '<strong>' + c[0] + '</strong>').join(', ') + '. ' +
+        'The cause was the <strong>' + S.culprit.name.toLowerCase() + '</strong>, a problem your own log shows this program had flown with ' +
+        S.anom(S.culprit.id).flown + ' time' + (S.anom(S.culprit.id).flown === 1 ? '' : 's') + ' before.</p>';
+    } else if (ending === 'cancelled' || ending === 'cancelled_after_loss') {
+      headline = 'Congressional review: why the Meridian program was cancelled';
+      lede = '<p class="body-text">The program is over' + (ending === 'cancelled_after_loss' ? '. The lost rocket was the last straw' : '') +
+        '. Nobody died, and the remaining missions will never fly. The committee wants to know: how does a careful program run out of money and friends? And will the next company, feeling the same pressure, just make the opposite mistake?</p>';
+    } else {
+      headline = 'Final review: all nine missions flown';
+      const gambleP = Math.round((1 - S.cumSurvive) * 100);
+      lede = '<p class="body-text">Nine flights, nothing lost. Now some math. Adding up every risk you flew with, the chance of losing a rocket somewhere along the way was <strong>' + gambleP + '%</strong>. ' +
+        (gambleP >= 25 ? 'So here is the committee’s question: was that skill, or luck?' : 'Your stand-downs bought most of that safety. The log shows where.') + '</p>';
+    }
+
+    let ledgerRows = '';
+    S.ledger.forEach(en => {
+      const pos = en.amount >= 0;
+      ledgerRows += '<tr><td>' + en.label + '</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:' + (pos ? 'var(--status-good)' : 'var(--status-critical)') + '">' + (pos ? '+' : '\u2212') + Math.abs(en.amount) + '</td></tr>';
+    });
+    const scoreLine = '<div class="kicker" style="margin-top:10px">The accounting, unsealed</div>' +
+      '<table class="log-table"><thead><tr><th>What happened</th><th style="text-align:right">Points</th></tr></thead><tbody>' + ledgerRows + '</tbody></table>' +
+      '<div class="kicker" style="margin-top:14px">Final score</div><div class="final-score">' + S.score + ' points</div>' +
+      '<p class="body-text" style="font-size:13.5px">Report this number for the class board.</p>';
+
+    const drift = findDriftQuote();
+    let quotes = '';
+    if (drift) {
+      quotes += '<div class="hearing-quote"><div class="hq-tag">Exhibit A. Your flight log, Mission ' + drift.early.mission + '</div>' +
+        '<strong>' + drift.early.anomaly + '</strong> (danger level ' + drift.early.sev + ' of 5). Your team rated it <strong>' + RATINGS[drift.early.rating].label.toLowerCase() + '</strong>' +
+        (drift.early.decision === 'Stood down' ? ' and stood down.' : ' and flew.') + '</div>' +
+        '<div class="hearing-quote"><div class="hq-tag">Exhibit B. Your flight log, Mission ' + drift.late.mission + '</div>' +
+        '<strong>' + drift.late.anomaly + '</strong> (danger level ' + drift.late.sev + ' of 5). Your team rated it <strong>' + RATINGS[drift.late.rating].label.toLowerCase() + '</strong> and flew.</div>' +
+        '<p class="body-text">The investigators keep asking one question: <strong>what changed between Mission ' + drift.early.mission + ' and Mission ' + drift.late.mission + '?</strong> The rocket didn’t get safer. What made the risk feel smaller?</p>';
+    } else {
+      const flewWithRisk = S.log.filter(e => e.decision === 'LAUNCHED' && (e.rating === 'med' || e.rating === 'high'));
+      if (flewWithRisk.length) {
+        const worst = flewWithRisk.sort((a, b) => b.sev - a.sev)[0];
+        quotes += '<div class="hearing-quote"><div class="hq-tag">Exhibit A. Your flight log, Mission ' + worst.mission + '</div>' +
+          '<strong>' + worst.anomaly + '</strong> (danger level ' + worst.sev + ' of 5). Your team rated it <strong>' + RATINGS[worst.rating].label.toLowerCase() + '</strong>. Then you flew.</div>' +
+          '<p class="body-text">Your log said one thing and your launch said another. Which one was the real decision?</p>';
+      } else if (ending === 'disaster') {
+        quotes += '<p class="body-text">Your log rated every problem <strong>low risk</strong>, including the one that brought the rocket down. So the investigators ask: what was the log for?</p>';
+      } else if (ending === 'cancelled' || ending === 'cancelled_after_loss') {
+        quotes += '<p class="body-text">Your log and your choices agree: nothing was ever safe enough, and almost nothing flew. Was there a version of this program that could have flown and survived? What would it have needed?</p>';
+      } else {
+        quotes += '<p class="body-text">Your log and your launches match. You only flew what you called safe, and you made it. Worth asking: how close did the money and support meters get to zero along the way?</p>';
+      }
+    }
+
+    // did the flight director ever overrule the engineering vote?
+    const overrides = [];
+    const seen = new Set();
+    S.log.forEach(e => {
+      if (e.decision === 'LAUNCHED' && e.engVote === 'stand' && !seen.has(e.mission)) {
+        seen.add(e.mission); overrides.push(e);
+      }
+    });
+    if (overrides.length) {
+      const o = overrides[0];
+      quotes += '<p class="body-text">One more thing in the record: on <strong>Mission ' + o.mission + '</strong>, engineering voted to stand down and the rocket flew anyway' +
+        (overrides.length > 1 ? ' (it happened ' + overrides.length + ' times)' : '') +
+        '. What would engineering have needed to say to be heard?</p>';
+    }
+
+    let table = '<table class="log-table"><thead><tr><th>Mission</th><th>Problem</th><th>Danger</th><th>Your rating</th><th>Votes</th><th>Decision</th><th>Honest?</th></tr></thead><tbody>';
+    S.log.forEach(e => {
+      table += '<tr><td>M' + e.mission + (e.crewed ? ' 👥' : '') + '</td><td>' + e.anomaly + '</td><td>' + e.sev + '/5</td><td>' +
+        ratingPill(e.rating) + '</td><td>E: ' + (e.engVote === 'fly' ? 'fly' : 'stand down') + ' · M: ' + (e.mgmtVote === 'fly' ? 'fly' : 'stand down') +
+        '</td><td>' + (e.decision === 'Stood down' ? 'Stood down' : 'Flew') + '</td><td>' +
+        (honestCall(e) ? '<span class="honest-yes">✓ +25</span>' : '<span class="honest-no">·</span>') + '</td></tr>';
+    });
+    table += '</tbody></table>';
+
+    screen.innerHTML =
+      '<div class="card fade-in ' + (ending === 'disaster' ? 'outcome-bad' : ending.startsWith('cancelled') ? 'outcome-warn' : 'outcome-good') + '">' +
+      '<div class="kicker">' + headline + '</div>' +
+      '<div class="big">On the record: ' + S.team + '</div>' + lede + crewPara + scoreLine + quotes +
+      '</div>' +
+      '<div class="card fade-in"><div class="kicker">Your run, drawn</div>' + driftChartSVG() +
+      '<p class="body-text" style="margin-top:10px">Sociologist <strong>Diane Vaughan</strong> spent ten years studying the real version of this story, the 1986 Challenger disaster. She didn’t find bad people. She found a normal process that happens inside normal organizations:</p>' +
+      '<ul class="concepts">' +
+      '<li><strong>Normalization of deviance.</strong> Every time something broken flies and nothing goes wrong, it starts to feel normal. Look at your history lines. When did “it flew before” start to count as proof of safety?</li>' +
+      '<li><strong>Production pressure.</strong> Nobody tells a team to be unsafe. There are just points, deadlines, memos, and a prize. Even writing “high risk” in the log cost you points. Where did that pressure show up in your room?</li>' +
+      '<li><strong>Structural secrecy.</strong> The full reports lived on screens most of you never saw. How much of what Engineering read actually made it into the log?</li>' +
+      '<li><strong>No villains.</strong> Vaughan’s point, and Chapter 8’s: ordinary people doing their jobs can produce the wrongdoing, one reasonable call at a time. Which of your calls felt most reasonable in the moment?</li>' +
+      '</ul>' +
+      '<div class="kicker" style="margin-top:14px">Your full flight log</div>' + table +
+      '</div>' +
+      '<div class="card fade-in"><div class="kicker">Talk about it</div><ul class="concepts">' +
+      '<li>Whose votes won in your group, engineering’s or management’s? Why those?</li>' +
+      '<li>Find the first time you flew with something you had rated risky. What made it feel okay right then?</li>' +
+      '<li>Did the prize change how anyone argued? What does that say about how real workplaces set up rewards?</li>' +
+      '<li>If delaying can kill the program and flying can kill the crew, what rule would you write for the next team? Who outside the control room would have to change something for that rule to work?</li>' +
+      '<li>Where have you seen “we’ve always done it this way” in your own life or a job? What would it take to challenge it?</li>' +
+      '</ul>' +
+      '<div class="decide"><button class="btn launch" id="againBtn">Run it again</button></div>' +
+      '</div>';
+    $('againBtn').addEventListener('click', showSetup);
+  }
+
+  /* ============ THEME + BOOT ============ */
+  const themeBtn = $('themeBtn');
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+  let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(isDark);
+  themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+  showSetup();
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<style>:root:not([data-theme="dark"]) .kicker { color: #5a5954 !important; }</style><script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

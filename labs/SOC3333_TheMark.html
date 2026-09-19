@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mark · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Mark <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+
+    <div class="card">
+      <p class="lede"><strong>Every theory you have met so far explains why people break rules.</strong> Labeling theory asks a different question, and it is the question Chapter 1 named as the field's third domain: what does our reaction to rule-breakers do? The provocative version of the claim is that the justice system can manufacture the criminality it exists to fight, by taking someone who did an ordinary bad thing and turning that into who they are. That claim is easy to state and notoriously hard to test, because you cannot randomly assign people criminal records. In 2001 a graduate student found a way around that, and this page starts with what she found.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-audit" type="button">Run the audit</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-method" type="button">Why this design</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-after" type="button">The label's afterlife</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-pipeline" type="button">The pipeline</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-shame" type="button">Two kinds of shaming</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-audit">
+      <div class="card">
+        <h2>Devah Pager's experiment</h2>
+        <p class="lede">Pager hired four young men, matched them carefully on appearance, age, speech, and self-presentation, and gave them identical fabricated resumes with the same education and work history. She then sent them to apply for real entry-level jobs advertised in Milwaukee, in pairs, over seven months in 2001. Within each pair, one man reported a criminal record and one did not, and which man carried the record rotated week to week so it could not be confounded with anything about the individual.</p>
+        <p class="lede">The record was an eighteen-month sentence for a first-time drug possession offense, signaled on the application form where employers asked, and otherwise through a work assignment obtained in a correctional facility and a parole officer listed as a reference. Three hundred fifty employers were audited in total. The outcome was simply whether the employer called back.</p>
+        <p class="note"><strong>Before you look, commit to all four numbers.</strong> Set each slider to the callback rate you expect. Guessing badly here is normal and the point of the exercise is to have a prediction on record before the answer arrives.</p>
+
+        <div class="p22">
+          <div class="pcell" id="cell-wn">
+            <div class="pn">White applicant, NO record</div>
+            <div class="pd">Clean resume, no conviction mentioned anywhere.</div>
+            <input type="range" id="sWN" min="0" max="60" step="1" value="30">
+            <div class="pv" id="vWN">your guess: 30%</div>
+            <div class="pactual" id="aWN"></div>
+          </div>
+          <div class="pcell" id="cell-wr">
+            <div class="pn">White applicant, WITH record</div>
+            <div class="pd">Identical resume plus an eighteen-month drug possession sentence.</div>
+            <input type="range" id="sWR" min="0" max="60" step="1" value="20">
+            <div class="pv" id="vWR">your guess: 20%</div>
+            <div class="pactual" id="aWR"></div>
+          </div>
+          <div class="pcell" id="cell-bn">
+            <div class="pn">Black applicant, NO record</div>
+            <div class="pd">Clean resume, matched to the white testers on every measured characteristic.</div>
+            <input type="range" id="sBN" min="0" max="60" step="1" value="30">
+            <div class="pv" id="vBN">your guess: 30%</div>
+            <div class="pactual" id="aBN"></div>
+          </div>
+          <div class="pcell" id="cell-br">
+            <div class="pn">Black applicant, WITH record</div>
+            <div class="pd">Identical resume plus the same eighteen-month sentence.</div>
+            <input type="range" id="sBR" min="0" max="60" step="1" value="20">
+            <div class="pv" id="vBR">your guess: 20%</div>
+            <div class="pactual" id="aBR"></div>
+          </div>
+        </div>
+        <div class="pickrow">
+          <button class="gbtn" id="lockBtn" type="button">Lock in all four</button>
+        </div>
+
+        <div class="veiled" id="rev1">
+          <h3>Act one: what the record did</h3>
+          <div class="bars">
+            <div class="brow"><div class="blabel">White, no record</div><div class="btrack"><div class="bfill good" id="r1" style="width:0%"></div></div><div class="bval">34%</div></div>
+            <div class="brow"><div class="blabel">White, with record</div><div class="btrack"><div class="bfill warn" id="r2" style="width:0%"></div></div><div class="bval">17%</div></div>
+          </div>
+          <div class="teach"><strong>The mark cut callbacks in half.</strong> Same man, same resume, same interview manner, one sentence of difference on a form. Half the doors closed. That is labeling theory's central claim about exclusion, measured with an experiment rather than argued from cases, and it is the reason this study is the most cited piece of labeling research of the century.</div>
+          <p class="lede">Now the second half of the design, which Pager included for a reason and which produced the finding that her reviewers found hardest to believe.</p>
+          <div class="pickrow">
+            <button class="gbtn" id="rev2Btn" type="button">Show the Black testers</button>
+          </div>
+        </div>
+
+        <div class="veiled" id="rev2">
+          <div class="bars">
+            <div class="brow"><div class="blabel">White, no record</div><div class="btrack"><div class="bfill good" id="q1" style="width:0%"></div></div><div class="bval">34%</div></div>
+            <div class="brow"><div class="blabel">White, with record</div><div class="btrack"><div class="bfill" id="q2" style="width:0%"></div></div><div class="bval">17%</div></div>
+            <div class="brow"><div class="blabel">Black, no record</div><div class="btrack"><div class="bfill" id="q3" style="width:0%"></div></div><div class="bval">14%</div></div>
+            <div class="brow"><div class="blabel">Black, with record</div><div class="btrack"><div class="bfill warn" id="q4" style="width:0%"></div></div><div class="bval">5%</div></div>
+          </div>
+          <p class="srcnote">Pager, D. (2003). The mark of a criminal record. American Journal of Sociology 108(5), 937 to 975. Fieldwork in Milwaukee, June through December 2001. Three hundred fifty employers audited, 150 in the white pair and 200 in the Black pair. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Look at the middle two bars.</strong> The white applicant WITH a criminal record was called back slightly more often than the Black applicant WITHOUT one. Seventeen percent against fourteen. A conviction was less of an obstacle for the white testers than skin color was for the Black testers who had never been convicted of anything.</div>
+
+          <p class="note"><strong>There is a second finding stacked on top of that one.</strong> The record did not just lower everyone's chances equally. It hurt the Black testers more. Callbacks fell by about half for the white pair and by roughly two thirds for the Black pair, a penalty Pager reported as about 40 percent larger for Black applicants. So a criminal record is not one obstacle applied uniformly. It is an obstacle whose size depends on who is carrying it.</p>
+
+          <div id="scoreBack"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-method">
+      <div class="card">
+        <h2>Why an audit and not a survey</h2>
+        <p class="lede">This is a Chapter 2 slide wearing different clothes. The reason Pager's study settled an argument that decades of survey research could not is entirely about design, and it is worth being precise about what the design buys.</p>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Randomization</div><div class="bd">Which tester carried the record rotated by week, so the record was not attached to any one person's height, manner, or luck. Anything else that might explain the gap was distributed evenly across conditions.</div></div>
+          <div class="bond"><div class="bn">Matched pairs</div><div class="bd">The testers were matched on age, appearance, education, work history, and interpersonal style, and trained to behave alike. The resumes were identical. The one thing that differed is the one thing being tested.</div></div>
+          <div class="bond"><div class="bn">Real behavior</div><div class="bd">These were real job openings and real employers making real decisions. Nobody knew they were in a study, which means nobody was managing how their answers would look.</div></div>
+        </div>
+        <p class="lede" style="margin-top:14px">That last point is the one that matters most. Ask employers on a survey whether they would hold a five-year-old drug conviction against an applicant and many will say no, sincerely. Watch what they do with an actual application and you get a different number. Attitudes and behavior come apart, and audits measure the half that has consequences.</p>
+
+        <h3>Now the limits, stated as carefully as the findings</h3>
+        <div id="limits"></div>
+        <div class="teach" id="limWrap" style="display:none"><strong>You got <span id="limScore"></span>.</strong> None of these limits undoes the finding. What they do is bound it, and being able to state the bounds is the difference between citing a study and understanding it. The result is solid for what it covers: entry-level hiring, in one city, at the first gate. It is also worth saying that later audit studies in other cities using the same design have found the same basic pattern, which is why the finding is treated as robust rather than as a Milwaukee curiosity.</div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-after">
+      <div class="card">
+        <h2>The sentence after the sentence</h2>
+        <p class="lede">Pager measured one gate. There are a great many gates. Criminologists call the whole set <strong>collateral consequences</strong>: the legal and practical penalties that attach to a conviction and continue long after the formal sentence is finished. Labeling theory has a name for what these amount to. They are a <strong>master status</strong> written into law and into databases, and a master status is a label that answers every question about a person before it is asked.</p>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Employment</div><div class="bd">Background checks at nearly every level of hiring, plus occupational licensing bans covering hundreds of jobs. Criminologists call these negative credentials, because unlike a degree they never expire.</div></div>
+          <div class="bond"><div class="bn">Housing and education</div><div class="bd">Denial of subsidized housing, application questions, and private landlords who search a name in ten seconds.</div></div>
+          <div class="bond"><div class="bn">Civic life</div><div class="bd">Felony disenfranchisement, with rules varying enormously by state, from voting while incarcerated to near-permanent exclusion.</div></div>
+        </div>
+
+        <p class="lede" style="margin-top:14px">Labeling theory makes a prediction about what should follow when the legitimate doors close. Before you see the number, guess it.</p>
+        <div class="guessbox">
+          <div class="gq">The Bureau of Justice Statistics followed people released from state prison across 34 states. What percentage were arrested at least once within five years of release?</div>
+          <div class="gr">
+            <input type="range" id="gRec" min="0" max="100" step="1" value="50">
+            <div class="gval" id="gRecV">50%</div>
+            <button class="gbtn" id="gRecBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gRecVerdict"></div>
+        </div>
+
+        <div class="veiled" id="revRec">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Arrested within 3 years</div><div class="btrack"><div class="bfill warn" id="rc1" style="width:0%"></div></div><div class="bval">62%</div></div>
+            <div class="brow"><div class="blabel">Arrested within 5 years</div><div class="btrack"><div class="bfill warn" id="rc2" style="width:0%"></div></div><div class="bval">71%</div></div>
+            <div class="brow"><div class="blabel">Returned to prison within 5 years</div><div class="btrack"><div class="bfill" id="rc3" style="width:0%"></div></div><div class="bval">46%</div></div>
+          </div>
+          <p class="srcnote">Durose, M. R., and Antenangeli, L. (2021). Recidivism of prisoners released in 34 states in 2012: A 5-year follow-up period, 2012 to 2017. Bureau of Justice Statistics. Return to prison includes both new sentences and parole or probation violations. Retrieved August 2026.</p>
+
+          <p class="note"><strong>Here is where you have to be disciplined.</strong> These numbers are perfectly consistent with labeling theory, and they are equally consistent with almost every other theory in this course. Control theory would point to the bonds that prison severs. Strain theory would point to blocked means. Learning theory would point to who you spent those years with. Self-control theory would say the same people who offended before were always going to offend again. Recidivism data cannot arbitrate between them, because it is an outcome that every theory predicts.</p>
+
+          <div class="teach"><strong>Which is exactly why Pager's design matters.</strong> The audit isolates one mechanism, the label, and holds everything else constant. That is the thing recidivism statistics cannot do. When you write about labeling theory, lead with the experiment and use the recidivism numbers to describe the scale of the problem rather than to prove the cause.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-pipeline">
+      <div class="card">
+        <h2>Labeling theory with a hall pass</h2>
+        <p class="lede">The school-to-prison pipeline is labeling theory operating inside a public institution. The claimed sequence runs from zero-tolerance discipline, through suspension and exclusion, to falling behind and dropping out, to police contact, to a record. The hard question is causal. Are the suspended students simply the ones who were already headed for trouble, or does the exclusion itself do damage?</p>
+        <p class="lede">One study got unusually close to an answer by using something that had nothing to do with any individual student. Between 1999 and 2008 the federal government awarded competitive grants to school districts to hire police officers. A researcher compared discipline outcomes within the same Texas districts across years with and without that grant funding, covering more than two and a half million students.</p>
+        <div id="wpick"></div>
+
+        <div class="veiled" id="revPipe">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">+6%</div><div class="l">middle school discipline rates in grant years, driven by conduct code violations rather than serious offenses</div></div>
+            <div class="stat warn"><div class="v">7 to 10%</div><div class="l">the increase for Black and Hispanic students, and 7 percent for low-income students</div></div>
+            <div class="stat"><div class="v">-2.5%</div><div class="l">high school graduation, and college enrollment down about 4 percent, after exposure to one three-year grant</div></div>
+          </div>
+          <p class="srcnote">Weisburst, E. K. (2019). Patrolling public schools: The impact of funding for school police on student discipline and long-term education outcomes. Journal of Policy Analysis and Management 38(2). Texas districts, COPS grants 1999 to 2008, over 2.5 million students. The graduation and enrollment results are described by the author as suggestive. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Read what drove the increase.</strong> Not fights, not weapons, not serious offenses. Conduct code violations, meaning the low-level misbehavior that every school has always had and that used to be handled by a teacher. Adding an officer did not reveal hidden crime. It changed what ordinary adolescent misbehavior gets called, and who handles it. That is the labeling mechanism, caught in the act, in a public institution, with a design that does not depend on which students got in trouble.</div>
+
+          <p class="note"><strong>Two honest qualifications.</strong> First, the graduation and college enrollment findings are described by the author herself as suggestive rather than definitive, and you should repeat that word if you cite them. Second, this is one state over one period, and school policing has changed since. The discipline finding is the solid one. The long-term education findings are the interesting one.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-shame">
+      <div class="card">
+        <h2>Braithwaite: shaming that reintegrates, and shaming that casts out</h2>
+        <p class="lede">If labels cause secondary deviance, the obvious conclusion is that societies should stop condemning wrongdoing, which is absurd and which no labeling theorist has ever argued. John Braithwaite proposed the resolution in 1989. What matters is not whether a society shames but how. <strong>Reintegrative shaming</strong> condemns the act and then deliberately readmits the person. <strong>Stigmatizing shaming</strong> condemns the person and leaves them outside, which is precisely how you manufacture a master status.</p>
+        <p class="lede">Eight responses to the same offense are below. Sort each one.</p>
+        <div id="shame"></div>
+        <div class="teach" id="shameWrap" style="display:none"><strong>You got <span id="shameScore"></span>.</strong> The test is not severity. Reintegrative shaming can be blunt and uncomfortable, and stigmatizing shaming can be perfectly polite. The test is whether the response ends with a route back in. Braithwaite argued this is why some societies with strong disapproval of wrongdoing have low crime rates: the disapproval is intense and the readmission is guaranteed.</div>
+
+        <div class="veiled" id="revRJ">
+          <h3>So does it work</h3>
+          <p class="lede">The main policy expression of reintegrative shaming is restorative justice conferencing, in which the person who caused harm meets the people affected, hears what it did, and agrees to repair it. The National Institute of Justice has graded the practice for juveniles, outcome by outcome, and the pattern is strange enough to be worth sitting with.</p>
+          <div class="bars">
+            <div class="brow"><div class="blabel">Victims’ perceptions of fairness</div><div class="btrack"><div class="bfill good" id="j1" style="width:0%"></div></div><div class="bval">0.64</div></div>
+            <div class="brow"><div class="blabel">Compliance with restitution</div><div class="btrack"><div class="bfill good" id="j2" style="width:0%"></div></div><div class="bval">0.54</div></div>
+            <div class="brow"><div class="blabel">Delinquency, meaning reoffending</div><div class="btrack"><div class="bfill good" id="j3" style="width:0%"></div></div><div class="bval">0.23</div></div>
+          </div>
+          <p class="lede">All three are rated <strong>Promising</strong>. Now the outcomes rated <strong>Ineffective</strong>, meaning no statistically significant effect was found: <strong>offender satisfaction, victim satisfaction, remorse, and recognition of wrongdoing.</strong></p>
+          <p class="srcnote">CrimeSolutions, National Institute of Justice, practice profile for Restorative Justice Programs for Juveniles. Delinquency effect size 0.23 across 90 comparisons in Wilson et al. (2017), with a second meta-analysis reporting a log odds ratio of 0.248 across 21 comparisons and a third finding no significant effect. Retrieved August 2026. Ratings are periodically re-reviewed.</p>
+
+          <div class="teach"><strong>Read that pairing carefully, because it is genuinely odd.</strong> Braithwaite's mechanism is that the conference produces remorse and recognition of wrongdoing, and that these are what reintegrate the person and prevent reoffending. The evidence finds a reduction in reoffending and no measurable movement in remorse or recognition of wrongdoing. The outcome the theory predicts is there. The mechanism the theory proposed is not showing up in the measurements.</div>
+
+          <p class="note"><strong>Three possibilities, and you should be able to argue all three.</strong> The mechanism may be real and badly measured, since remorse is self-reported at a single moment and people are poor reporters of it. The mechanism may be wrong while the practice still works, perhaps because conferencing simply keeps young people out of court and therefore out of the labeling machinery, which would be an even purer confirmation of labeling theory. Or the reoffending effect may be smaller than it looks, since one of the three meta-analyses found nothing. This is what a live research question looks like, and Chapter 13 will return to it.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum: argue both sides of ban-the-box</h2>
+        <p class="lede">Ban-the-box policies prohibit employers from asking about criminal history until late in the hiring process, typically after a first interview. Post your initial response and then reply to two classmates. Length and deadlines are in that week's module in the LMS.</p>
+        <ol class="qs">
+          <li>Argue FOR ban-the-box using labeling theory. Name the concepts you are using, and use Pager's actual numbers rather than the idea of them.</li>
+          <li>Now argue against it, using any other theory from this course. Make it the strongest version of the objection you can construct, not a version you can easily knock down.</li>
+          <li>Say which side you actually find more persuasive and what specific evidence would change your mind. Not what argument would change your mind. What evidence.</li>
+        </ol>
+        <div class="teach"><strong>Replies:</strong> respond to two classmates who landed on the other side from you. Engage their strongest point rather than their weakest one.</div>
+        <p class="note"><strong>Where to look for the objection.</strong> A serious argument against ban-the-box exists and it comes from within this course. If employers cannot ask about records, and they still want to avoid hiring people with them, they have to guess. Some research has found that removing the question increased racial gaps in callbacks, on the theory that employers fell back on statistical assumptions about who is likely to have a record. Whether that finding holds up is contested. Steel-manning that argument, rather than dismissing it, is what step 2 is asking for.</p>
+        <p class="note"><strong>On step 3.</strong> Naming the evidence that would change your mind is the hardest sentence in the post and the one worth the most. If you cannot name any, that is worth noticing about your own position.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+
+  // ---------- TAB 1: the four-cell predictor ----------
+  const CELLS = [
+    { s: 'sWN', v: 'vWN', a: 'aWN', cell: 'cell-wn', actual: 34, stage: 1 },
+    { s: 'sWR', v: 'vWR', a: 'aWR', cell: 'cell-wr', actual: 17, stage: 1 },
+    { s: 'sBN', v: 'vBN', a: 'aBN', cell: 'cell-bn', actual: 14, stage: 2 },
+    { s: 'sBR', v: 'vBR', a: 'aBR', cell: 'cell-br', actual: 5,  stage: 2 },
+  ];
+  const guesses = {};
+  CELLS.forEach(c => {
+    const sl = $(c.s), out = $(c.v);
+    const upd = () => { out.textContent = 'your guess: ' + sl.value + '%'; };
+    sl.addEventListener('input', upd); upd();
+  });
+  let locked = false;
+  function revealStage(stage){
+    CELLS.filter(c => c.stage === stage).forEach(c => {
+      const diff = guesses[c.s] - c.actual;
+      const word = diff === 0 ? 'exactly right' : (Math.abs(diff) + ' points ' + (diff > 0 ? 'high' : 'low'));
+      $(c.a).innerHTML = 'Actual: <strong>' + c.actual + '%</strong> · you were ' + word;
+      $(c.cell).classList.add('revealed');
+    });
+  }
+  function lockAll(){
+    if (locked) return;
+    locked = true;
+    CELLS.forEach(c => { guesses[c.s] = Number($(c.s).value); $(c.s).disabled = true; });
+    $('lockBtn').disabled = true;
+    revealStage(1);
+    $('rev1').style.display = 'block';
+    fill('r1', 85); fill('r2', 43);
+  }
+  $('lockBtn').addEventListener('click', lockAll);
+
+  let stage2 = false;
+  function showStage2(){
+    if (!locked || stage2) return;
+    stage2 = true;
+    revealStage(2);
+    $('rev2Btn').disabled = true;
+    $('rev2').style.display = 'block';
+    fill('q1', 85); fill('q2', 43); fill('q3', 35); fill('q4', 13);
+    const errs = CELLS.map(c => Math.abs(guesses[c.s] - c.actual));
+    const mean = Math.round(errs.reduce((a,b) => a+b, 0) / errs.length);
+    const gapGuess = guesses['sWR'] - guesses['sBN'];
+    let msg = '<div class="teach"><strong>How your prediction did.</strong> Across the four cells you were off by an average of ' + mean + ' percentage points. ';
+    if (gapGuess >= 0) {
+      msg += 'You predicted the white applicant with a record would do at least as well as the Black applicant without one, which is what happened. Most people do not predict that, so either you had seen this study or you were reading the chapter closely.';
+    } else {
+      msg += 'You predicted the Black applicant with a clean record would do better than the white applicant with a conviction. That is the intuitive answer, it is what most people guess, and it is not what the employers did.';
+    }
+    msg += '</div>';
+    $('scoreBack').innerHTML = msg;
+  }
+  $('rev2Btn').addEventListener('click', showStage2);
+
+  // ---------- generic sorter ----------
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+    return { answer };
+  }
+
+  // ---------- TAB 2: limits ----------
+  const LIM_OPTS = ['A real limit on the finding', 'Not actually a limit'];
+  const LIMITS = [
+    { t: 'The study covered entry-level jobs only, of the kind advertised in a newspaper and filled quickly.', a: 'A real limit on the finding',
+      v: 'A real limit. Nothing here tells you what happens in professional hiring, where the screening is different and the record may surface later or matter differently. The finding is about the segment of the labor market most available to people leaving prison, which is arguably the segment that matters most for recidivism, but it is still a segment.' },
+    { t: 'The testers were not actually seeking jobs, so they were not real applicants.', a: 'Not actually a limit',
+      v: 'Not a limit on what the study measured. The employers were real, the openings were real, and the decisions were real. The testers being unusual does not matter because both testers were equally unusual, which is what matching is for. What you would want to know is whether the callbacks converted into offers, and the study does not measure that.' },
+    { t: 'Only one kind of record was tested, a first-time drug possession sentence of eighteen months.', a: 'A real limit on the finding',
+      v: 'A real limit, and an important one in the conservative direction. This is close to the most sympathetic record a person can have: nonviolent, first offense, drugs. It is reasonable to expect the penalty to be larger for records that read as more serious, which means 50 percent may be a floor rather than a ceiling.' },
+    { t: 'The fieldwork happened in one city in one year, and labor markets change.', a: 'A real limit on the finding',
+      v: 'A real limit, and the standard one for any field experiment. Milwaukee in 2001 had a specific labor market and a specific racial history. This is why replication matters, and later audit studies in other cities have found the same basic pattern, which is why the finding is treated as robust.' },
+    { t: 'Employers might have called back and then rejected the applicant later, so the callback is not a job.', a: 'Not actually a limit',
+      v: 'Not a limit on the claim being made, though it is a good question. Pager measured the first gate and never claimed to measure hiring. A callback is a necessary step toward a job, so a barrier at that stage is a real barrier, and if anything the effect at later stages could be larger once the record is discussed face to face.' },
+  ];
+  buildSorter('limits', LIMITS, LIM_OPTS, (right, total) => {
+    $('limScore').textContent = right + ' of ' + total;
+    $('limWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 3: recidivism guess ----------
+  const slR = $('gRec'), outR = $('gRecV'), btnR = $('gRecBtn');
+  slR.addEventListener('input', () => { outR.textContent = slR.value + '%'; });
+  outR.textContent = slR.value + '%';
+  let recLocked = false;
+  function lockRec(){
+    if (recLocked) return;
+    recLocked = true;
+    const g = Number(slR.value);
+    slR.disabled = true; btnR.disabled = true;
+    const diff = g - 71;
+    $('gRecVerdict').textContent = diff === 0
+      ? 'You guessed 71%. That is exactly the published figure.'
+      : 'You guessed ' + g + '%. The published figure is 71%. You were ' + Math.abs(diff) + ' points ' + (diff > 0 ? 'high' : 'low') + '.';
+    $('revRec').style.display = 'block';
+    fill('rc1', 78); fill('rc2', 89); fill('rc3', 58);
+  }
+  btnR.addEventListener('click', lockRec);
+
+  // ---------- TAB 4: pipeline pick ----------
+  const WQ = [{
+    q: 'When a Texas district received a federal grant to hire school police, what happened to middle school discipline rates, and what kind of conduct drove the change?',
+    opts: [
+      'Discipline fell, because the officers deterred misbehavior.',
+      'Discipline rose, driven mainly by serious offenses that had previously gone unreported.',
+      'Discipline rose, driven mainly by low-level conduct code violations.'
+    ],
+    a: 2
+  }];
+  const wEl = $('wpick');
+  WQ.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-wq="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="qopts">' + btns + '</div>';
+    wEl.appendChild(d);
+  });
+  let wPicked = null;
+  function pickW(i, j){
+    const btns = wEl.querySelectorAll('[data-wq="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === WQ[i].a) b.classList.add('answer');
+    });
+    wPicked = j;
+    $('revPipe').style.display = 'block';
+  }
+  wEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-wq]');
+    if (b) pickW(Number(b.dataset.wq), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 5: shaming sorter ----------
+  const SH_OPTS = ['Reintegrative', 'Stigmatizing'];
+  const SHAME = [
+    { t: 'A judge tells a young man that what he did was serious and wrong, that the court expects better of him, and orders him to repair the damage and report back in six months.', a: 'Reintegrative',
+      v: 'Reintegrative. The condemnation is unambiguous and so is the assumption that he is coming back as a member in good standing. Braithwaite would say the expectation of return is the operative part.' },
+    { t: 'A sign on the door of a business listing the names and photographs of people caught shoplifting there.', a: 'Stigmatizing',
+      v: 'Stigmatizing. The label is made permanent and public, and no route back is offered. Notice that this is also cheap and satisfying, which is why stigmatizing responses are so common.' },
+    { t: 'A residency restriction preventing someone from living within a set distance of a school, with no end date.', a: 'Stigmatizing',
+      v: 'Stigmatizing, and it is a master status written into geography. The person is defined permanently by one category, and the restriction operates whatever they do afterward, which means nothing they do afterward can change it.' },
+    { t: 'A conference where a young woman hears from the family whose car she damaged, apologizes, and agrees to a repayment plan, after which the matter is closed and not referred to court.', a: 'Reintegrative',
+      v: 'Reintegrative, and it is the textbook case. Full acknowledgment of the harm, direct contact with the people affected, a concrete repair, and then an ending. The last part matters as much as the rest.' },
+    { t: 'A school expels a student for a fight and enters the incident in a record that follows them to any district they transfer to.', a: 'Stigmatizing',
+      v: 'Stigmatizing. This is the pipeline in a sentence. The response removes the student from the institution that was supposed to integrate them and attaches a durable label instead.' },
+    { t: 'A father tells his son he is furious about what he did, that it was beneath him, and that they will be dealing with it together starting tomorrow.', a: 'Reintegrative',
+      v: 'Reintegrative, and note how harsh it is. Braithwaite drew the concept partly from ordinary family discipline, where intense disapproval and unconditional membership routinely coexist. Severity is not the variable.' },
+    { t: 'An employer who conducts a background check on every applicant and declines anyone with a conviction, without asking what it was for or when.', a: 'Stigmatizing',
+      v: 'Stigmatizing, and this is Pager\'s employers. Notice that no individual here is being cruel. A blanket policy applied without malice produces exactly the master status the theory describes, which is why labeling theorists focus on institutions rather than on attitudes.' },
+    { t: 'A community supervision program that requires weekly meetings, connects the person to a job placement service, and ends after a fixed term with the case closed.', a: 'Reintegrative',
+      v: 'Reintegrative. Real obligation, real oversight, real support, and a defined end. The fixed term is doing quiet work here, because a sanction with no endpoint cannot reintegrate anyone by definition.' },
+  ];
+  buildSorter('shame', SHAME, SH_OPTS, (right, total) => {
+    $('shameScore').textContent = right + ' of ' + total;
+    $('shameWrap').style.display = 'block';
+    $('revRJ').style.display = 'block';
+    fill('j1', 88); fill('j2', 74); fill('j3', 32);
+  });
+
+  window.__S = {
+    activate, lockAll, showStage2, lockRec, pickW,
+    setCells: (a,b,c,d) => { $('sWN').value=a; $('sWR').value=b; $('sBN').value=c; $('sBR').value=d;
+      ['sWN','sWR','sBN','sBR'].forEach(id => $(id).dispatchEvent(new Event('input'))); },
+    answerLimit: (i,a) => { const b = document.querySelector('#limits .pick[data-i="'+i+'"][data-a="'+a+'"]'); if (b) b.click(); },
+    answerShame: (i,a) => { const b = document.querySelector('#shame .pick[data-i="'+i+'"][data-a="'+a+'"]'); if (b) b.click(); },
+    state: () => ({ locked, stage2, recLocked, wPicked, guesses })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Told to Win · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Told to Win <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+
+    <div class="card">
+      <p class="lede"><strong>Robert Merton published a nine-page argument in 1938 that still organizes this part of criminology.</strong> American culture, he said, prescribes the same goal to everybody, and American social structure hands out the legitimate means of reaching it very unevenly. That mismatch is the strain, and it does not require anyone to be poorly socialized, badly parented, or short on self-control. It only requires a society that tells everyone to win and then rations who is allowed to. This page treats that as a claim you can check rather than a slogan, because unusually good data exists on exactly the thing Merton was describing.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-dream" type="button">Is the Dream real</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-place" type="button">Where the ladder is</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-adapt" type="button">Five adaptations</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-agnew" type="button">Agnew's strains</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-wild" type="button">Strain you can measure</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-dream">
+      <div class="card">
+        <h2>The promise, and whether it was kept</h2>
+        <p class="lede">The specific promise inside the American Dream is that you will do better than your parents did. That is a testable claim, and Raj Chetty and colleagues tested it by linking tax records to census data and asking, for each birth cohort, what share of children were earning more at age 30 than their parents had earned at the same age.</p>
+        <p class="lede">Start with the generation that came of age after the Second World War.</p>
+
+        <div class="guessbox">
+          <div class="gq">Of children born in 1940, what percentage went on to earn more than their parents?</div>
+          <div class="gr">
+            <input type="range" id="g40" min="0" max="100" step="1" value="50">
+            <div class="gval" id="g40V">50%</div>
+            <button class="gbtn" id="g40Btn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="g40Verdict"></div>
+        </div>
+
+        <div class="veiled" id="rev40">
+          <div class="guessbox" style="margin-top:14px">
+            <div class="gq">Now the cohort born in the 1980s, the one your parents or older siblings belong to. What percentage of them out-earned their parents?</div>
+            <div class="gr">
+              <input type="range" id="g80" min="0" max="100" step="1" value="70">
+              <div class="gval" id="g80V">70%</div>
+              <button class="gbtn" id="g80Btn" type="button">Lock in my guess</button>
+            </div>
+            <div class="verdict" id="g80Verdict"></div>
+          </div>
+        </div>
+
+        <div class="veiled" id="rev80">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Born 1940</div><div class="btrack"><div class="bfill good" id="b40" style="width:0%"></div></div><div class="bval">90%</div></div>
+            <div class="brow"><div class="blabel">Born in the 1980s</div><div class="btrack"><div class="bfill warn" id="b80" style="width:0%"></div></div><div class="bval">50%</div></div>
+          </div>
+          <p class="srcnote">Chetty, R., Grusky, D., Hell, M., Hendren, N., Manduca, R., and Narang, J. (2017). The fading American dream: Trends in absolute income mobility since 1940. Science 356(6336), 398 to 406. Rates are the share of children earning more than their parents at age 30, in inflation-adjusted terms. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Roughly a coin flip.</strong> For the cohort born in 1940, doing better than your parents was close to a guarantee. For children born in the 1980s it became about as likely as not. Notice what this does to Merton's argument. He assumed a culture that promises success to everyone. He did not need to assume that the promise had gotten harder to keep, and it has.</div>
+
+          <h3>Before you conclude the economy just stopped growing</h3>
+          <p class="lede">The obvious explanation is slower growth. The authors tested it directly by running two counterfactuals: give the 1980s cohort the GDP growth rates of the 1940s cohort, or give them the way that growth was <em>distributed</em> in the 1940s. Only one of those fixes it.</p>
+          <div class="bars">
+            <div class="brow"><div class="blabel">Actual, born in the 1980s</div><div class="btrack"><div class="bfill warn" id="c1" style="width:0%"></div></div><div class="bval">50%</div></div>
+            <div class="brow"><div class="blabel">With 1940s GROWTH rates</div><div class="btrack"><div class="bfill" id="c2" style="width:0%"></div></div><div class="bval">62%</div></div>
+            <div class="brow"><div class="blabel">With 1940s DISTRIBUTION of growth</div><div class="btrack"><div class="bfill good" id="c3" style="width:0%"></div></div><div class="bval">80%</div></div>
+            <div class="brow"><div class="blabel">Actual, born 1940</div><div class="btrack"><div class="bfill good" id="c4" style="width:0%"></div></div><div class="bval">90%</div></div>
+          </div>
+          <p class="srcnote">Same source. The authors concluded that returning to the more equal distribution of growth experienced by the 1940 cohort would reverse more than 70 percent of the decline in mobility, while raising growth alone would have modest effects. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>The pie kept growing. The slices changed.</strong> This is as close as social science gets to a direct measurement of Merton's structural claim. The cultural goal did not move. What moved was the distribution of the legitimate means of reaching it, which is precisely the mismatch he named in 1938 and precisely the thing he said would generate pressure toward what he called innovation.</div>
+
+          <p class="note"><strong>One honesty note before you use this in an argument.</strong> Everything on this page is about income mobility, not about crime. Chetty and colleagues were not testing strain theory and did not claim to. What this data establishes is that the PREMISE of Merton's theory describes the United States accurately. Whether the mismatch actually produces crime is a separate question, and it is the question the rest of the chapter is about. Treating a well-measured premise as if it were a demonstrated cause is exactly the mistake this course keeps asking you not to make.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-place">
+      <div class="card">
+        <h2>The ladder is not the same height everywhere</h2>
+        <p class="lede">Merton's claim is about structure, which means it should show up as variation across places rather than as a fact about individuals. So take the sharpest version of the question. If a child grows up in a family in the bottom fifth of the income distribution, what are the odds that child ends up in the top fifth as an adult?</p>
+        <p class="lede">If opportunity were perfectly equal, the answer would be 20 percent everywhere, because a fifth of adults are in the top fifth by definition. Guess the national figure.</p>
+
+        <div class="guessbox">
+          <div class="gq">Nationally, what percentage of children born to bottom-fifth parents reach the top fifth as adults?</div>
+          <div class="gr">
+            <input type="range" id="gMob" min="0" max="30" step="1" value="15">
+            <div class="gval" id="gMobV">15%</div>
+            <button class="gbtn" id="gMobBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gMobVerdict"></div>
+        </div>
+
+        <div class="veiled" id="revMob">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Perfect equality of opportunity</div><div class="btrack"><div class="bfill" id="m0" style="width:0%"></div></div><div class="bval">20%</div></div>
+            <div class="brow"><div class="blabel">United States, national average</div><div class="btrack"><div class="bfill warn" id="m1" style="width:0%"></div></div><div class="bval">7.5%</div></div>
+            <div class="brow"><div class="blabel">San Jose commuting zone</div><div class="btrack"><div class="bfill good" id="m2" style="width:0%"></div></div><div class="bval">12.9%</div></div>
+            <div class="brow"><div class="blabel">Charlotte commuting zone</div><div class="btrack"><div class="bfill warn" id="m3" style="width:0%"></div></div><div class="bval">4.4%</div></div>
+          </div>
+          <p class="srcnote">Chetty, R., Hendren, N., Kline, P., and Saez, E. (2014). Where is the land of opportunity? The geography of intergenerational mobility in the United States. NBER Working Paper 19843. Figures are for children raised in families at the 20th percentile of the national income distribution, measured in adulthood. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>A child in one American metro is roughly three times as likely to make that climb as a child in another.</strong> Same country, same culture, same advertising, same message about what a successful life looks like. Different rungs. If you wanted to draw a picture of what Merton meant by universal goals and rationed means, this is close to it.</div>
+
+          <p class="note"><strong>What the geography does and does not tell you.</strong> These are the odds for children raised in a place, not a property of the place itself, and the causes are genuinely contested. Later work by the same team found that moving younger children to higher-mobility areas improved their adult outcomes, which is evidence that place is doing some causal work rather than simply sorting families. It is still not a finding about crime, and a low-mobility metro is not thereby a high-crime metro. Hold the two separately.</p>
+
+          <div class="teach"><strong>Now do this for somewhere you actually know.</strong> The Opportunity Atlas, linked in that week's module, maps this down to the neighborhood. Look up where you grew up, or where you live now, and see what it says. Your forum post starts there.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-adapt">
+      <div class="card">
+        <h2>Five ways to live with the mismatch</h2>
+        <p class="lede">Merton's most cited contribution is a table. Given a cultural goal and a set of approved means, a person can accept or reject each one, and the combinations produce five ways of adapting. Only one of them is what we usually call conformity, and only one of them is where most property crime lives.</p>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Conformity</div><div class="bd">Accepts the goal, accepts the means. Keep striving the approved way. Most people, most of the time.</div></div>
+          <div class="bond"><div class="bn">Innovation</div><div class="bd">Accepts the goal, rejects the means. Keep the destination, improvise the route. This is the criminological star.</div></div>
+          <div class="bond"><div class="bn">Ritualism</div><div class="bd">Rejects the goal, keeps the means. Stops believing in the climb and follows the procedure anyway.</div></div>
+          <div class="bond"><div class="bn">Retreatism</div><div class="bd">Rejects both. Withdrawal from the whole arrangement.</div></div>
+          <div class="bond"><div class="bn">Rebellion</div><div class="bd">Replaces both. Not opting out, but substituting a different goal and a different set of means.</div></div>
+        </div>
+        <p class="lede" style="margin-top:14px">Eight short cases below. Sort each into an adaptation. Two of them are arguable and the explanations say so.</p>
+        <div id="adapt"></div>
+        <div class="teach" id="adaptWrap" style="display:none"><strong>You got <span id="adaptScore"></span>.</strong> Two things to carry to the exam. First, ritualism and retreatism are deviant in Merton's scheme and mostly not criminal, which is the Chapter 1 distinction between deviance and crime showing up again where it matters. Second, notice that innovation is the only adaptation that keeps the cultural goal fully intact. Merton's innovator is not rejecting American values. He is taking them seriously and finding the door locked, which is a considerably more uncomfortable claim than saying offenders have the wrong values.</div>
+        <p class="srcnote">Merton, R. K. (1938). Social structure and anomie. American Sociological Review 3(5), 672 to 682.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-agnew">
+      <div class="card">
+        <h2>Agnew: strain is bigger than money</h2>
+        <p class="lede">Merton's strain is one specific thing: you want the thing everyone wants and cannot get it legitimately. Robert Agnew argued in 1992 that this is far too narrow, and that strain should cover the whole range of negative relationships people find themselves in. He proposed three types, and the mechanism running through all of them is emotional rather than economic. Strain produces negative emotion, anger above all, and crime is one way of coping with that emotion. Most people cope some other way.</p>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Failing to reach a goal</div><div class="bd">Money, status, respect, autonomy, fairness. Merton's strain is one member of this category rather than the whole story.</div></div>
+          <div class="bond"><div class="bn">Losing something valued</div><div class="bd">A breakup, a death, an eviction, a job, a friendship. Removal of positively valued stimuli.</div></div>
+          <div class="bond"><div class="bn">Being subjected to something bad</div><div class="bd">Abuse, bullying, harassment, discrimination, chronic conflict. Presentation of negative stimuli.</div></div>
+        </div>
+        <p class="lede" style="margin-top:14px">Sort eight situations into the three types. Some genuinely belong to more than one and the explanations say which.</p>
+        <div id="strains"></div>
+
+        <div class="veiled" id="agnewMore">
+          <h3>The critique, and Agnew's answer to it</h3>
+          <p class="lede">Broadening a theory has a cost. If almost any bad experience counts as strain, and most strained people do not offend, then what exactly would refute the theory? That is a real falsifiability problem and Chapter 1 taught you to be suspicious of it.</p>
+          <p class="lede">Agnew answered it directly in 2001 by specifying which strains should matter. He argued that strains lead to crime when they are <strong>seen as unjust</strong>, <strong>high in magnitude</strong>, <strong>associated with low social control</strong>, and when they <strong>create some pressure or incentive to engage in criminal coping</strong>. That is a testable narrowing, and it produced a list. Before you look at it, predict one thing.</p>
+
+          <div id="agnewPick"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-wild">
+      <div class="card">
+        <h2>Two strains with numbers attached</h2>
+        <p class="lede">Strain theory is easy to state and hard to measure, because most strains live inside people's lives rather than in administrative records. Here are two that leave a paper trail.</p>
+
+        <h3>Legal financial obligations</h3>
+        <p class="lede">A criminal case in the United States generates fines, court costs, supervision fees, and surcharges that follow a person for years after the sentence itself is finished. In Agnew's terms this stacks all three strain types at once: it removes resources, it presents a continuing negative condition, and it blocks goals that require a clean record or a driver's license. It is also, unusually, a strain the state creates on purpose.</p>
+        <div class="statrow">
+          <div class="stat warn"><div class="v">$0.41</div><div class="l">spent on in-court and jail costs for every dollar of fees and fines actually collected, in the jurisdictions studied</div></div>
+          <div class="stat"><div class="v">46%</div><div class="l">of fees and fines went unpaid across the three states examined</div></div>
+          <div class="stat"><div class="v">$1.9B</div><div class="l">in uncollected debt accumulated in Florida, New Mexico, and Texas over a seven-year window</div></div>
+        </div>
+        <p class="srcnote">Menendez, M., Eisen, L., Atchison, N., and Crowley, M. (2019). The Steep Costs of Criminal Justice Fees and Fines. Brennan Center for Justice. The report also found that roughly half of families with a convicted member cannot afford to pay the fees and fines imposed. Retrieved August 2026.</p>
+        <div class="teach"><strong>Read those first two numbers together.</strong> A system that spends 41 cents to collect a dollar, and fails to collect nearly half of what it imposes, is not functioning as a revenue system. What it reliably produces instead is durable debt attached to people who already have the least capacity to absorb it. Whatever else that is, it is a machine for manufacturing exactly the conditions general strain theory says lead to crime, which is an awkward thing for a criminal justice system to be doing.</div>
+        <p class="note"><strong>Keep the inference honest.</strong> These figures document the scale and inefficiency of the debt. They do not by themselves show that the debt causes offending. The strain argument is a prediction about what such conditions should produce, and it is a plausible one, but the numbers on this page are about the strain and not about the crime.</p>
+
+        <h3>Discrimination as strain</h3>
+        <p class="lede">Agnew's 2001 specification named experiences with prejudice and discrimination as a strain likely to lead to crime, on the reasoning that it scores high on every one of his four characteristics: it is unjust by definition, often severe, frequently outside the reach of any authority that would intervene, and it generates anger with no legitimate target. That is a prediction, and it has been tested.</p>
+        <div id="disc"></div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum: look up a place you know</h2>
+        <p class="lede">Post your initial response and then reply to two classmates. Length and deadlines are in that week's module in the LMS.</p>
+        <ol class="qs">
+          <li>Open the Opportunity Atlas from that week's module and look up a neighborhood you actually know. Where you grew up, where you live now, or somewhere you have spent real time. Report what it shows without editorializing yet.</li>
+          <li>Explain what you found using ONE strain theory from this chapter. Name the theory, name the mechanism, and say specifically what that theory would predict about crime in that place.</li>
+          <li>Then say what your chosen theory does NOT explain about the place you picked. Every one of these theories has a blind spot and yours will have one here.</li>
+          <li>Finally, one methodological sentence. The Atlas measures adult income for children raised in an area. Say one thing that measure cannot tell you about the people who live there now.</li>
+        </ol>
+        <div class="teach"><strong>Replies:</strong> respond to two classmates who used a different strain theory than you did. Ask what their theory sees in their place that yours would have missed.</div>
+        <p class="note"><strong>A note on choosing a place.</strong> You are not required to write about where you grew up, and you should not feel obliged to share anything about your own circumstances. Any neighborhood you know well enough to describe is fine, including one you only worked in or visited often. The assignment is about applying a theory to a place, not about disclosing anything about yourself.</p>
+        <p class="note"><strong>On step 3.</strong> This is the step that separates a good post from an average one. Merton says little about violence that earns no money. Agnew struggles to say why most strained people never offend. Institutional anomie works at the level of whole societies and gets awkward when applied to one block. Find yours and name it.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+
+  function setupGuess(cfg){
+    const sl = $(cfg.slider), out = $(cfg.val), btn = $(cfg.btn), vd = $(cfg.verdict), rv = $(cfg.reveal);
+    let locked = false;
+    const fmt = v => v + '%';
+    sl.addEventListener('input', () => { out.textContent = fmt(sl.value); });
+    out.textContent = fmt(sl.value);
+    function lock(){
+      if (locked) return;
+      locked = true;
+      const g = Number(sl.value);
+      sl.disabled = true; btn.disabled = true;
+      const diff = Math.round(g - cfg.answer);
+      vd.textContent = Math.abs(diff) < 1
+        ? 'You guessed ' + fmt(g) + '. That is the published figure.'
+        : 'You guessed ' + fmt(g) + '. The published figure is ' + cfg.answerLabel + '. You were about ' + Math.abs(diff) + ' points ' + (diff > 0 ? 'high' : 'low') + '.';
+      rv.style.display = 'block';
+      if (cfg.after) cfg.after();
+    }
+    btn.addEventListener('click', lock);
+    return lock;
+  }
+
+  const lock40 = setupGuess({ slider:'g40', val:'g40V', btn:'g40Btn', verdict:'g40Verdict', reveal:'rev40', answer:90, answerLabel:'about 90 percent' });
+  const lock80 = setupGuess({ slider:'g80', val:'g80V', btn:'g80Btn', verdict:'g80Verdict', reveal:'rev80', answer:50, answerLabel:'about 50 percent',
+    after: () => { fill('b40',90); fill('b80',50); fill('c1',50); fill('c2',62); fill('c3',80); fill('c4',90); } });
+  const lockMob = setupGuess({ slider:'gMob', val:'gMobV', btn:'gMobBtn', verdict:'gMobVerdict', reveal:'revMob', answer:7.5, answerLabel:'7.5 percent',
+    after: () => { fill('m0',67); fill('m1',25); fill('m2',43); fill('m3',15); } });
+
+  // ---------- generic sorter ----------
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+    return { answer, state };
+  }
+
+  // ---------- TAB 3: five adaptations ----------
+  const ADAPT_OPTS = ['Conformity','Innovation','Ritualism','Retreatism','Rebellion'];
+  const ADAPT = [
+    { t: 'A shift supervisor who stopped believing in promotions years ago and now follows every procedure exactly, to the minute, and asks for nothing.', a: 'Ritualism',
+      v: 'Ritualism. The goal has been abandoned and the approved means are followed with something close to devotion. Merton thought this was the most common form of deviance in bureaucracies and it is almost never criminal, which is why it is useful for keeping deviance and crime separate in your head.' },
+    { t: 'A man running a business that reports revenue it does not have, in order to keep the valuation up and take the company public.', a: 'Innovation',
+      v: 'Innovation. He wants exactly what the culture told him to want and has substituted an unapproved means of getting it. Note that he already possessed enormous legitimate means, which is the hardest problem for Merton\'s theory and the reason Chapter 4 keeps coming back.' },
+    { t: 'A first-generation student working two jobs to finish a degree, on the theory that the degree is the route to a better life.', a: 'Conformity',
+      v: 'Conformity. Goal accepted, means accepted, and considerable strain endured in the process. Merton\'s point is not that strained people offend. It is that this adaptation gets harder to sustain as the means get thinner, and most people sustain it anyway.' },
+    { t: 'Someone who has withdrawn from work, school, and family life into sustained drug use, no longer pursuing the goal or the means.', a: 'Retreatism',
+      v: 'Retreatism. Merton described retreatists as in the society but not of it. Note the honest limitation here: describing addiction as a rejection of cultural goals is a 1938 sociological framing and it sits uneasily beside what is now understood about dependence. Use the category for the exam and hold it loosely.' },
+    { t: 'An organizer who argues that the whole idea of ranking people by income is the problem, and works to build cooperatives instead.', a: 'Rebellion',
+      v: 'Rebellion. Both the goal and the means are rejected AND replaced with substitutes. This is the adaptation students most often confuse with retreatism. The test is whether something new is being built. Retreatism withdraws, rebellion substitutes.' },
+    { t: 'A person selling counterfeit designer goods online, who describes the work as a hustle and hopes to reinvest the profits into a legitimate storefront.', a: 'Innovation',
+      v: 'Innovation, and the last clause makes it unmistakable. The goal is entirely conventional, including the aspiration to become legitimate. Only the current means are not. Merton would say the culture supplied the ambition and the structure supplied the workaround.' },
+    { t: 'A student who stopped caring about grades but still attends every class, takes notes, and turns things in on time.', a: 'Ritualism',
+      v: 'Ritualism, though a case can be made for conformity if you think the goal was never really abandoned. The distinguishing question is whether the person is still reaching for the outcome or only performing the routine. Merton cared about the internal orientation, which is exactly what makes this adaptation hard to measure.' },
+    { t: 'A teenager who shoplifts with friends for the excitement of it and throws most of what she takes away.', a: 'Innovation',
+      v: 'This is the one that does not fit, and that is the point of including it. Formally it looks like innovation, but nothing is being acquired toward the cultural goal, so the category does very little work. Non-utilitarian delinquency is Merton\'s clearest failure, and it is exactly the gap Albert Cohen filled in Chapter 9 with status frustration. If you marked it innovation you were following the rules of the table correctly. The table is what is inadequate here.' },
+  ];
+  const adaptSorter = buildSorter('adapt', ADAPT, ADAPT_OPTS, (right, total) => {
+    $('adaptScore').textContent = right + ' of ' + total;
+    $('adaptWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 4: Agnew strain types ----------
+  const STRAIN_OPTS = ['Failing to reach a goal','Losing something valued','Being subjected to something bad'];
+  const STRAINS = [
+    { t: 'Being passed over for a promotion you were told was yours.', a: 'Failing to reach a goal',
+      v: 'Failing to reach a goal, and note the aggravating detail. Agnew argued that strains matter most when they are seen as unjust, and being told it was yours is what converts a disappointment into an injustice.' },
+    { t: 'A parent dies.', a: 'Losing something valued',
+      v: 'Removal of a positively valued stimulus. This is the type Merton\'s theory has no vocabulary for at all, which is a large part of why Agnew argued the original was too narrow.' },
+    { t: 'Being harassed daily by a group at school.', a: 'Being subjected to something bad',
+      v: 'Presentation of negative stimuli. Agnew\'s 2001 specification named peer abuse as one of the strains most likely to lead to crime, precisely because it is unjust, severe, ongoing, and usually outside the reach of anyone who would stop it.' },
+    { t: 'Losing a driver\'s license over unpaid court fees, and with it the ability to get to work.', a: 'Losing something valued',
+      v: 'Losing something valued, and it is worth noticing that it immediately becomes the other two as well. The lost license blocks a goal and the accumulating debt is a continuing negative condition. Real strains rarely stay in one box, which is both the strength and the vulnerability of the theory.' },
+    { t: 'Being stopped and questioned by police in your own neighborhood for the third time this year.', a: 'Being subjected to something bad',
+      v: 'Presentation of negative stimuli. Agnew listed experiences with prejudice and discrimination among the strains most likely to produce crime. Chapter 11 will pick this up again from the other direction, as labeling rather than as strain.' },
+    { t: 'Wanting to be respected by people whose respect you cannot seem to earn.', a: 'Failing to reach a goal',
+      v: 'Failing to reach a goal. Agnew deliberately included non-monetary goals such as respect and autonomy, which is what lets general strain theory reach the expressive violence that Merton could not explain.' },
+    { t: 'A relationship of several years ends without warning.', a: 'Losing something valued',
+      v: 'Losing something valued. Agnew would predict a real risk of criminal coping only if it is also severe, felt as unjust, and hits someone with few legitimate ways of handling it. That conditional is the theory working properly rather than a hedge.' },
+    { t: 'Growing up with a parent whose discipline was harsh and unpredictable.', a: 'Being subjected to something bad',
+      v: 'Presentation of negative stimuli, and this one topped Agnew\'s 2001 list. Erratic and harsh parental discipline, child abuse and neglect, and parental rejection were the strains he identified as most criminogenic. Notice how far that is from Merton, and notice also how close it sits to the parenting mechanism in Chapter 8.' },
+  ];
+  buildSorter('strains', STRAINS, STRAIN_OPTS, () => { $('agnewMore').style.display = 'block'; });
+
+  const AG = [{
+    q: 'Agnew ranked which strains actually produce crime. Where did failure to achieve educational or occupational success land, the classic Mertonian strain?',
+    opts: ['Among the strains most likely to cause crime', 'In the middle of the list', 'Among the strains unrelated or only weakly related to crime'],
+    a: 2,
+    v: '<strong>Among the strains he judged unrelated or only weakly related to crime.</strong> Read that again, because it is remarkable. The strain that Merton built the entire tradition on, and that gave the theory its name, did not survive Agnew\'s own specification. The strains Agnew identified as most criminogenic were parental rejection, erratic and harsh discipline, child abuse and neglect, negative school experiences, inability to achieve selected goals, peer abuse, and experiences with prejudice and discrimination. Almost all of them are interpersonal rather than economic.<br><br>Two lessons. First, this is what a research tradition looks like when it is working: a theory generated better measurement, and the better measurement partly refuted the theory that produced it. Second, be careful how you state strain theory on the exam. The blocked-ladder version is Merton and it is the version the mobility data supports as a description of American structure. The version with the strongest evidence behind it as a cause of crime is Agnew\'s, and it is mostly about how people are treated rather than about what they cannot buy.',
+    src: 'Agnew, R. (2001). Building on the foundation of general strain theory: Specifying the types of strain most likely to lead to crime and delinquency. Journal of Research in Crime and Delinquency 38(4), 319 to 361. Retrieved August 2026.'
+  }];
+  const agEl = $('agnewPick');
+  AG.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-ag="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="qopts">' + btns + '</div><div class="scv" id="agv' + i + '"></div>';
+    agEl.appendChild(d);
+  });
+  let agState = null;
+  function pickAg(i, j){
+    const btns = agEl.querySelectorAll('[data-ag="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === AG[i].a) b.classList.add('answer');
+    });
+    agState = (j === AG[i].a);
+    const box = $('agv' + i);
+    box.innerHTML = '<div class="grade ' + (agState ? 'right' : 'mixed') + '">' + (agState ? 'you had it' : 'not quite') + '</div>' + AG[i].v + '<div class="srcnote">' + AG[i].src + '</div>';
+    box.style.display = 'block';
+  }
+  agEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ag]');
+    if (b) pickAg(Number(b.dataset.ag), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 5: discrimination study ----------
+  const DISC = [{
+    q: 'Simons and colleagues followed 718 African American families over two waves, measuring experiences of racial discrimination and later delinquency. What did they find?',
+    opts: [
+      'No association once family factors were controlled',
+      'An association, with anger and depression carrying most of the effect for boys',
+      'An association driven entirely by neighborhood poverty rather than by discrimination itself'
+    ],
+    a: 1,
+    v: '<strong>An association, running through the emotional pathway general strain theory predicts.</strong> The frequency of exposure to racial discrimination was associated with delinquent behavior, and for boys the link ran through anger, depression, and the belief that aggression serves a purpose in dealing with other people. For girls the emotional pathway also operated, and a small but significant direct effect remained on top of it.<br><br>This is a good example of a theory earning its keep. General strain theory did not merely accommodate the finding afterward. It specified in advance that discrimination should be criminogenic, named the emotion that should carry the effect, and the study found that emotion doing the carrying. Keep the framing precise, though: the mechanism is how people are treated, not anything about the people being treated that way. That is the same discipline Chapter 5 asked for when separating disparity from disproportionality.',
+    src: 'Simons, R. L., Chen, Y.-F., Stewart, E. A., and Brody, G. H. (2003). Incidents of discrimination and risk for delinquency: A longitudinal test of strain theory with an African-American sample. Justice Quarterly 20(4), 827 to 854. Family and Community Health Study, Georgia and Iowa, 867 youth aged 10 to 12 at wave 1 and 718 families with complete data. Retrieved August 2026.'
+  }];
+  const discEl = $('disc');
+  DISC.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-dc="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="qopts">' + btns + '</div><div class="scv" id="dcv' + i + '"></div>';
+    discEl.appendChild(d);
+  });
+  let discState = null;
+  function pickDisc(i, j){
+    const btns = discEl.querySelectorAll('[data-dc="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === DISC[i].a) b.classList.add('answer');
+    });
+    discState = (j === DISC[i].a);
+    const box = $('dcv' + i);
+    box.innerHTML = '<div class="grade ' + (discState ? 'right' : 'mixed') + '">' + (discState ? 'you had it' : 'not quite') + '</div>' + DISC[i].v + '<div class="srcnote">' + DISC[i].src + '</div>';
+    box.style.display = 'block';
+  }
+  discEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-dc]');
+    if (b) pickDisc(Number(b.dataset.dc), Number(b.dataset.j));
+  });
+
+  window.__S = {
+    activate, lock40, lock80, lockMob,
+    answerAdapt: adaptSorter.answer,
+    answerStrain: (i, a) => { const b = document.querySelector('#strains .pick[data-i="' + i + '"][data-a="' + a + '"]'); if (b) b.click(); },
+    pickAg, pickDisc,
+    state: () => ({ agState, discState })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

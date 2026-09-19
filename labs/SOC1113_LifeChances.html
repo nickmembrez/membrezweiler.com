@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-mode="lap">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life Chances</title>
+<style>
+:root{
+  --bg:#f4f4f2; --surface:#fcfcfb; --surface2:#f0efec; --ink:#1a1a19; --ink2:#5d5c58;
+  --line:#dedcd6; --accent:#266cc1; --accent2:#ae4d26; --good:#137a55; --bad:#c94f42;
+  --chip:#e8e6e1; --dim:#c9c7c0;
+}
+[data-theme="dark"]{
+  --bg:#131312; --surface:#1a1a19; --surface2:#232322; --ink:#ececea; --ink2:#a3a29d;
+  --line:#33322f; --accent:#3c8ff3; --accent2:#ef622a; --good:#199e70; --bad:#d4675b;
+  --chip:#2a2a28; --dim:#3d3c39;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+[data-mode="proj"]{font-size:19px}
+body{margin:0;background:var(--bg);color:var(--ink);font:1rem/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+h1{font-size:1.7rem;margin:0}
+.sub{color:var(--ink2);font-size:.9rem}
+.hbtns{display:flex;gap:8px}
+.hbtns button{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.82rem}
+.hbtns button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.big{font-size:1.35rem;font-weight:700;margin:0 0 6px}
+.muted{color:var(--ink2)}
+.small{font-size:.84rem}
+.srcline{color:var(--ink2);font-size:.76rem;margin-top:10px}
+.levers{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 18px;margin:12px 0 4px}
+.lever .lab{font-size:.84rem;color:var(--ink2);margin-bottom:4px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:.84rem;cursor:pointer}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.seg button.na{opacity:.55;border-style:dashed}
+.seg button.na.on{background:var(--surface2);border-color:var(--accent2);color:var(--ink);opacity:.85}
+.bornline{font-size:1.05rem;margin:12px 0 0;padding:10px 14px;background:var(--surface2);border-radius:10px}
+.segbtn{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 14px;font-size:.86rem;cursor:pointer}
+.segbtn:hover{border-color:var(--accent)}
+.heldwrap{border-left:3px solid var(--accent2);padding-left:12px;margin-top:14px}
+.heldwrap .tag{font-size:.76rem;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.dots{display:grid;grid-template-columns:repeat(20,1fr);gap:4px;margin:14px 0 6px}
+.dots i{aspect-ratio:1;border-radius:50%;display:block;transition:background .4s}
+.dotleg{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--ink2);margin-bottom:4px}
+.dotleg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+.tiles{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0 0}
+.tile{flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.tile .val{font-size:1.7rem;font-weight:800;line-height:1.2}
+.tile .val small{font-size:.95rem;font-weight:600;color:var(--ink2)}
+.tile .cap{font-size:.78rem;color:var(--ink2);margin-top:2px}
+.sect{font-size:.8rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.07em;margin:0 0 4px}
+/* vertical bars */
+.vbars{display:flex;align-items:flex-end;gap:10px;height:160px;margin:14px 0 4px}
+.vb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.vb .v{font-size:.84rem;font-weight:700;margin-bottom:3px}
+.vb i{display:block;width:100%;max-width:74px;background:var(--accent);border-radius:5px 5px 0 0;min-height:3px;transition:height .35s}
+.vbx{display:flex;gap:10px;font-size:.78rem;color:var(--ink2)}
+.vbx span{flex:1;text-align:center}
+/* horizontal bars */
+.hb{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:.86rem}
+.hb .l{width:170px;color:var(--ink)}
+.hb .t{flex:1;height:14px;background:var(--chip);border-radius:5px;overflow:hidden}
+.hb .t i{display:block;height:100%;border-radius:0 5px 5px 0;background:var(--accent);transition:width .35s}
+.hb .n{width:76px;font-weight:700;text-align:right;white-space:nowrap}
+.hb.dimmed .t i{background:var(--dim)}
+.hb.dimmed .l,.hb.dimmed .n{color:var(--ink2);font-weight:500}
+.hb.hot .l,.hb.hot .n{font-weight:750}
+/* paired bars */
+.pair{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:.86rem}
+.pair .l{width:150px}
+.pair .duo{flex:1;display:flex;flex-direction:column;gap:2px}
+.pair .t{height:11px;background:var(--chip);border-radius:5px;overflow:hidden}
+.pair .t i{display:block;height:100%;border-radius:0 5px 5px 0}
+.pair .n{width:110px;text-align:right;font-size:.8rem;white-space:nowrap}
+.legendrow{display:flex;gap:16px;font-size:.82rem;color:var(--ink2);margin:8px 0 2px;flex-wrap:wrap}
+.legendrow i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.factbox{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:12px 0;font-size:.92rem}
+.factbox b{font-size:1.05rem}
+.gradwrap{margin:12px 0 2px}
+.gradwrap svg{width:100%;height:auto;display:block}
+.qs li{margin-bottom:10px}
+footer{margin-top:24px;color:var(--ink2);font-size:.76rem;line-height:1.7}
+footer a{color:var(--accent)}
+.hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+@media (max-width:640px){ .levers{grid-template-columns:1fr} .hb .l{width:120px} }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="wrap" role="main">
+<header role="presentation">
+  <div>
+    <h1>Life Chances</h1>
+  </div>
+  <div class="hbtns">
+    <button id="modeBtn">Projector</button>
+    <button id="themeBtn">Dark</button>
+  </div>
+</header>
+
+<div class="card">
+  <p class="small muted" style="margin:0">Max Weber argued that class is really a bundle of life chances: the odds a person carries into the world before making a single choice. Set the circumstances of a birth below. Every chart on this page answers for that child, using published data on millions of real Americans. The first three levers nobody chooses. The fourth one is the kind sociologists call achieved, and the second section shows how much the first lever shapes it.</p>
+  <div class="levers">
+    <div class="lever"><div class="lab">Parents’ income</div><div class="seg" data-k="q">
+      <button data-v="1">Bottom fifth</button><button data-v="2">Second</button><button data-v="3">Middle</button><button data-v="4">Fourth</button><button data-v="5">Top fifth</button></div></div>
+    <div class="lever"><div class="lab">Race and ethnicity</div><div class="seg" data-k="race">
+      <button data-v="white">White</button><button data-v="black">Black</button><button data-v="hisp">Hispanic</button><button data-v="asian">Asian</button><button data-v="aian">American Indian</button></div></div>
+    <div class="lever"><div class="lab">Gender</div><div class="seg" data-k="sex">
+      <button data-v="w">A girl</button><button data-v="m">A boy</button></div></div>
+    <div class="lever" style="grid-column:1/-1"><div class="lab">Education they end up with</div><div class="seg" data-k="edu">
+      <button data-v="none">No diploma</button><button data-v="hs">High school</button><button data-v="some">Some college</button><button data-v="assoc">Associate</button><button data-v="ba">Bachelor’s</button><button data-v="adv">Advanced degree</button></div></div>
+  </div>
+  <div class="bornline" id="bornline"></div>
+  <div class="tiles" id="headline"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+    <button class="segbtn" id="holdBtn">Hold this child for comparison</button>
+    <button class="segbtn" id="clearBtn" style="display:none">Clear the held child</button>
+  </div>
+  <div id="heldBox"></div>
+</div>
+
+<div class="card">
+  <div class="sect">Income mobility</div>
+  <div class="big">Where this child is likely to land</div>
+  <p class="small muted" id="mobCap"></p>
+  <div class="vbars" id="mobBars"></div>
+  <div class="vbx"><span>Bottom fifth</span><span>Second</span><span>Middle</span><span>Fourth</span><span>Top fifth</span></div>
+  <div id="mobDots"></div>
+  <div id="raceFact"></div>
+  <hr class="hr">
+  <p class="small" style="margin:0 0 2px"><b>Where the average child of each group lands</b> <span class="muted">(mean income percentile reached in adulthood)</span></p>
+  <div id="rankBars"></div>
+  <p class="small muted" id="genderNote"></p>
+  <div class="srcline">Source: Chetty, Hendren, Kline, and Saez 2014 (transition matrix, tax records of 40 million families). Chetty, Hendren, Jones, and Porter 2020 (race, 20 million children). Race data cover Black, White, Hispanic, Asian, and American Indian children. Asian children in these data show higher upward mobility than all other groups.</div>
+</div>
+
+<div class="card">
+  <div class="sect">School and what it pays</div>
+  <div class="big">The education ladder</div>
+  <p class="small muted">College attendance climbs almost in a straight line with parents’ income: from about 26 percent of children at the very bottom to about 94 percent at the very top. The marker shows this child’s starting point.</p>
+  <div class="gradwrap" id="gradChart"></div>
+  <div class="factbox">Children of the top 1 percent are <b>77 times</b> more likely to attend an Ivy-plus college than children from the bottom fifth.</div>
+  <p class="small" style="margin:14px 0 2px"><b>What finishing each level pays</b> <span class="muted">(median weekly earnings, US workers 25 and over, 2024)</span></p>
+  <div id="eduBars"></div>
+  <div class="srcline">Sources: Chetty et al. 2014 (attendance gradient), Chetty, Friedman, Saez, Turner, and Yagan, Mobility Report Cards (Ivy-plus), US Bureau of Labor Statistics, Education Pays 2024.</div>
+</div>
+
+<div class="card">
+  <div class="sect">Health and years of life</div>
+  <div class="big">How long this child can expect to live</div>
+  <div class="tiles" id="lifeTiles"></div>
+  <p class="small" style="margin:14px 0 2px"><b>Pick an intersection to see</b> <span class="muted">(the grayed ones explain themselves)</span></p>
+  <div class="seg" id="interPick" style="margin:6px 0 10px"></div>
+  <div id="interChart"></div>
+  <p class="small muted" id="lifeNote">Between 2001 and 2014, the richest 5 percent of Americans gained about 3 years of life expectancy. The poorest 5 percent gained roughly none.</p>
+  <div class="srcline">Sources: CDC/NCHS, United States Life Tables 2023. Chetty et al., JAMA 2016 and its public data tables at healthinequality.org (income and life expectancy, 1.4 billion tax records). IHME, Lancet Public Health 2024 (education gap).</div>
+</div>
+
+<div class="card">
+  <div class="sect">Prison and wealth</div>
+  <div class="big">The sharpest edges</div>
+  <p class="small" style="margin:0 0 2px"><b>Percent of men incarcerated on a single day</b> <span class="muted">(April 1, 2010, ages 27 to 32, by parents’ income)</span></p>
+  <div id="prisonNote"></div>
+  <div id="prisonBars"></div>
+  <p class="small" style="margin:16px 0 2px"><b>What the typical family owns</b> <span class="muted">(median family wealth, 2022)</span></p>
+  <div id="wealthBars"></div>
+  <p class="small muted">The typical white family holds about 6 times the wealth of the typical Black family and about 5 times the wealth of the typical Hispanic family. American Indian families are grouped into an "other" category in this survey, with a median near $63,000.</p>
+  <div class="srcline">Sources: Chetty, Hendren, Jones, and Porter 2020 (incarceration). Federal Reserve, Survey of Consumer Finances 2022 (wealth).</div>
+</div>
+
+<div class="card">
+  <div class="big">Talk about it</div>
+  <ul class="qs">
+    <li>Weber said a person’s class position is really a set of life chances. After using this page, how would you explain that phrase to a friend in one sentence?</li>
+    <li>Move one lever at a time. Which single circumstance of birth moved the charts the most? Is that the one you expected?</li>
+    <li>Why do the children of the rich stay rich? Name the actual machinery: what exactly gets handed down, and at what ages does the handing down happen?</li>
+    <li>Why would money buy years of life? List every pathway you can think of that runs from a paycheck to a body.</li>
+    <li>Why does more schooling pay more? Is it what people learn, what the diploma signals, who they meet, or something else?</li>
+    <li>The black-white income gap in these data is driven almost entirely by men’s outcomes, not women’s. Why would a gap show up so much more strongly for men?</li>
+    <li>Incomes and wealth tell different stories. The typical white family earns maybe twice what the typical Black family earns, but holds six times the wealth. Why is the wealth gap so much wider? What history is stored in a number like that?</li>
+    <li>Who benefits from these patterns staying as they are? What would changing them cost, and who would pay that cost?</li>
+    <li>Everything on this page is a chance, not a fate. What do numbers like these say about any one person’s life? What do they fail to say?</li>
+  </ul>
+</div>
+
+<footer role="presentation" id="sources">
+Built for SOC 1113. Every number on this page is a published estimate for millions of real Americans. Nothing here is simulated.<br>
+Sources: Chetty, Hendren, Kline, Saez, <i>Where Is the Land of Opportunity?</i> QJE 2014. Chetty, Hendren, Jones, Porter, <i>Race and Economic Opportunity in the United States</i>, QJE 2020. Chetty et al., <i>The Association Between Income and Life Expectancy in the United States</i>, JAMA 2016. CDC/NCHS United States Life Tables 2023 and Mortality in the United States 2023. Federal Reserve, Survey of Consumer Finances 2022. US Bureau of Labor Statistics, Education Pays 2024. Chetty, Friedman, Saez, Turner, Yagan, <i>Mobility Report Cards</i>, QJE 2020.
+</footer>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const P = { q: 1, race: 'white', sex: 'w', edu: 'hs', lastDim: 'inc' };
+window.__P = P;
+let HELD = null;
+
+/* ---------- verified data ---------- */
+// Chetty et al. 2014, Table II. Rows: parent quintile 1-5. Cols: child quintile 1-5. Percent.
+const MATRIX = [
+  [33.7, 28.0, 18.4, 12.3,  7.5],
+  [24.2, 24.2, 21.7, 17.6, 12.3],
+  [17.8, 19.8, 22.1, 22.0, 18.3],
+  [13.4, 16.0, 20.9, 24.4, 25.4],
+  [10.9, 11.9, 17.0, 23.6, 36.5]
+];
+const QWORD = ['bottom fifth','second fifth','middle fifth','fourth fifth','top fifth'];
+// Chetty, Hendren, Jones, Porter 2020
+const RACE = {
+  white:{ name:'white',            rank:55.7, b2t:10.6, stayTop:41.1, fallTop:null,  prisonB1:6.4,  prisonT1:0.2 },
+  black:{ name:'Black',            rank:34.8, b2t:2.5,  stayTop:18.0, fallTop:16.7,  prisonB1:21.0, prisonT1:2.2 },
+  hisp: { name:'Hispanic',         rank:45.7 },
+  asian:{ name:'Asian',            rank:null },
+  aian: { name:'American Indian',  rank:36.7 }
+};
+// CDC/NCHS United States Life Tables 2023, life expectancy at birth
+const LIFE = {
+  white:{ w:80.9, m:76.0 }, black:{ w:77.6, m:70.3 }, hisp:{ w:84.0, m:78.5 },
+  asian:{ w:87.1, m:83.2 }, aian:{ w:73.5, m:66.7 }
+};
+const LIFE_ORDER = ['asian','hisp','white','black','aian'];
+// Chetty et al. JAMA 2016, expected age at death for 40 year olds
+const JAMA = { m:{lo:72.7, hi:87.3, gap:14.6}, w:{lo:78.8, hi:88.9, gap:10.1} };
+// Federal Reserve SCF 2022, median family wealth, thousands of 2022 dollars
+const WEALTH = [ ['asian','Asian',536.0], ['white','White',285.0], ['hisp','Hispanic',61.6], ['black','Black',44.9] ];
+// BLS Education Pays 2024: [key, label, median weekly earnings $, unemployment %]
+const EDU = [
+  ['adv','Professional degree', 2363, 1.3], ['adv','Doctoral degree', 2278, 1.2], ['adv','Master’s degree', 1840, 2.2],
+  ['ba','Bachelor’s degree', 1543, 2.5], ['assoc','Associate degree', 1099, 2.8], ['some','Some college, no degree', 1020, 3.8],
+  ['hs','High school diploma', 930, 4.2], ['none','Less than high school', 738, 6.2]
+];
+// JAMA 2016: pooled expected age at death at 40 by income quarter
+const QUARTER = { lo: 79.4, hi: 86.4 };
+// Chetty et al 2016 online data table 1 (healthinequality.org): race-adjusted expected age at death
+// at 40 by own income percentile. Values at the midpoint percentile of each fifth (10/30/50/70/90).
+const LE_INC = { m:[76.4, 79.2, 81.7, 83.4, 85.4], w:[81.8, 83.8, 85.0, 86.1, 87.5] };
+// College attendance gradient, Chetty 2014 Figure IV: ~26% at p1 to ~94% at p99, slope 0.675
+const ATT = p => 26 + 0.675 * p;
+const QMID = [10, 30, 50, 70, 90];
+
+/* ---------- render ---------- */
+const fmtPct = v => (v % 1 ? v.toFixed(1) : v) + '%';
+
+function bornSentence(){
+  const child = P.sex==='w' ? 'A girl' : 'A boy';
+  const raceW = { white:'white', black:'Black', hisp:'Hispanic', asian:'Asian', aian:'American Indian' }[P.race];
+  const eduW = { none:'leaves school without a diploma', hs:'finishes high school', some:'gets some college but no degree',
+    assoc:'earns an associate degree', ba:'earns a bachelor’s degree', adv:'earns an advanced degree' }[P.edu];
+  return `${child}, born to ${raceW} parents whose income is in the <b>${QWORD[P.q-1]}</b> of American families. ${P.sex==='w'?'She':'He'} goes on to ${eduW}.`;
+}
+function buildTiles(){
+  const row = MATRIX[P.q-1];
+  const life = LIFE[P.race][P.sex];
+  const wl = WEALTH.find(w=>w[0]===P.race);
+  const eduRow = EDU.filter(e=>e[0]===P.edu);
+  const pay = eduRow.length>1 ? `$${eduRow[2][2].toLocaleString()}+` : `$${eduRow[0][2].toLocaleString()}`;
+  const unemp = eduRow[eduRow.length-1][3];
+  const tiles = [];
+  tiles.push(`<div class="tile"><div class="val">${fmtPct(row[4])}</div><div class="cap">chance of reaching the top fifth as an adult (all races, this income group)</div></div>`);
+  tiles.push(`<div class="tile"><div class="val">${fmtPct(row[0])}</div><div class="cap">chance of ending in the bottom fifth (all races, this income group)</div></div>`);
+  tiles.push(P.lastDim==='race'
+    ? `<div class="tile"><div class="val">${LIFE[P.race][P.sex].toFixed(1)} <small>years</small></div><div class="cap">life expectancy at birth for ${P.race==='aian'?'American Indian':RACE[P.race].name} ${P.sex==='w'?'women':'men'} (by race and gender, US 2023)</div></div>`
+    : `<div class="tile"><div class="val">${LE_INC[P.sex][P.q-1].toFixed(1)} <small>years</small></div><div class="cap">expected age at death for a 40 year old ${P.sex==='w'?'woman':'man'} whose adult income sits in the ${QWORD[P.q-1]} (by income and gender)</div></div>`);
+  tiles.push(wl
+    ? `<div class="tile"><div class="val">$${wl[2]>=100?Math.round(wl[2]):wl[2]}k</div><div class="cap">median wealth of ${wl[1]} families, 2022</div></div>`
+    : `<div class="tile"><div class="val">~$63k</div><div class="cap">median wealth, "other" families in the Fed survey, 2022</div></div>`);
+  tiles.push(`<div class="tile"><div class="val">${pay}<small>/wk</small></div><div class="cap">median pay at this education level, 2024 (unemployment ${unemp} percent)</div></div>`);
+  return tiles.join('');
+}
+function headline(){
+  $('#headline').innerHTML = buildTiles();
+}
+function renderHeld(){
+  if (!HELD){ $('#heldBox').innerHTML=''; $('#clearBtn').style.display='none'; return; }
+  $('#clearBtn').style.display='';
+  $('#heldBox').innerHTML = `<div class="heldwrap"><span class="tag">Held for comparison</span>
+    <div class="bornline" style="margin-top:6px">${HELD.born}</div>
+    <div class="tiles">${HELD.tiles}</div></div>`;
+}
+function mobility(){
+  const row = MATRIX[P.q-1];
+  $('#mobCap').textContent = `Out of every 100 American children born to parents in the ${QWORD[P.q-1]}, here is where they ended up as adults. All races together, from federal tax records.`;
+  $('#mobBars').innerHTML = row.map((v,i)=>`
+    <div class="vb"><span class="v">${fmtPct(v)}</span><i style="height:${v/40*100}%"></i></div>`).join('');
+  // 100 children as dots, largest-remainder rounding to sum 100
+  const floors = row.map(v=>Math.floor(v));
+  let rem = 100 - floors.reduce((a,b)=>a+b,0);
+  const byFrac = row.map((v,i)=>({i, f: v-Math.floor(v)})).sort((a,b)=>b.f-a.f);
+  for (let k=0;k<rem;k++) floors[byFrac[k].i]++;
+  const shade = i => `color-mix(in srgb, var(--accent) ${[22,42,62,82,100][i]}%, var(--surface2))`;
+  let dots = '';
+  const labels = ['ends in the bottom fifth','ends in the second fifth','ends in the middle fifth','ends in the fourth fifth','ends in the top fifth'];
+  floors.forEach((n,i)=>{ for(let k=0;k<n;k++) dots += `<i style="background:${shade(i)}" title="1 of ${n} children who ${labels[i]}"></i>`; });
+  $('#mobDots').innerHTML = `
+    <div class="dotleg">${['Bottom','Second','Middle','Fourth','Top'].map((l,i)=>`<span><i style="background:${shade(i)}"></i>${l} fifth</span>`).join('')}</div>
+    <div class="dots">${dots}</div>
+    <p class="small muted" style="margin:2px 0 0">The same 100 children as dots, darkest for the ones who reach the top. Move the income lever and watch the shade of the room change.</p>`;
+  // race fact
+  const r = RACE[P.race];
+  let fact = '';
+  if (P.q===1 && (P.race==='white'||P.race==='black')){
+    fact = P.race==='black'
+      ? `For <b>Black children</b> starting here, the chance of reaching the top fifth is not 7.5 percent. It is <b>2.5 percent</b>. For white children it is <b>10.6 percent</b>.`
+      : `For <b>white children</b> starting here, the chance of reaching the top fifth is <b>10.6 percent</b>. For Black children it is <b>2.5 percent</b>.`;
+  } else if (P.q===5 && (P.race==='white'||P.race==='black')){
+    fact = P.race==='black'
+      ? `<b>Black children</b> born at the top do not stay there the way white children do. <b>18 percent</b> remain in the top fifth, and <b>16.7 percent</b> fall all the way to the bottom. Rich Black children are almost as likely to become poor as to stay rich.`
+      : `<b>White children</b> born at the top mostly stay near it: <b>41.1 percent</b> remain in the top fifth, and they are nearly five times as likely to stay at the top as to fall to the bottom.`;
+  } else if (P.race==='hisp'){
+    fact = `<b>Hispanic children</b> in these data have upward mobility close to that of white children, and their incomes are converging toward white incomes across generations.`;
+  } else if (P.race==='asian'){
+    fact = `<b>Asian children</b> in these data have higher rates of upward mobility than every other group.`;
+  } else if (P.race==='aian'){
+    fact = `<b>American Indian children</b> in these data have upward mobility comparable to Black children, among the lowest of any group.`;
+  } else {
+    fact = `The bars above pool all races. The race gaps documented in these data are largest at the bottom and the top of the income scale. Set the income lever to the bottom fifth or the top fifth to see them.`;
+  }
+  $('#raceFact').innerHTML = `<div class="factbox">${fact}</div>`;
+  // mean rank bars
+  const order = ['white','hisp','aian','black'];
+  $('#rankBars').innerHTML = order.map(k=>{
+    const g = RACE[k];
+    const hot = k===P.race;
+    return `<div class="hb ${hot?'hot':'dimmed'}"><span class="l">${g.name[0].toUpperCase()+g.name.slice(1)} children</span><span class="t"><i style="width:${g.rank/60*100}%"></i></span><span class="n">${g.rank}</span></div>`;
+  }).join('') + (P.race==='asian' ? `<p class="small muted" style="margin-top:6px">Asian children are not shown as a bar here, but reach higher average ranks than all groups above.</p>` : '');
+  $('#genderNote').innerHTML = P.sex==='w'
+    ? `For <b>girls</b>: conditional on parents’ income, Black women grow up to earn about the same individual income as white women (about 1 percentile higher). The racial gaps on this page are driven almost entirely by men’s outcomes.`
+    : `For <b>boys</b>: the black-white income gap is driven almost entirely by men. Black and white women with parents at the same income level earn almost the same as each other. Black and white men do not.`;
+}
+function gradChart(){
+  const W=640, H=210, padL=44, padB=30, padT=12, padR=14;
+  const x = p => padL + p/100*(W-padL-padR);
+  const y = v => padT + (1 - v/100) * (H-padT-padB);
+  const px = QMID[P.q-1], py = ATT(px);
+  let grid = '';
+  [0,25,50,75,100].forEach(v=>{ grid += `<line x1="${padL}" y1="${y(v)}" x2="${W-padR}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>
+    <text x="${padL-8}" y="${y(v)+4}" text-anchor="end" font-size="11" fill="var(--ink2)">${v}%</text>`; });
+  $('#gradChart').innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="College attendance by parent income percentile">
+    ${grid}
+    <line x1="${x(1)}" y1="${y(ATT(1))}" x2="${x(99)}" y2="${y(ATT(99))}" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${x(px)}" cy="${y(py)}" r="7" fill="var(--accent2)" stroke="var(--surface)" stroke-width="2"/>
+    <text x="${x(px)}" y="${y(py)-14}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">${Math.round(py)}% attend college</text>
+    <text x="${x(10)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink2)">poorest parents</text>
+    <text x="${x(90)}" y="${H-8}" text-anchor="middle" font-size="11" fill="var(--ink2)">richest parents</text>
+  </svg>`;
+}
+function eduBars(){
+  $('#eduBars').innerHTML = EDU.map(([k,l,d,u])=>{
+    const hot = k===P.edu;
+    return `<div class="hb ${hot?'hot':'dimmed'}"><span class="l">${l}</span><span class="t"><i style="width:${d/2400*100}%"></i></span><span class="n">$${d.toLocaleString()}/wk</span></div>`;
+  }).join('')
+    + `<p class="small muted" style="margin-top:6px">Unemployment runs the same ladder in reverse: 6.2 percent for those without a high school diploma, 2.5 percent with a bachelor’s degree, about 1 percent at the top credentials. The highlighted rungs follow the education lever above.</p>`;
+}
+const INTERS = [
+  { id:'incsex', t:'Income and gender', ok:true },
+  { id:'racesex', t:'Race and gender', ok:true },
+  { id:'raceinc', t:'Race and income', ok:false,
+    reason:'This chart cannot be built. The income numbers come from 1.4 billion tax records, and tax returns do not record race. The researchers adjust race out of their estimates rather than reporting it, so no official table shows life expectancy by race and income together.' },
+  { id:'eduinter', t:'Education', ok:false,
+    reason:'College graduates live about 11 years longer on average than people who never finished high school (IHME, 2024). But no public national table splits those years cleanly by gender or race, so this page does not chart them.' },
+  { id:'allinter', t:'Race, income, and gender at once', ok:false,
+    reason:'No published table crosses all three. From official data you cannot look up, for example, how long a poor Black woman can expect to live compared with a poor white woman. That silence in the data is itself worth talking about.' }
+];
+let IPICK = 'incsex';
+function incLadderHTML(){
+  return `<p class="small" style="margin:0 0 2px"><b>Expected age at death at 40, by own income fifth</b> <span class="muted">(midpoint of each fifth, US tax records 2001 to 2014, ${P.sex==='w'?'women':'men'})</span></p>`
+  + LE_INC[P.sex].map((v,i)=>{
+    const hot = i===P.q-1;
+    return `<div class="hb ${hot?'hot':'dimmed'}"><span class="l">${QWORD[i][0].toUpperCase()+QWORD[i].slice(1)}</span><span class="t"><i style="width:${(v-70)/20*100}%"></i></span><span class="n">${v.toFixed(1)}</span></div>`;
+  }).join('')
+  + `<p class="small muted" style="margin-top:6px">Bars start at age 70. At the very extremes the spread is wider still: the poorest 1 percent of ${P.sex==='w'?'women reach 78.8 and the richest 1 percent reach 88.9':'men reach 72.7 and the richest 1 percent reach 87.3'}.</p>`;
+}
+function raceSexHTML(){
+  return `<p class="small" style="margin:0 0 2px"><b>Life expectancy at birth by race and gender</b> <span class="muted">(United States, 2023)</span></p>
+  <div class="legendrow"><span><i style="background:var(--accent)"></i>Women</span><span><i style="background:var(--accent2)"></i>Men</span></div>`
+  + LIFE_ORDER.map(k=>{
+    const g = LIFE[k], hot = k===P.race;
+    const nm = { asian:'Asian', hisp:'Hispanic', white:'White', black:'Black', aian:'American Indian' }[k];
+    return `<div class="pair ${hot?'hot':''}">
+      <span class="l" style="${hot?'font-weight:750':'color:var(--ink2)'}">${nm}</span>
+      <span class="duo">
+        <span class="t"><i style="width:${(g.w-60)/30*100}%;background:var(--accent);${hot?'':'opacity:.45'}"></i></span>
+        <span class="t"><i style="width:${(g.m-60)/30*100}%;background:var(--accent2);${hot?'':'opacity:.45'}"></i></span>
+      </span>
+      <span class="n" style="${hot?'font-weight:750':'color:var(--ink2)'}">${g.w} / ${g.m}</span>
+    </div>`;
+  }).join('') + `<p class="small muted" style="margin-top:4px">Bars start at age 60 to make the differences visible. Numbers are women / men.</p>`;
+}
+function lifeSection(){
+  const mine = LIFE[P.race][P.sex];
+  $('#lifeTiles').innerHTML = `
+    <div class="tile"><div class="val">${mine.toFixed(1)} <small>years</small></div><div class="cap">at birth: ${RACE[P.race].name[0].toUpperCase()+RACE[P.race].name.slice(1)} ${P.sex==='w'?'women':'men'}, US 2023. This table splits by race and sex, not income.</div></div>
+    <div class="tile"><div class="val">${LE_INC[P.sex][P.q-1].toFixed(1)} <small>years</small></div><div class="cap">expected age at death for a 40 year old ${P.sex==='w'?'woman':'man'} with adult income in the ${QWORD[P.q-1]}. This table splits by income and sex, not race.</div></div>`;
+  $('#interPick').innerHTML = INTERS.map(x =>
+    `<button data-ix="${x.id}" class="${x.ok?'':'na'} ${IPICK===x.id?'on':''}">${x.t}</button>`).join('');
+  document.querySelectorAll('#interPick button').forEach(b => b.addEventListener('click', () => { IPICK = b.dataset.ix; lifeSection(); }));
+  const cur = INTERS.find(x=>x.id===IPICK);
+  $('#interChart').innerHTML = cur.ok
+    ? (cur.id==='incsex' ? incLadderHTML() : raceSexHTML())
+    : `<div class="factbox">${cur.reason}</div>`;
+}
+function prisonSection(){
+  const isW = P.sex==='w';
+  $('#prisonNote').innerHTML = isW
+    ? `<div class="factbox">For <b>women</b>, incarceration rates are very low in every racial group at every parent income level. The bars below are what the same day looked like for men.</div>`
+    : '';
+  const rows = [
+    ['black','Black men, poorest parents', 21.0],
+    ['white','White men, poorest parents', 6.4],
+    ['black','Black men, richest parents', 2.2],
+    ['white','White men, richest parents', 0.2]
+  ];
+  $('#prisonBars').innerHTML = rows.map(([k,l,v])=>{
+    const hot = !isW && k===P.race;
+    return `<div class="hb ${hot?'hot':(isW||P.race===k?'':'dimmed')}"><span class="l">${l}</span><span class="t"><i style="width:${v/22*100}%;${hot?'':'opacity:.75'}"></i></span><span class="n">${fmtPct(v)}</span></div>`;
+  }).join('')
+  + `<p class="small muted" style="margin-top:6px">Poorest parents means the bottom 1 percent of parent income, richest means the top 1 percent. One in five Black men born to the poorest families was in prison or jail on the single day this snapshot was taken.</p>`;
+}
+function wealthSection(){
+  $('#wealthBars').innerHTML = WEALTH.map(([k,l,v])=>{
+    const hot = k===P.race;
+    return `<div class="hb ${hot?'hot':'dimmed'}"><span class="l">${l} families</span><span class="t"><i style="width:${v/560*100}%"></i></span><span class="n">$${v>=100?Math.round(v):v}k</span></div>`;
+  }).join('');
+}
+function renderAll(){
+  $('#bornline').innerHTML = bornSentence();
+  headline(); mobility(); gradChart(); eduBars(); lifeSection(); prisonSection(); wealthSection(); renderHeld();
+  document.querySelectorAll('.seg').forEach(seg=>{
+    const k = seg.dataset.k;
+    seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on', String(P[k])===b.dataset.v));
+  });
+}
+$('#holdBtn').addEventListener('click', () => {
+  HELD = { born: bornSentence(), tiles: buildTiles() };
+  renderHeld();
+});
+$('#clearBtn').addEventListener('click', () => { HELD = null; renderHeld(); });
+document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const k = seg.dataset.k;
+  if (!k) return;
+  P[k] = k==='q' ? +b.dataset.v : b.dataset.v;
+  if (k==='q'){ P.lastDim = 'inc'; IPICK = 'incsex'; }
+  else if (k==='race'){ P.lastDim = 'race'; IPICK = 'racesex'; }
+  renderAll();
+}));
+$('#themeBtn').addEventListener('click', () => {
+  const el = document.documentElement;
+  const dark = el.getAttribute('data-theme') === 'dark';
+  el.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('#themeBtn').textContent = dark ? 'Dark' : 'Light';
+});
+$('#modeBtn').addEventListener('click', () => {
+  const el = document.documentElement;
+  const proj = el.getAttribute('data-mode') === 'proj';
+  el.setAttribute('data-mode', proj ? 'lap' : 'proj');
+  $('#modeBtn').classList.toggle('on', !proj);
+});
+eduBars();
+renderAll();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<style>:root:not([data-theme="dark"]) .seg button.na { opacity: 1 !important; color: #6e6c67 !important; } :root[data-theme="dark"] .seg button.na { opacity: 1 !important; color: #9b9a94 !important; }</style><script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

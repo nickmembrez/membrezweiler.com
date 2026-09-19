@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apply the Theory · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h3 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+  .checklist { margin: 14px 0 4px; }
+  .cki { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cki:last-child { border-bottom: 0; }
+  .ckbox { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--surface-1); font-weight: 700; }
+  .cki.on .ckbox { background: var(--good); border-color: var(--good); color: #fff; }
+  .cki.on .ckt { color: var(--text-muted); }
+  .ckt { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
+  .ckt strong { color: var(--text-primary); }
+  .ckcount { font-size: 13px; font-weight: 700; color: var(--accent); margin-top: 10px; }
+  .ref { font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.7; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  #apa .sclaim { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 14px; line-height: 1.7; }
+  .ref em { font-style: italic; }
+  .ref .lbl { display: block; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .refbad { border-color: var(--warn); }
+  .refgood { border-color: var(--good); }
+  .steps { counter-reset: st; margin: 12px 0; }
+  .step { border-left: 3px solid var(--grid); padding: 2px 0 12px 16px; margin-left: 6px; }
+  .step:last-child { padding-bottom: 0; }
+  .step h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--accent); }
+  .step .qv { font-family: Georgia, "Times New Roman", serif; font-size: 15px; color: var(--text-primary); margin: 4px 0 6px; }
+  .step .why { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .step.on { border-left-color: var(--good); }
+  .src { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 12px 0; background: var(--surface-1); }
+  .src h3 { margin: 0 0 2px; font-size: 15px; color: var(--text-primary); }
+  .src .where { font-size: 12px; color: var(--accent); word-break: break-all; margin: 0 0 8px; }
+  .src p { margin: 0 0 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .src .lim { font-size: 13px; color: var(--text-primary); background: var(--wash); border-radius: 6px; padding: 8px 10px; margin: 8px 0 0; }
+  .src .lim strong { color: var(--text-primary); }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 780px) { .twocol { grid-template-columns: 1fr; } }
+  .rival { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin: 10px 0; background: var(--surface-1); }
+  .rival h3 { margin: 0 0 4px; font-size: 14.5px; color: var(--text-primary); }
+  .rival p { margin: 0 0 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .rival .sep { font-size: 13px; color: var(--text-primary); background: var(--wash); border-radius: 6px; padding: 8px 10px; margin: 6px 0 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .gcell { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .gcell h3 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .gcell p { margin: 0; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+  .thy { border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; margin: 8px 0; background: var(--surface-1); }
+  .thy h3 { margin: 0 0 2px; font-size: 14.5px; color: var(--text-primary); }
+  .thy .ch { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+  .thy p { margin: 0 0 5px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .thy .pr { font-size: 13px; color: var(--text-primary); background: var(--wash); border-radius: 6px; padding: 8px 10px; margin: 6px 0 0; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .dcell { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .dcell h3 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .dcell p { margin: 0 0 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .dcell p:last-child { margin-bottom: 0; }
+  @media (max-width: 760px) { .duo { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Apply the Theory <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Applying a theory is not the same as naming one.</strong> Most Part 4 drafts name a theory, restate what it says, assert that it fits, and move on. That is a label, not an application. An application derives something from the theory that could turn out to be false about your offense, checks it against what you found in Parts 2 and 3, and reports the result even when the result is inconvenient. This page is practice at that, on other people's offenses, so you can do it on yours. Nothing here is recorded and nothing is graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-ref" type="button">The theories, one page</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-match" type="button">Match the phenomenon</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-two" type="button">Two theories, one offense</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-judge" type="button">Which one survives</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-errors" type="button">Six ways it goes wrong</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-check" type="button">Before you submit</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-ref">
+      <div class="card">
+        <h2>Every explanatory theory in the course, and what each one predicts</h2>
+        <p class="lede">Each entry gives the core claim and then the thing that matters most for Part 4: what the theory predicts you would see if it were true of your offense. A theory that predicts nothing specific cannot be applied and cannot be evaluated.</p>
+        <div id="theories"></div>
+        <div class="note"><strong>Pick two that disagree.</strong> The single best decision you can make in Part 4 is choosing two theories that predict different things about your offense. Two theories that both fit comfortably give you nothing to evaluate, and the evaluation is worth more than either application. Look down the prediction lines and find two that pull apart.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-match">
+      <div class="card">
+        <h2>Ten findings. Which theory explains each one best?</h2>
+        <p class="lede">Every finding here is real and every one appeared in this course. Best is doing a lot of work in that question, because more than one theory can usually accommodate a finding. Pick the theory that predicted it rather than the one that can absorb it.</p>
+        <div id="match"></div>
+        <div class="veiled" id="matchWrap">
+          <div class="scorebar">You matched <strong id="matchScore">0 of 10</strong>.</div>
+          <div class="teach"><strong>Notice how often a second theory also fits.</strong> That is not a flaw in the exercise, it is the actual condition of the field. Several theories can accommodate most findings after the fact. The ones worth writing about are the findings a theory called in advance, or the findings that one theory predicted and another got wrong. Those are what the next two tabs are about.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-two">
+      <div class="card">
+        <h2>A worked application, on an offense that is not yours</h2>
+        <p class="lede">Here is the Part 4 task done once, at full length, on residential burglary. Read it as a template. The offense does not matter. The five moves do.</p>
+
+        <div class="steps" id="worked"></div>
+
+        <div class="veiled" id="workedDone">
+          <div class="teach"><strong>Count the moves.</strong> State the theory in one sentence. Derive a prediction that could fail. Check it against what you actually found. Say what fits and what does not. Then do the same for the second theory and compare. Five moves, twice, plus a comparison. That is the whole of Part 4 and it is why the sheet asks for two theories rather than four.</div>
+          <div class="note"><strong>The move students skip is the second one.</strong> Deriving a prediction that could fail is what separates an application from a summary. If you cannot imagine a finding that would embarrass your theory, you have not applied it yet, and no amount of additional description will fix that.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-judge">
+      <div class="card">
+        <h2>Now judge between them</h2>
+        <p class="lede">This is the part worth the most points and the part most drafts hurry. Five pairs of competing predictions, each with the evidence that bears on it. For each one, decide what the evidence actually supports.</p>
+        <div id="judge"></div>
+        <div class="veiled" id="judgeWrap">
+          <div class="scorebar">You judged <strong id="judgeScore">0 of 5</strong>.</div>
+          <div class="teach"><strong>Three verdicts are allowed, and the third is the one nobody uses.</strong> The evidence can favor one theory, favor the other, or fail to separate them. That last verdict is a real finding and it is often the honest one. A Part 4 that says the evidence does not currently distinguish these two explanations, and here is the study that would, is stronger than one that declares a winner the literature has not declared.</div>
+          <div class="note"><strong>Where your evidence comes from.</strong> Parts 2 and 3 are your evidence base. The measurement work told you what the numbers can and cannot support. The pattern work gave you the things a theory has to explain. You do not need new sources for Part 4. You need to use the ones you have as tests rather than as decoration.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-errors">
+      <div class="card">
+        <h2>Six ways a theory application goes wrong</h2>
+        <p class="lede">These are the failures that cost points, in rough order of how often they appear.</p>
+
+        <p><strong>One. The label.</strong> The paper names a theory, restates it in the theorist's words, asserts that it explains the offense, and stops. Nothing was derived and nothing was tested. This is the most common failure and it is usually invisible to the writer, because the paragraph reads fluently.</p>
+        <p><strong>Two. The unfalsifiable fit.</strong> The theory is stated so loosely that no finding could contradict it. If low self-control explains both the impulsive offense and the carefully planned one, the concept has stopped doing work. Say what the theory rules out, not only what it allows.</p>
+        <p><strong>Three. The cherry pick.</strong> The paper reports the two findings that fit and passes over the one that does not. Graders read the same literature you do. Reporting the awkward finding and explaining what you make of it is worth more than hiding it, and it is the difference between an argument and an advertisement.</p>
+        <p><strong>Four. The level error.</strong> A theory about neighborhoods is used to explain why one person offended, or a theory about individuals is used to explain why a rate differs between cities. Social disorganization explains places. Self-control explains people. Mixing the levels produces a claim neither theory made.</p>
+        <p><strong>Five. The pattern restated as an explanation.</strong> Part 3 was about this and it returns here. Saying that offending peaks in the late teens because young people offend more is a circle. The theory has to say something the pattern did not already say.</p>
+        <p><strong>Six. The tie that was never contested.</strong> Two theories are chosen that agree about everything, so the evaluation section has nothing to do and becomes a summary of both. Choose theories that disagree about your offense. The disagreement is the assignment.</p>
+
+        <div class="teach"><strong>A quick self-test before you submit.</strong> Find the sentence in your draft where a theory makes a prediction that could have been wrong. If you cannot find one, the evaluation section has nothing to stand on, and that section is worth more than either application.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-check">
+      <div class="card">
+        <h2>Before you submit Part 4</h2>
+        <p class="lede">Work down this list with your draft open. Click a line when it is true. Nothing here is recorded.</p>
+        <div class="checklist" id="ck"></div>
+        <div class="ckcount" id="ckCount">0 of 12 checked</div>
+        <div class="veiled" id="ckDone">
+          <div class="teach"><strong>That is the list.</strong> Part 5 asks you to weave Parts 1 through 4 into one review. The evaluation you write here becomes the spine of that review, because it is the only section of the project where you argue rather than report.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Nothing on this page is recorded and nobody sees your answers but you. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+  }
+
+  // ---------- TAB 1: theory reference ----------
+  const THEORIES = [
+    { n: 'Deterrence', c: 'Chapter 6', d: 'People weigh the cost of an offense against its benefit. Certainty of punishment matters far more than severity.',
+      p: 'Predicts that offending falls when the chance of being caught rises, and barely moves when the penalty gets longer. If your offense responds to sentence length but not to enforcement intensity, this theory is in trouble.' },
+    { n: 'Routine activity theory', c: 'Chapter 7', d: 'An offense needs a motivated offender, a suitable target, and no capable guardian, converging in one place at one time.',
+      p: 'Predicts that your offense clusters where those three meet, that it moves when routines move, and that removing any one leg stops it. It predicts nothing about who becomes motivated, which is its stated limit.' },
+    { n: 'Social bond theory', c: 'Chapter 8', d: 'People do not offend because they are bonded to conventional life through attachment, commitment, involvement, and belief.',
+      p: 'Predicts that people with weaker attachments and less to lose offend more, and that offending falls when bonds form. Marriage, employment, and school attachment should each show up in your patterns.' },
+    { n: 'Self-control theory', c: 'Chapter 8', d: 'A stable trait formed early in life explains offending, and it explains other risky behavior at the same time.',
+      p: 'Predicts that the same people who offend also show up in accidents, poor health, and unstable employment, and that the trait predicts offending across every offense type. If your offense requires patience and planning, this theory has a problem.' },
+    { n: 'Social disorganization', c: 'Chapter 8', d: 'Neighborhoods with concentrated disadvantage, residential turnover, and heterogeneity struggle to supervise public space. Collective efficacy is the working mechanism.',
+      p: 'Predicts differences between places rather than between people. It predicts that the same neighborhood stays high-crime as its residents change, which is a strong and testable claim.' },
+    { n: 'Differential association and social learning', c: 'Chapter 9', d: 'Offending is learned in intimate groups, along with the techniques and the definitions that make it acceptable.',
+      p: 'Predicts that peers matter more than anything else, and that definitions favorable to the offense precede the offending. Its hardest test is separating learning from selection, since people also choose their friends.' },
+    { n: 'Neutralization', c: 'Chapter 9', d: 'People who accept a rule set it aside for one act using specific justifications: denial of responsibility, injury, or victim, condemnation of the condemners, and appeal to higher loyalties.',
+      p: 'Predicts that offenders express conventional values and use identifiable justifications. It is unusually good for offenses where offenders do not see themselves as criminals, which includes most white-collar and corporate offending.' },
+    { n: 'Merton strain', c: 'Chapter 10', d: 'A society that pushes everyone toward the same goals while distributing the means unequally produces adaptations, of which innovation is the criminal one.',
+      p: 'Predicts that offending concentrates where the gap between goals and legitimate means is widest. Note that Agnew found educational and occupational failure only weakly related to offending, which is a direct problem for this version.' },
+    { n: 'General strain theory', c: 'Chapter 10', d: 'Strains cause crime when they are seen as unjust, are high in magnitude, come with low social control, and create pressure for criminal coping. Anger is the mechanism.',
+      p: 'Predicts that specific strains matter and generic ones do not. Parental rejection, harsh discipline, abuse, and discrimination should predict offending. Failure to achieve success goals should not, and that is the testable difference from Merton.' },
+    { n: 'Labeling and secondary deviance', c: 'Chapter 11', d: 'The reaction to an act changes the person. A label attaches, opportunities close, and further offending follows from the reaction rather than from the original cause.',
+      p: 'Predicts that formal system contact increases later offending, holding the original behavior constant. The audit study evidence on records and callbacks is the strongest support, and this theory predicts diversion should work better than processing.' },
+    { n: 'Reintegrative shaming and defiance', c: 'Chapter 11', d: 'Shaming that condemns the act and welcomes the person reduces offending. Shaming that stigmatizes the person increases it, and sanctions felt as unjust produce defiance.',
+      p: 'Predicts that how a sanction is delivered matters as much as whether it is delivered. Restorative programs should outperform stigmatizing ones on reoffending, and the evidence from Chapter 13 partly supports that while failing to find the remorse mechanism.' },
+  ];
+  (function buildTh(){
+    const el = $('theories');
+    THEORIES.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'thy';
+      d.innerHTML = '<h3>' + t.n + '</h3><p class="ch">' + t.c + '</p><p>' + t.d + '</p><p class="pr"><strong>What it predicts.</strong> ' + t.p + '</p>';
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 2: match ----------
+  const M_OPTS = ['Routine activity', 'Self-control', 'Social learning', 'General strain', 'Labeling', 'Social disorganization'];
+  const MATCH = [
+    { t: 'Motor vehicle theft fell sharply once manufacturers fitted engine immobilizers as standard.', a: 'Routine activity',
+      v: 'Routine activity theory, and this is close to a pure test of it. Nobody was deterred, treated, or labeled. The target became unsuitable and the offense fell. No theory about the offender predicted this, and none was needed.' },
+    { t: 'Children who scored lowest on self-control at ages three to eleven had more convictions, worse health, and less stable employment at 32.', a: 'Self-control',
+      v: 'Self-control theory, and the Dunedin study is its strongest evidence. Notice what makes it strong: the theory predicted that one trait would show up across unrelated outcomes, and it did. A theory that predicts several different things at once is harder to fit after the fact.' },
+    { t: 'Across 133 studies, the strongest correlate of offending was the behavior of a person\'s friends.', a: 'Social learning',
+      v: 'Social learning theory. The differential association measure had the largest effect in the meta-analysis. The standing objection is selection, because people choose friends who resemble them, and the honest current position is that selection and socialization both operate.' },
+    { t: 'Parental rejection, harsh discipline, and experience of discrimination predicted offending, while failure to achieve occupational success did not.', a: 'General strain',
+      v: 'General strain theory, and this finding is why Agnew\'s version replaced the classic one. The strains that predict offending are the ones felt as unjust and high in magnitude. The classic Mertonian strain came out unrelated or weakly related, which is a striking result for a theory that dominated for decades.' },
+    { t: 'Job applicants with a criminal record received callbacks at about half the rate of identical applicants without one.', a: 'Labeling',
+      v: 'Labeling theory. The audit study made a previously untestable theory testable by holding the person constant and varying only the label. It shows the mechanism directly: exclusion follows the record rather than the person.' },
+    { t: 'The same street segments in one city carried half of all crime every year for sixteen years, while the residents changed.', a: 'Social disorganization',
+      v: 'A theory about places rather than people, and this finding is the clearest demonstration that such a theory is needed. Individual-level theories cannot explain why the location stays constant while the population turns over. Routine activity also speaks to this, which is why the two are usually taught together.' },
+    { t: 'Two standard deviations more collective efficacy was associated with about 40 percent lower expected homicide.', a: 'Social disorganization',
+      v: 'Social disorganization in its modern form. Collective efficacy is the mechanism that the older version lacked, and it is a property of a neighborhood rather than of the people in it. Notice that this is an association, not an experiment.' },
+    { t: 'People who offend are victimized at much higher rates than people who do not.', a: 'Routine activity',
+      v: 'Routine activity theory absorbs this effortlessly, because a lifestyle that puts you among motivated offenders puts you there as a target too. The triangle does not care which role you occupy on a given night. Competing accounts point to shared underlying traits instead, which is where self-control would enter.' },
+    { t: 'Young people who attended a prison awareness program offended more afterward than those who did not.', a: 'Labeling',
+      v: 'Labeling theory gives the cleanest account, since the program formally identifies a young person as headed for prison. Social learning also fits, through contact with offenders. Both predicted trouble and deterrence predicted the opposite, which is the useful part.' },
+    { t: 'Offenders in a study of corporate wrongdoing described their conduct as normal business practice that harmed nobody in particular.', a: 'Social learning',
+      v: 'Social learning, and specifically neutralization, which sits inside that tradition. Denial of injury and denial of the victim are doing the work. This is why the learning tradition is unusually strong for offenses whose offenders do not consider themselves criminals.' },
+  ];
+  buildSorter('match', MATCH, M_OPTS, (right, total) => {
+    $('matchScore').textContent = right + ' of ' + total;
+    $('matchWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 3: worked ----------
+  const WORKED = [
+    { h: 'Move 1. State the first theory in one sentence', q: 'Routine activity theory says a burglary requires a motivated offender, a suitable target, and no capable guardian, converging at one address at one time.',
+      w: 'One sentence, in your own words, with no quotation. If you cannot state it in one sentence you do not yet understand it well enough to apply it.' },
+    { h: 'Move 2. Derive a prediction that could fail', q: 'If that is right, daytime residential burglary should concentrate in hours when households are empty, and should fall when guardianship rises.',
+      w: 'This is the move students skip. The prediction has to be capable of coming out wrong. A prediction that cannot fail cannot support your argument when it succeeds.' },
+    { h: 'Move 3. Check it against what you found', q: 'Part 3 found that burglary peaks on weekday mornings and early afternoons, and that occupied-home rates are lower on the same segments.',
+      w: 'Your evidence is Parts 2 and 3. Notice that this step is only possible because Part 3 established a time pattern. A vague Part 3 leaves you nothing to test against here.' },
+    { h: 'Move 4. Say what fits and what does not', q: 'The timing fits. What routine activity theory does not explain is why burglary concentrated in these particular neighborhoods rather than in equally empty ones nearby.',
+      w: 'Reporting the awkward part is worth points rather than costing them. It also sets up the second theory, because the thing your first theory cannot explain is exactly what the second one is for.' },
+    { h: 'Move 5. Repeat for theory two, then compare', q: 'Social disorganization predicts the neighborhood difference that routine activity misses, and it predicts the segments stay high-crime as residents change. It says nothing about time of day.',
+      w: 'Now you have a real comparison. Each theory explains what the other misses, and you can say which part of your offense each one accounts for. That comparison is the section worth the most points.' },
+  ];
+  (function buildWorked(){
+    const el = $('worked');
+    let opened = 0;
+    WORKED.forEach(st => {
+      const d = document.createElement('div');
+      d.className = 'step';
+      d.innerHTML = '<h3>' + st.h + '</h3><div class="qv">' + st.q + '</div><p class="why" style="display:none">' + st.w + '</p>';
+      d.addEventListener('click', () => {
+        if (d.classList.contains('on')) return;
+        d.classList.add('on');
+        d.querySelector('.why').style.display = 'block';
+        opened++;
+        if (opened === WORKED.length) $('workedDone').style.display = 'block';
+      });
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 4: judge ----------
+  const J_OPTS = ['Favors the first', 'Favors the second', 'Does not separate them'];
+  const JUDGE = [
+    { t: '<strong>Routine activity theory</strong> predicts that making a target unsuitable stops the offense. <strong>Self-control theory</strong> predicts that people with the trait will simply find another target, so the offense moves rather than falls.', a: 'Favors the first',
+      v: 'Favors routine activity theory. Engine immobilizers cut motor vehicle theft sharply, and the displacement literature says the movement is partial rather than total. Across 102 evaluations, displacement was detected in about 26 percent of observations and diffusion of benefits in about 27 percent. Many offenses are opportunistic, and when the easy option disappears a good share of people do not go looking for a harder one.' },
+    { t: '<strong>Social learning</strong> predicts that peer behavior causes offending. <strong>Self-control</strong> predicts that people with the trait select delinquent friends, so the correlation is not causal.', a: 'Does not separate them',
+      v: 'The current evidence does not cleanly separate them, and saying so is the honest verdict. The review in Chapter 9 concluded that selection and socialization are complementary and interactive rather than rivals. A Part 4 that says this, and names the study design that would settle it, is stronger than one that picks a winner.' },
+    { t: '<strong>Merton strain</strong> predicts that failure to achieve success goals drives offending. <strong>General strain theory</strong> predicts that unjust, high-magnitude strains do, and that success failure does not.', a: 'Favors the second',
+      v: 'Favors general strain theory, clearly. Agnew found parental rejection, harsh discipline, abuse, and discrimination predicted offending while failure to achieve educational or occupational success came out unrelated or weakly related. This is the sharpest theory-against-theory result in the course.' },
+    { t: '<strong>Deterrence</strong> predicts that a prison awareness program reduces later offending. <strong>Labeling</strong> predicts it increases it.', a: 'Favors the second',
+      v: 'Favors labeling. The pooled randomized trials found the treated groups offending more than the controls, with an odds ratio around 1.68. A program with a negative effect is rare and this is the standard example. Deterrence made a clear prediction and the evidence went the other way.' },
+    { t: '<strong>Reintegrative shaming</strong> predicts that restorative programs reduce reoffending through remorse and recognition of wrongdoing. The evidence rates those programs promising for reoffending and ineffective for remorse.', a: 'Does not separate them',
+      v: 'This one is genuinely awkward and it is the most interesting case here. The predicted outcome appears and the proposed mechanism does not, so the theory is neither confirmed nor refuted. A policy can work for reasons other than the ones its theory gives, and noticing that is worth more in a paper than declaring a winner.' },
+  ];
+  buildSorter('judge', JUDGE, J_OPTS, (right, total) => {
+    $('judgeScore').textContent = right + ' of ' + total;
+    $('judgeWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 6 ----------
+  const CK = [
+    'I apply <strong>two</strong> theories from this course, and I name the chapter each one comes from.',
+    'The two theories <strong>disagree</strong> about something in my offense. They do not both simply fit.',
+    'I state each theory <strong>in my own words</strong>, in about one sentence, with no long quotation.',
+    'For each theory I derive a <strong>prediction that could have failed</strong> about my offense.',
+    'I check each prediction against what I found in <strong>Parts 2 and 3</strong>, not against my impressions.',
+    'I say what each theory <strong>does not</strong> explain, including the finding that fits it badly.',
+    'My evaluation says which theory the <strong>evidence better supports</strong>, or says honestly that it does not separate them.',
+    'I do not use a theory about <strong>places</strong> to explain an individual, or a theory about individuals to explain a rate between places.',
+    'No sentence restates a <strong>pattern</strong> as if it were an explanation.',
+    'Every claim about evidence is <strong>cited</strong>, and I did not need new sources to write this.',
+    'Every reference follows <strong>APA 7th edition</strong>.',
+    'My <strong>prompt index</strong> lists every prompt I gave an AI tool, in order, with nothing left out.',
+  ];
+  (function buildCk(){
+    const el = $('ck');
+    CK.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'cki';
+      d.innerHTML = '<div class="ckbox">&#10003;</div><div class="ckt">' + t + '</div>';
+      d.addEventListener('click', () => {
+        d.classList.toggle('on');
+        const n = document.querySelectorAll('.cki.on').length;
+        $('ckCount').textContent = n + ' of ' + CK.length + ' checked';
+        $('ckDone').style.display = n === CK.length ? 'block' : 'none';
+      });
+      el.appendChild(d);
+    });
+    $('ckCount').textContent = '0 of ' + CK.length + ' checked';
+  })();
+
+  window.__S = { activate, THEORIES, MATCH, WORKED, JUDGE, CK };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

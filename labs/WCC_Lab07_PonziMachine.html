@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ponzi Machine · White-Collar Crime · Crime Lab 7</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+  @media (max-width: 760px) { .sliders { grid-template-columns: 1fr; } }
+  .sliders .gq { margin-bottom: 4px; margin-top: 8px; }
+  .chartwrap svg { width: 100%; height: auto; display: block; background: var(--wash); border-radius: 10px; }
+  .tablewrap { overflow-x: auto; }
+  .runlog { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .runlog th, .runlog td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; white-space: nowrap; }
+  .runlog th { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .codes .ynb { font-size: 12.5px; padding: 5px 10px; }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .ynb.sel.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .ynb.alt { border-color: var(--amber); color: var(--amber); }
+  .ynb.sel.alt { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .ynb:disabled:not(.sel):not(.answer):not(.alt) { opacity: 0.55; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Ponzi Machine <span class="sub">White-Collar Crime · Crime Lab 7 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>A Ponzi scheme is a promise that cannot be kept, financed by the people who have not yet found that out.</strong> Charles Ponzi's 1920 notes paid 50 percent in 45 days; Bernard Madoff's statements paid about 10 percent a year for decades; Allen Stanford's certificates of deposit paid a premium over U.S. bank rates for twenty years; FTX promised nothing at all except that customer deposits were held in custody. All four ended the same way, when the money going out exceeded the money coming in. This lab gives you the machine itself, with the levers that set how fast it runs and how long it lasts, so you can see why collapse is arithmetic and why the arithmetic can take twenty years. Then it turns to the fraud that dwarfed all of these, the mortgage securitization industry of 2003 to 2008, where the firms were real, the products were real, and 32 of the 60 largest firms settled fraud claims anyway.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-arith" type="button">The arithmetic</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-machine" type="button">Run the machine</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-mbs" type="button">Fraud by legitimate firms</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-types" type="button">Which kind of scheme</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: ARITHMETIC -->
+    <div class="section active" id="sec-arith">
+      <div class="card">
+        <h2>Four schemes, one mechanism</h2>
+        <p class="lede">Each of these paid earlier investors with later investors' money, or with money that belonged to customers, and each ended when withdrawals outran deposits. The figures are what the courts, trustees, and prosecutors established.</p>
+        <div class="defs">
+          <div class="def"><div class="who">Charles Ponzi, Boston, 1920</div><div class="hinge"><strong>The promise:</strong> 50 percent in 90 days, then 50 percent in 45 days, supposedly from arbitrage in international postal reply coupons. <strong>The run:</strong> about $15 million from roughly 40,000 people in eight months. <strong>The end:</strong> a Boston Post exposé on July 24, 1920, a run on the office two days later, arrest on August 12. Note holders got back less than 30 cents on the dollar. Convicted of larceny, imprisoned, deported.</div></div>
+          <div class="def"><div class="who">Bernard L. Madoff Investment Securities, New York, to December 2008</div><div class="hinge"><strong>The promise:</strong> steady returns of roughly 10 to 12 percent a year, in every market. <strong>The size:</strong> the last statements showed $64.8 billion; the cash investors had actually put in and not taken out was about $17.5 billion. <strong>The end:</strong> redemption requests in the 2008 crisis exceeded the cash on hand, and Madoff confessed in December 2008. As of August 2026 the trustee had recovered $15.5 billion and distributed $14.8 billion to customers, measured by cash in minus cash out.</div></div>
+          <div class="def"><div class="who">Stanford International Bank, Antigua, 1990s to 2009</div><div class="hinge"><strong>The promise:</strong> certificates of deposit paying a premium over U.S. bank rates, backed by conservative investments. <strong>The size:</strong> about $7 billion from depositors. <strong>The use:</strong> billions diverted to Stanford's own money-losing businesses, a 112-foot yacht, six private planes, and gambling. <strong>The end:</strong> the SEC sued in February 2009; convicted on 13 of 14 counts and sentenced on June 14, 2012, to 110 years.</div></div>
+          <div class="def"><div class="who">FTX and Alameda Research, 2019 to November 2022</div><div class="hinge"><strong>The promise:</strong> customer deposits "kept safe" and "held in custody." <strong>The mechanism:</strong> code that let Alameda withdraw effectively unlimited amounts of customer cryptocurrency; more than $8 billion of customer money spent on investments, loans, real estate, and political donations. <strong>The end:</strong> a run on withdrawals in early November 2022 that the exchange could not meet. Bankman-Fried was convicted on seven counts and sentenced on March 28, 2024, to 25 years with $11 billion in forfeiture; the Second Circuit affirmed on June 12, 2026, calling the evidence "conservatively stated, robust."</div></div>
+        </div>
+        <p class="srcnote">Sources: Darby, M. (1998), In Ponzi we trust, Smithsonian, December 1998, and In re Ponzi, 268 F. 997 (D. Mass. 1920), as quoted in Baker and Faulkner (2003), pp. 1173-1174; Madoff trustee (madofftrustee.com), recovery and distribution figures as of August 21, 2026, and the trustee's net equity determination upheld in In re Bernard L. Madoff Investment Securities LLC, 654 F.3d 229 (2d Cir. 2011); FBI Houston, press release, June 14, 2012 (Stanford); U.S. Attorney's Office, Southern District of New York, press release, March 28, 2024, and United States v. Bankman-Fried, 2d Cir., June 12, 2026, as reported by Courthouse News Service.</p>
+      </div>
+
+      <div class="card">
+        <h2>Cash in, cash out</h2>
+        <p class="lede">When a scheme collapses, the paper balances are fiction and the only real numbers are what each investor put in and took out. The Madoff trustee called this net equity, paid claims on that basis, and pursued investors whose withdrawals exceeded their deposits for the difference. Before you run the machine, guess one number.</p>
+        <div class="guessbox">
+          <p class="gq">Of the roughly $17.5 billion in principal that Madoff's customers lost, what share had the trustee recovered by 2026?</p>
+          <div class="pickrow">
+            <button class="pick" data-m="15" type="button">About 15 percent</button>
+            <button class="pick" data-m="40" type="button">About 40 percent</button>
+            <button class="pick" data-m="60" type="button">About 60 percent</button>
+            <button class="pick" data-m="88" type="button">About 88 percent</button>
+          </div>
+          <p class="verdict" id="mVerdict"></p>
+        </div>
+        <div class="veiled" id="mReveal">
+          <p class="teach"><strong>About 88 percent: $15.5 billion recovered against $17.5 billion lost.</strong> Most of it did not come from Madoff. It came from settlements with the people and funds who had taken out more than they put in, the net winners, and from the banks and feeder funds that had moved money into the scheme. This is the arithmetic of a Ponzi scheme seen from the other end: every dollar an early investor withdrew as profit was a later investor's principal, and the law can sometimes get it back. The $64.8 billion on the final statements never existed and is not part of any recovery.</p>
+          <p class="teach"><strong>What this means for the machine.</strong> On the next tab, the line for reported balances is the $64.8 billion; the line for cash on hand is what is actually there; the gap between them is the hole. The cohort chart at the bottom sorts investors by the year they came in and shows who ended up a net winner and who a net loser. Watch how the winners are always the earliest years.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: MACHINE -->
+    <div class="section" id="sec-machine">
+      <div class="card">
+        <h2>The machine</h2>
+        <p class="lede">Every month the machine takes in new money, keeps the operator's cut, pays whatever real return the assets earn, credits investors' statements with the promised return, and pays out the withdrawals investors request as a share of what their statements say they have. It runs until the month the withdrawals exceed the cash, or for fifty years. You set the promised return, what the money really earns, the size and growth of new money, the operator's cut, the withdrawal rate, and, optionally, a month in which confidence breaks: new money drops to a tenth and withdrawals spike for six months. Run the four named settings, then change one lever at a time. Each run is logged for your submission.</p>
+        <div class="pickrow">
+          <button class="gbtn" data-preset="ponzi" type="button">Ponzi, 1920</button>
+          <button class="gbtn" data-preset="madoff" type="button">Madoff</button>
+          <button class="gbtn" data-preset="stanford" type="button">Stanford CDs</button>
+          <button class="gbtn" data-preset="ftx" type="button">Deposits used as a bank</button>
+        </div>
+        <div class="guessbox" style="margin-top:12px">
+          <div class="sliders">
+            <div><p class="gq">Promised return, percent per year</p><div class="gr"><input type="range" id="p-r" min="0" max="400" step="1" value="11"><span class="gval" id="g-r">11</span></div></div>
+            <div><p class="gq">What the money really earns, percent per year</p><div class="gr"><input type="range" id="p-a" min="-10" max="20" step="1" value="1"><span class="gval" id="g-a">1</span></div></div>
+            <div><p class="gq">New money in the first month, $ millions</p><div class="gr"><input type="range" id="p-B0" min="0.1" max="300" step="0.1" value="60"><span class="gval" id="g-B0">60</span></div></div>
+            <div><p class="gq">Growth of new money, percent per month</p><div class="gr"><input type="range" id="p-g" min="0" max="60" step="0.2" value="0.4"><span class="gval" id="g-g">0.4</span></div></div>
+            <div><p class="gq">Operator's cut, percent of new money</p><div class="gr"><input type="range" id="p-skim" min="0" max="80" step="1" value="1"><span class="gval" id="g-skim">1</span></div></div>
+            <div><p class="gq">Withdrawals, percent of balances per month</p><div class="gr"><input type="range" id="p-w" min="0" max="60" step="0.2" value="0.8"><span class="gval" id="g-w">0.8</span></div></div>
+            <div><p class="gq">Month confidence breaks (0 for never)</p><div class="gr"><input type="range" id="p-shockM" min="0" max="480" step="1" value="216"><span class="gval" id="g-shockM">216</span></div></div>
+            <div><p class="gq">Withdrawals during the break, percent per month</p><div class="gr"><input type="range" id="p-shockW" min="0" max="80" step="1" value="8"><span class="gval" id="g-shockW">8</span></div></div>
+          </div>
+          <div class="pickrow" style="margin-top:12px"><button class="gbtn" id="runBtn" type="button">Run the machine</button><span class="progress" id="runLabel" style="margin:0">Setting: Madoff</span></div>
+        </div>
+        <div class="veiled" id="mOut">
+          <div class="statrow">
+            <div class="stat warn"><div class="v" id="o-when">0</div><div class="l" id="o-whenl">month of collapse</div></div>
+            <div class="stat"><div class="v" id="o-L">$0</div><div class="l">on investors' statements at the end</div></div>
+            <div class="stat"><div class="v" id="o-in">$0</div><div class="l">cash investors put in over the life of the scheme</div></div>
+            <div class="stat warn"><div class="v" id="o-hole">$0</div><div class="l">the hole: statements minus cash on hand</div></div>
+          </div>
+          <h3 style="margin-top:14px">What the statements say and what is in the account</h3>
+          <div class="chartwrap"><svg id="lineSvg" viewBox="0 0 1000 340" role="img" aria-label="Reported balances and cash on hand by month"></svg></div>
+          <p class="evsrc">Maroon: the total on investors' statements. Blue: cash actually on hand. The shaded gap is the hole. Years along the bottom.</p>
+          <h3 style="margin-top:14px">Net winners and net losers, by the year they came in</h3>
+          <div class="chartwrap"><svg id="cohSvg" viewBox="0 0 1000 240" role="img" aria-label="Net cash by investor cohort"></svg></div>
+          <p class="evsrc">Each bar is one year's entrants: what they took out minus what they put in, including the pro rata share of whatever cash was left at the end. Green above the line means that year's investors came out ahead; maroon below means they lost.</p>
+          <p class="teach" id="mNote"></p>
+        </div>
+        <h3 style="margin-top:18px">Run log</h3>
+        <div class="tablewrap"><table class="runlog" id="runLog"><thead><tr><th>Run</th><th>Setting</th><th>Promised</th><th>Real</th><th>New money</th><th>Growth</th><th>Cut</th><th>Withdrawals</th><th>Break</th><th>Lasted</th><th>Statements</th><th>Hole</th><th>Winner years</th></tr></thead><tbody></tbody></table></div>
+        <p class="srcnote">The machine is the lab's own construction. The named settings are chosen to resemble the four schemes on the first tab in their promised returns, the pace of new money, withdrawal behavior, and the timing of the break in confidence, and nothing more; the dollar amounts they produce are not the historical amounts. Ponzi's 50 percent in 45 days is entered as 400 percent a year. The Madoff setting lets you see the same scheme with and without the 2008 break by setting the break month to 0.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: MBS -->
+    <div class="section" id="sec-mbs">
+      <div class="card">
+        <h2>Fraud without a Ponzi</h2>
+        <p class="lede">Fligstein and Roehrkasse built a dataset of every regulatory settlement reached between January 2008 and January 2014 by the 60 largest firms in mortgage origination and mortgage-backed securities issuance and underwriting. The firms were real banks and lenders selling real loans and real securities. The fraud was in what they said about them: lenders deceived borrowers about terms and eligibility, and issuers and underwriters misrepresented the quality of the loans in the securities, bet against those securities while selling them, and lied to their own shareholders (p. 618). Before you see the count, predict it.</p>
+        <div class="guessbox">
+          <p class="gq">Of the 60 largest firms in the industry, how many reached at least one regulatory settlement over predatory lending or securities fraud?</p>
+          <div class="pickrow">
+            <button class="pick" data-f="6" type="button">About 6</button>
+            <button class="pick" data-f="15" type="button">About 15</button>
+            <button class="pick" data-f="32" type="button">About 32</button>
+            <button class="pick" data-f="50" type="button">About 50</button>
+          </div>
+          <p class="verdict" id="fVerdict"></p>
+        </div>
+        <div class="veiled" id="fReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Investment banks (9 firms)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">9 of 9 settled</span></div>
+            <div class="brow"><span class="blabel">Commercial banks (11 firms)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="82%"></div></div><span class="bval">9 of 11</span></div>
+            <div class="brow"><span class="blabel">Mortgage specialists (37 firms)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="35%"></div></div><span class="bval">13 of 37</span></div>
+            <div class="brow"><span class="blabel">Savings and loan banks (3 firms)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="33%"></div></div><span class="bval">1 of 3</span></div>
+            <div class="brow"><span class="blabel">All firms (60)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="53%"></div></div><span class="bval">32 of 60</span></div>
+          </div>
+          <p class="teach"><strong>32 of 60, with 43 predatory lending settlements and 204 securities fraud settlements, totaling more than $79 billion (p. 618; Table 1, p. 629).</strong> Every investment bank in the sample settled. The fraud was not confined to fly-by-night lenders; it ran through the biggest and best-known firms, and 87 percent of the firms that settled for predatory lending also settled for securities fraud, which the authors read as fraud cascading upward from origination to the securities built on it (p. 629). The background numbers: mortgage fraud suspicious activity reports to the FBI went from 6,936 in 2003 to 63,713 in 2008, and the FBI estimated $60 billion in fraudulent loans originated between 2006 and 2008 (note 4, p. 638).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Which theory fits the pattern</h2>
+        <p class="lede">The article tests three established accounts against its own. The law and economics view says stiff competition prevents fraud, because firms protect their reputations. The reputational view says small, marginal firms that do not care about their reputations will be the ones to commit fraud. The market failure view says the originate-to-distribute model was the problem: originators passed bad loans to securitizers who packaged them for unwitting buyers, so the disintegrated structure of the market drove the fraud (p. 618). Fligstein and Roehrkasse argue instead that as the supply of good mortgages ran out after 2003, firms that were vertically integrated, operating in origination and in securities issuance and underwriting at once, needed mortgages as raw material and lowered standards to get them, and then had to misrepresent the securities built on those loans (pp. 618, 623-625). Which account does the pattern of settlements support?</p>
+        <div class="guessbox">
+          <p class="gq">Given that all nine investment banks settled, that larger and more integrated firms settled more often, and that firms in more stages of the chain settled more, which account does the evidence support?</p>
+          <div class="pickrow">
+            <button class="pick" data-t="law" type="button">Competition prevents fraud</button>
+            <button class="pick" data-t="rep" type="button">Small firms with no reputation to lose</button>
+            <button class="pick" data-t="mkt" type="button">Disintegration, originate to distribute</button>
+            <button class="pick" data-t="int" type="button">Vertical integration under scarcity</button>
+          </div>
+          <p class="verdict" id="tVerdict"></p>
+        </div>
+        <div class="veiled" id="tReveal">
+          <p class="teach"><strong>Vertical integration under scarcity.</strong> For each additional function a firm occupied in the chain, it reached more than two additional regulatory settlements, and the effect held after accounting for the firm's revenue and how long it survived to be sued (Table 4, p. 631). That is the opposite of what the reputational account predicts, since the biggest firms with the most to lose settled most, and the opposite of the market failure account, since integrated firms that kept the loans in-house committed more fraud, not less. Competition did not prevent fraud; scarcity of the raw material made it profitable. By 2003 real estate loans were 54 percent of commercial banks' loan assets, up from 32 percent in 1986, and fee income from securitizing and servicing mortgages had become the largest source of non-interest income (p. 620). A business built on the flow of mortgages could not let the flow stop.</p>
+          <p class="teach"><strong>Set this next to Baker and Faulkner.</strong> Fountain was one small intermediate fraud: a legitimate business that turned. Fligstein and Roehrkasse describe an industry of intermediate frauds, in which the largest firms turned together under the same competitive pressure and with the same products. Neither was a Ponzi scheme. Both ended when the flow of new money stopped.</p>
+          <p class="srcnote">Source: Fligstein, N., and Roehrkasse, A. F. (2016). The causes of fraud in the financial crisis of 2007 to 2009: Evidence from the mortgage-backed securities industry. American Sociological Review, 81(4), 617-643, at the pages cited.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>The people who wrote the loans</h2>
+        <p class="lede">Nguyen and Pontell interviewed 23 people who worked in subprime lending in Southern California in 2008 and 2009, mostly loan agents at large lenders and brokers, plus three borrowers. Their subjects described stated-income loans, inflated appraisals, changed job titles, and borrowed bank balances as ordinary skill. Code each statement with the scheme from Lab 5. The codes: 1 denial of responsibility, 2 denial of injury, 3 denial of the victim, 4 condemnation of the condemners, 5 appeal to higher loyalties, 6 claim of normality, 7 defense of necessity, 8 denial of the guilty mind.</p>
+        <div id="npList"></div>
+        <p class="progress" id="nProgress">0 of 3 coded.</p>
+        <div class="veiled" id="nDone">
+          <p class="teach"><strong>The two articles fit together.</strong> Fligstein and Roehrkasse explain why the firms needed the loans. Nguyen and Pontell show what that need looked like at the desk where the application was filled in: a product designed not to be checked, a broker who said to state the income higher, a lender who did not ask, and an appraiser who took the picture from the outside. Between 2005 and 2007 a study of stated-income loans found 90 percent overstated income by at least 5 percent and almost 60 percent by more than half (Sharick et al. 2006, quoted at p. 595). The loan agents did not think of themselves as committing fraud, and the borrower who put down $14,000 a month was "happy."</p>
+          <p class="srcnote">Source: Nguyen, T. H., and Pontell, H. N. (2010). Mortgage origination fraud and the global economic crisis: A criminological analysis. Criminology and Public Policy, 9(3), 591-612 (method pp. 598-600; quotations at the pages cited).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: TYPES -->
+    <div class="section" id="sec-types">
+      <div class="card">
+        <h2>Which kind of scheme is it</h2>
+        <p class="lede">Ponzi has become the word for any investment fraud, which loses the differences that matter for explaining them and for catching them. Five kinds are defined below. Sort the seven cases, then read the reference on what the sorting misses.</p>
+        <div class="defs">
+          <div class="def"><div class="who">Ponzi scheme</div><div class="hinge">Returns to earlier investors are paid out of later investors' money. There may be a real business at the front, but the returns do not come from it. Collapses when withdrawals exceed new money.</div></div>
+          <div class="def"><div class="who">Pyramid scheme</div><div class="hinge">Participants are paid for recruiting new participants, who pay to join. Runs out of people rather than money; the geometry, not the returns, sets the limit.</div></div>
+          <div class="def"><div class="who">Intermediate fraud</div><div class="hinge">Clinard's category, used by Baker and Faulkner: a legitimate business that, after a period of operation, begins to commit fraud, usually to survive. Fraud and honest loss are mixed and hard to separate.</div></div>
+          <div class="def"><div class="who">Misappropriation of custodial funds</div><div class="hinge">Money held for customers, with no return promised, is used by the holder for its own purposes. Collapses like a Ponzi scheme, in a run, though nothing was ever promised but safekeeping.</div></div>
+          <div class="def"><div class="who">Hybrid investment fraud (pig butchering)</div><div class="hinge">Maras and Ives's term: a relationship built over weeks or months through unsolicited contact, a false persona, and a fake trading platform showing fake gains, then pressure to invest more, then silence. No later investor pays the earlier one; the platform simply does not exist.</div></div>
+        </div>
+        <div id="typeList"></div>
+        <p class="progress" id="yProgress">0 of 7 sorted.</p>
+        <div class="veiled" id="yDone">
+          <p class="teach"><strong>What the categories share, and what they do not.</strong> Four of the seven end in a run, and a run is the signature of any scheme whose liabilities are real and whose assets are not. Pig butchering never runs, because there is nothing to run on; the victim is alone with a website. That difference matters for detection: a Ponzi scheme leaves a trail of statements, transfers, and a growing gap that an auditor could find, and Madoff's was reported to the SEC repeatedly before it fell. A pig butchering operation leaves a trail only in the victim's bank records and in the laundering, which is why the prosecutions are for money laundering rather than for the fraud itself. Maras and Ives found 59 cases with U.S. victims in five years, losses from $22,000 to $9.6 million per person, most victims male, most single, most in their 20s to 60s.</p>
+          <p class="srcnote">Sources: Maras, M.-H., and Ives, E. R. (2024). Deconstructing a form of hybrid investment fraud: Examining "pig butchering" in the United States. Journal of Economic Criminology, 5, 100066 (open access), sample and typology; the other cases as cited on the first tab and under each item.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 7 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers, your run log, and your sorting record into one block of text, and paste that text into the Lab 7 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your runs. Using the Madoff setting, say what happens to the month of collapse when you remove the break in confidence, when you halve the withdrawal rate, and when you set what the money really earns equal to the promised return. Which lever decides whether a scheme lasts a year or twenty, and why?</div>
+          <div class="qh">Three to five sentences. Use numbers from your run log.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. The net winners. In every run the earliest cohorts come out ahead and the latest lose everything. Explain, using the trustee's net equity method, why the law treats an early investor's profit as a later investor's money, and what that implies about who the victims of a Ponzi scheme are.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Fligstein and Roehrkasse reject three accounts of financial fraud and offer a fourth. State the fourth in your own words, say what evidence in the article supports it, and say what it predicts about where fraud will appear the next time a financial product's raw material runs short.</div>
+          <div class="qh">Three to five sentences. Cite the article by page.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Where did the money come from in your case, where did it go, and what ended it: a run, an audit, a whistleblower, a market turn, or a regulator? Say which of the five kinds of scheme on the fourth tab your case is, or why it is none of them.</div>
+          <div class="qh">Four to six sentences. Give the document that shows the flow of money. This is material for Part 2 and Part 3.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the machine and the sources</h2>
+      <p class="srcnote">The machine on the second tab is the lab's own construction; it is a monthly cash-flow model with the levers described on that tab and no others, and its output should not be cited as a fact about any of the schemes it is named after. Historical figures for Ponzi, Madoff, Stanford, and FTX are from the sources cited on the first tab. The mortgage industry figures are from Fligstein and Roehrkasse (2016) and Nguyen and Pontell (2010) at the pages cited. The pig butchering case is from the Justice Department and contemporaneous reporting on the February 10, 2026 sentencing.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function money(m){ if (m < 0.05) return '$0'; if (m >= 1000) return '$' + (m / 1000).toFixed(m >= 10000 ? 0 : 1) + 'B'; if (m >= 10) return '$' + m.toFixed(0) + 'M'; return '$' + m.toFixed(1) + 'M'; }
+
+  // ---------- guesses ----------
+  function guess(sel, key, right, verdictId, revealId, yes, no){
+    let picked = null;
+    document.querySelectorAll(sel).forEach(btn => btn.addEventListener('click', () => {
+      if (picked) return; picked = btn.dataset[key]; btn.classList.add('chosen');
+      document.querySelectorAll(sel).forEach(b => { b.disabled = true; if (b.dataset[key] === right) b.classList.add('answer'); });
+      $(verdictId).textContent = picked === right ? yes : no;
+      $(revealId).style.display = 'block'; animateBars($(revealId));
+    }));
+    return () => picked;
+  }
+  const gM = guess('#sec-arith .pick[data-m]', 'm', '88', 'mVerdict', 'mReveal', 'Right. About 88 percent.', 'About 88 percent. See below.');
+  const gF = guess('#sec-mbs .pick[data-f]', 'f', '32', 'fVerdict', 'fReveal', 'Right. 32 of 60.', '32 of the 60 largest firms settled. See below.');
+  const gT = guess('#sec-mbs .pick[data-t]', 't', 'int', 'tVerdict', 'tReveal', 'Right.', 'The evidence supports vertical integration under scarcity. See below.');
+
+  // ---------- machine ----------
+  function runPonzi(p){
+    let cash = 0, L = 0, collapse = 0; const T = 600; const cohorts = {}; const series = []; let totIn = 0, totOut = 0, totSkim = 0;
+    for (let t = 1; t <= T; t++) {
+      const yr = Math.ceil(t / 12);
+      let inflow = Math.min(p.B0 * Math.pow(1 + p.g / 100, t - 1), p.B0 * 60);
+      const shocked = p.shockM && t >= p.shockM; if (shocked) inflow *= 0.1;
+      const wm = (shocked && t < p.shockM + 6) ? p.shockW / 100 : p.w / 100;
+      const acc = 1 + p.r / 1200; L *= acc; for (const k in cohorts) cohorts[k].bal *= acc;
+      const W = wm * L;
+      cash = cash * (1 + p.a / 1200) + inflow * (1 - p.skim / 100); totSkim += inflow * p.skim / 100; totIn += inflow;
+      if (!cohorts[yr]) cohorts[yr] = { in: 0, out: 0, bal: 0 }; cohorts[yr].in += inflow; cohorts[yr].bal += inflow;
+      if (cash < W) { collapse = t; for (const k in cohorts) { const share = L > 0 ? cohorts[k].bal / L : 0; cohorts[k].out += cash * share; } totOut += cash; series.push({ t, L, cash }); cash = 0; break; }
+      cash -= W; totOut += W; for (const k in cohorts) { const o = wm * cohorts[k].bal; cohorts[k].out += o; cohorts[k].bal -= o; }
+      L += inflow - W; series.push({ t, L, cash });
+    }
+    const last = series[series.length - 1];
+    return { collapse, months: collapse || T, L: last.L, cash: collapse ? 0 : last.cash, totIn, totOut, totSkim, series, coh: Object.keys(cohorts).map(k => ({ yr: Number(k), net: cohorts[k].out - cohorts[k].in, inn: cohorts[k].in })) };
+  }
+  const KEYS = ['r', 'a', 'B0', 'g', 'skim', 'w', 'shockM', 'shockW'];
+  const PRESETS = {
+    ponzi: { name: 'Ponzi, 1920', r: 400, a: 0, B0: 0.1, g: 60, skim: 15, w: 35, shockM: 8, shockW: 60 },
+    madoff: { name: 'Madoff', r: 11, a: 1, B0: 60, g: 0.4, skim: 1, w: 0.8, shockM: 216, shockW: 8 },
+    stanford: { name: 'Stanford CDs', r: 9, a: 0, B0: 15, g: 0.6, skim: 20, w: 1.2, shockM: 240, shockW: 20 },
+    ftx: { name: 'Deposits used as a bank', r: 0, a: 0, B0: 300, g: 3, skim: 55, w: 4, shockM: 30, shockW: 40 }
+  };
+  let setting = 'Madoff';
+  function showVals(){ KEYS.forEach(k => { $('g-' + k).textContent = $('p-' + k).value; }); }
+  KEYS.forEach(k => $('p-' + k).addEventListener('input', () => { setting = 'Your own'; $('runLabel').textContent = 'Setting: your own'; showVals(); }));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => { const p = PRESETS[b.dataset.preset]; KEYS.forEach(k => { $('p-' + k).value = p[k]; }); setting = p.name; $('runLabel').textContent = 'Setting: ' + p.name; showVals(); }));
+  const LOG = [];
+  function drawLines(r){
+    const W = 1000, H = 340, L0 = 70, R0 = 20, T0 = 16, B0 = 40; const n = r.series.length; const maxV = Math.max(1, ...r.series.map(s => s.L));
+    const x = i => L0 + (W - L0 - R0) * (i / Math.max(1, n - 1)); const y = v => T0 + (H - T0 - B0) * (1 - v / maxV);
+    let svg = '';
+    let area = 'M' + x(0) + ',' + y(r.series[0].L); r.series.forEach((s, i) => { area += ' L' + x(i).toFixed(1) + ',' + y(s.L).toFixed(1); }); for (let i = n - 1; i >= 0; i--) area += ' L' + x(i).toFixed(1) + ',' + y(r.series[i].cash).toFixed(1); area += ' Z';
+    svg += '<path d="' + area + '" fill="#840028" fill-opacity="0.12"/>';
+    const line = (key, col) => { let d = ''; r.series.forEach((s, i) => { d += (i ? ' L' : 'M') + x(i).toFixed(1) + ',' + y(s[key]).toFixed(1); }); return '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="2.5"/>'; };
+    svg += line('L', '#840028') + line('cash', '#2f5f9e');
+    const years = Math.ceil(n / 12); const step = years > 30 ? 10 : years > 12 ? 5 : 1;
+    for (let yv = 0; yv <= years; yv += step) { const i = Math.min(n - 1, yv * 12); svg += '<line x1="' + x(i).toFixed(1) + '" y1="' + (H - B0) + '" x2="' + x(i).toFixed(1) + '" y2="' + (H - B0 + 5) + '" stroke="#888"/><text x="' + x(i).toFixed(1) + '" y="' + (H - B0 + 20) + '" font-size="12" fill="#666" text-anchor="middle">' + yv + '</text>'; }
+    [0, 0.5, 1].forEach(f => { svg += '<text x="' + (L0 - 8) + '" y="' + (y(f * maxV) + 4).toFixed(1) + '" font-size="12" fill="#666" text-anchor="end">' + money(f * maxV) + '</text><line x1="' + L0 + '" y1="' + y(f * maxV).toFixed(1) + '" x2="' + (W - R0) + '" y2="' + y(f * maxV).toFixed(1) + '" stroke="#888" stroke-opacity="0.25"/>'; });
+    if (r.collapse) svg += '<text x="' + (x(n - 1) - 6).toFixed(1) + '" y="' + (T0 + 14) + '" font-size="12" fill="#840028" text-anchor="end">collapse, month ' + r.collapse + '</text>';
+    svg += '<text x="' + (W - R0) + '" y="' + (H - 4) + '" font-size="12" fill="#666" text-anchor="end">years</text>';
+    $('lineSvg').innerHTML = svg;
+  }
+  function drawCoh(r){
+    const W = 1000, H = 240, L0 = 70, R0 = 20, T0 = 14, B0 = 36; const c = r.coh; const maxA = Math.max(1, ...c.map(d => Math.abs(d.net)));
+    const y0 = T0 + (H - T0 - B0) / 2; const sc = (H - T0 - B0) / 2 / maxA; const bw = (W - L0 - R0) / c.length;
+    let svg = '<line x1="' + L0 + '" y1="' + y0 + '" x2="' + (W - R0) + '" y2="' + y0 + '" stroke="#888"/>';
+    c.forEach((d, i) => { const h = Math.abs(d.net) * sc; const xx = L0 + i * bw + bw * 0.15; svg += '<rect x="' + xx.toFixed(1) + '" y="' + (d.net >= 0 ? y0 - h : y0).toFixed(1) + '" width="' + (bw * 0.7).toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + (d.net >= 0 ? '#2e7d4f' : '#840028') + '"><title>Year ' + d.yr + ': put in ' + money(d.inn) + ', net ' + (d.net >= 0 ? '+' : '-') + money(Math.abs(d.net)) + '</title></rect>'; if (c.length <= 25 || d.yr % 5 === 1) svg += '<text x="' + (xx + bw * 0.35).toFixed(1) + '" y="' + (H - B0 + 18) + '" font-size="12" fill="#666" text-anchor="middle">' + d.yr + '</text>'; });
+    svg += '<text x="' + (L0 - 8) + '" y="' + (T0 + 12) + '" font-size="12" fill="#666" text-anchor="end">+' + money(maxA) + '</text><text x="' + (L0 - 8) + '" y="' + (H - B0 - 2) + '" font-size="12" fill="#666" text-anchor="end">-' + money(maxA) + '</text><text x="' + (W - R0) + '" y="' + (H - 4) + '" font-size="12" fill="#666" text-anchor="end">year investors came in</text>';
+    $('cohSvg').innerHTML = svg;
+  }
+  $('runBtn').addEventListener('click', () => {
+    const p = {}; KEYS.forEach(k => p[k] = Number($('p-' + k).value));
+    const r = runPonzi(p);
+    const yrs = (r.months / 12).toFixed(1);
+    $('o-when').textContent = r.collapse ? r.collapse : '50+'; $('o-whenl').textContent = r.collapse ? 'month of collapse (' + yrs + ' years)' : 'years without collapse: the money was really earning it';
+    $('o-L').textContent = money(r.L); $('o-in').textContent = money(r.totIn); $('o-hole').textContent = money(Math.max(0, r.L - r.cash));
+    drawLines(r); drawCoh(r);
+    const winners = r.coh.filter(c => c.net > 0).length, losers = r.coh.length - winners;
+    $('mNote').innerHTML = '<strong>Read the run.</strong> ' + (r.collapse ? 'The scheme lasted ' + r.collapse + ' months, ' + yrs + ' years, and ended with ' + money(r.L) + ' on statements and nothing in the account.' : 'The scheme survived fifty years with ' + money(r.cash) + ' on hand against ' + money(r.L) + ' on statements, which means it was not a scheme: the money earned what was promised.') + ' Investors put in ' + money(r.totIn) + ' and got back ' + money(r.totOut) + '; the operator kept ' + money(r.totSkim) + '. Of ' + r.coh.length + ' yearly cohorts, ' + winners + ' came out ahead and ' + losers + ' lost.' + (p.shockM && r.collapse && r.collapse >= p.shockM ? ' The break in confidence at month ' + p.shockM + ' is what ended it; set the break to 0 and run again to see how long the arithmetic alone would have taken.' : '') + (p.a >= p.r && p.r > 0 ? ' With real earnings equal to the promise, the gap never opens.' : '');
+    $('mOut').style.display = 'block';
+    LOG.push({ i: LOG.length + 1, setting, p, lasted: r.collapse ? r.collapse + ' mo' : '50+ yr', L: money(r.L), hole: money(Math.max(0, r.L - r.cash)), win: winners + ' of ' + r.coh.length });
+    const row = LOG[LOG.length - 1];
+    $('runLog').querySelector('tbody').insertAdjacentHTML('beforeend', '<tr><td>' + row.i + '</td><td>' + esc(row.setting) + '</td><td>' + p.r + '%</td><td>' + p.a + '%</td><td>$' + p.B0 + 'M</td><td>' + p.g + '%</td><td>' + p.skim + '%</td><td>' + p.w + '%</td><td>' + (p.shockM ? 'mo ' + p.shockM + ' at ' + p.shockW + '%' : 'none') + '</td><td>' + row.lasted + '</td><td>' + row.L + '</td><td>' + row.hole + '</td><td>' + row.win + '</td></tr>');
+  });
+  showVals();
+
+  // ---------- N&P coding ----------
+  const CODES = [['DR', '1 Denial of responsibility'], ['DI', '2 Denial of injury'], ['DV', '3 Denial of the victim'], ['CC', '4 Condemnation of the condemners'], ['HL', '5 Appeal to higher loyalties'], ['CN', '6 Claim of normality'], ['DN', '7 Defense of necessity'], ['DG', '8 Denial of the guilty mind']];
+  const NP = [
+    { who: 'Loan officer', text: 'When I get an A paper (good credit) client who wants a 30-year fixed loan but does not make enough, all my brokers told me to put them in stated loan program where I can just state whatever is needed to get the loan. Everyone in the offices I have worked in would offer stated-loans if the clients didn\'t make enough money or have enough money in the bank. I have had brokers tell me to state the income much higher on an application just to make sure we get the loan, since we can\'t restate the income. I have been at many broker offices, this type of stuff is normal in the mortgage industry.', src: 'Nguyen and Pontell 2010, pp. 601-602.', ref: { p: 'CN', alt: ['DR', 'HL'], why: 'The authors read it as diffusing responsibility onto the broker and as an appeal to the organization, and the closing sentence is the claim of normality in its plainest form: "this type of stuff is normal in the mortgage industry." Any of the three is defensible; the reference takes the sentence the speaker chose to end on.' } },
+    { who: 'Loan officer', text: 'You can get anyone a loan if you are good. You have to work with what your client has. If he has a crappy job, change his title so you can state a higher income. If the income is still not enough, give him another job. There is a lot you can do to qualify someone. Go stated, make him pay off debts, change the loan amount, change his job title, add someone to the loan. If he doesn\'t have enough money in the bank, for example, put his name on another person\'s account and get a VOD of that account.', src: 'Nguyen and Pontell 2010, p. 603.', ref: { p: 'DG', alt: ['DI', 'CN'], why: 'There is no defense here at all, which is the point: the speaker describes falsifying employment, income, and assets as skill, "if you are good," with no sense that a crime is being described. The authors call this treating fraud as "a financial skill rather than as a criminal act." That is a denial of the guilty mind by omission; nothing in the speaker\'s frame has a victim or an injury to deny.' } },
+    { who: 'Loan officer', text: 'They want the loan, so even though they know that my client can\'t possibly make what I put down, it\'s a stated loan. My lenders don\'t really make an issue about the income I state unless it doesn\'t make sense at all. So I just work the employment title and that\'s it. Borrowers are usually grateful that I got them the loan. They don\'t care that I stated in the application that they make this amount of money when they really didn\'t. They are just happy I got them the loan.', src: 'Nguyen and Pontell 2010, p. 604.', ref: { p: 'DV', alt: ['DI', 'CN'], why: 'The authors code this one themselves: denial of the victim. Everyone in the transaction wanted it, the borrower is grateful, the lender did not object. The person who would be injured, the eventual holder of the security built on this loan, is not in the room, which is exactly what Fligstein and Roehrkasse mean when they say fraud is concealed from victims at the end of a long chain.' } },
+  ];
+  const nAns = NP.map(() => null); const nEl = $('npList');
+  NP.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">STATEMENT ' + (i + 1) + '</span><span class="evtitle">' + esc(s.who) + '</span></div><div class="evtext">"' + esc(s.text) + '"</div><div class="evsrc">' + esc(s.src) + '</div>' +
+      '<div class="codes">' + CODES.map(c => '<button class="ynb" data-ni="' + i + '" data-nk="' + c[0] + '" type="button">' + esc(c[1]) + '</button>').join('') + '</div><p class="verdict" id="nv-' + i + '"></p><div class="evnote" id="nn-' + i + '"></div>';
+    nEl.appendChild(d);
+  });
+  nEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ni]'); if (!b) return;
+    const i = Number(b.dataset.ni); if (nAns[i]) return; nAns[i] = b.dataset.nk; const ref = NP[i].ref;
+    nEl.querySelectorAll('[data-ni="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.nk === ref.p) x.classList.add('answer'); else if (ref.alt.includes(x.dataset.nk)) x.classList.add('alt'); });
+    const v = nAns[i] === ref.p ? ['yes', 'Matches the reference'] : ref.alt.includes(nAns[i]) ? ['arg', 'A defensible alternate'] : ['no', 'Different from the reference'];
+    $('nv-' + i).innerHTML = '<span class="tag ' + v[0] + '">' + v[1] + '</span> Reference: ' + ref.p + '; defensible: ' + ref.alt.join(', ') + '.';
+    const n = $('nn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(ref.why); n.style.display = 'block';
+    const done = nAns.filter(Boolean).length; $('nProgress').textContent = done + ' of 3 coded.'; if (done === 3) $('nDone').style.display = 'block';
+  });
+
+  // ---------- types ----------
+  const KINDS = [['PZ', 'Ponzi scheme'], ['PY', 'Pyramid scheme'], ['IF', 'Intermediate fraud'], ['MC', 'Misappropriation of custodial funds'], ['HB', 'Hybrid investment fraud']];
+  const TYPES = [
+    { t: 'Ponzi, 1920', text: 'Promissory notes paying 50 percent in 45 days, supposedly from postal reply coupon arbitrage. No coupons were ever traded in quantity; the notes were paid from new sales until the run of July 1920.', src: 'Baker and Faulkner 2003, pp. 1173-1174; Darby 1998.', ref: 'PZ', why: 'The original. There was a story about a business, but no business; the returns were the later investors.' },
+    { t: 'Madoff, 1990s to 2008', text: 'A legitimate market-making firm on one floor and an investment advisory business on another that made no trades for well over a decade, generated statements showing steady gains, and paid withdrawals from deposits.', src: 'United States v. Madoff, plea allocution, March 12, 2009.', ref: 'PZ', why: 'A Ponzi scheme housed inside a legitimate business. The market-making side was real and was run by his brother and sons, which is why Madoff\'s allocution drew a line around it (Lab 5). Whether the advisory side ever traded honestly is disputed; by his own account it had not since the early 1990s.' },
+    { t: 'Fountain Oil and Gas, 1986 to 1989', text: 'An oil and gas company that drilled real wells, struck gas, then diverted investor money between wells and to its president\'s personal use until contractors\' liens closed it.', src: 'Baker and Faulkner 2003, pp. 1183-1188.', ref: 'IF', why: 'Baker and Faulkner\'s own category and their own case: a legitimate business that turned. Investors lost to dry holes and to theft, and the forensic accountant could not separate the two (p. 1195).' },
+    { t: 'Stanford International Bank, to 2009', text: 'An Antiguan bank selling certificates of deposit at above-market rates to depositors in many countries while investing the money in the owner\'s own loss-making businesses and lifestyle, and paying redemptions from new deposits.', src: 'FBI Houston, press release, June 14, 2012.', ref: 'PZ', why: 'A Ponzi scheme in the form of a bank. The court and the receiver treated it as one; the CDs were real certificates, but the returns came from the next depositor. Defensible to call it intermediate fraud if you weight the early years, when the bank existed and some assets were real, but the sentence of 110 years followed the Ponzi reading.' },
+    { t: 'FTX and Alameda, 2019 to 2022', text: 'A cryptocurrency exchange holding customer deposits, with code that let an affiliated trading firm draw on them without limit; more than $8 billion of customer money was spent before a run in November 2022.', src: 'U.S. Attorney\'s Office, S.D.N.Y., March 28, 2024; 2d Cir., June 12, 2026.', ref: 'MC', why: 'Not a Ponzi scheme in the strict sense: no return was promised and no later customer\'s money was used to pay an earlier customer\'s return. It was customer property used as the operator\'s own. It collapsed like a Ponzi scheme because a run tests the same thing, whether the assets are there. Bankman-Fried argued on appeal that they nearly were; the Second Circuit held that the evidence he had knowingly taken them was overwhelming either way.' },
+    { t: 'The Daren Li operation, 2021 to 2024', text: 'Victims contacted through messaging and dating apps were led over weeks to invest in a fake cryptocurrency platform showing fake gains. More than $73 million was moved through about 74 shell companies and U.S. bank accounts, then to a Bahamian bank and into Tether. Li pleaded guilty to conspiracy to launder the proceeds, cut off his ankle monitor and fled in December 2025, and was sentenced in absentia on February 10, 2026, to 20 years.', src: 'U.S. Department of Justice; contemporaneous reporting, February 10, 2026.', ref: 'HB', why: 'Maras and Ives\'s hybrid investment fraud: the romance builds the trust, the fake platform takes the money. Note the charge. The fraud itself was committed abroad by people not in custody; the U.S. case is the laundering, which is the part that touched U.S. banks.' },
+    { t: 'The mortgage securitization industry, 2003 to 2008', text: 'Real lenders wrote real loans on false applications, and real banks packaged them into securities described as something better than they were, until the flow of mortgages and the housing market stopped.', src: 'Fligstein and Roehrkasse 2016; Nguyen and Pontell 2010.', ref: 'IF', why: 'An industry of intermediate frauds: legitimate firms that, when the raw material ran out, turned to fraud to keep the business going. It is sometimes described as a Ponzi scheme because it depended on new money, but the mechanism was different, and so was the scale: $79 billion in settlements against Madoff\'s $17.5 billion in principal.' },
+  ];
+  const yAns = TYPES.map(() => null); const yEl = $('typeList');
+  TYPES.forEach((v, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">CASE ' + (i + 1) + '</span><span class="evtitle">' + esc(v.t) + '</span></div><div class="evtext">' + esc(v.text) + '</div><div class="evsrc">Source: ' + esc(v.src) + '</div>' +
+      '<div class="codes">' + KINDS.map(k => '<button class="ynb" data-yi="' + i + '" data-yk="' + k[0] + '" type="button">' + esc(k[1]) + '</button>').join('') + '</div><p class="verdict" id="yv-' + i + '"></p><div class="evnote" id="yn-' + i + '"></div>';
+    yEl.appendChild(d);
+  });
+  yEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-yi]'); if (!b) return;
+    const i = Number(b.dataset.yi); if (yAns[i]) return; yAns[i] = b.dataset.yk;
+    yEl.querySelectorAll('[data-yi="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.yk === TYPES[i].ref) x.classList.add('answer'); });
+    $('yv-' + i).innerHTML = '<span class="tag ' + (yAns[i] === TYPES[i].ref ? 'yes' : 'no') + '">' + (yAns[i] === TYPES[i].ref ? 'Matches the reference' : 'Reference: ' + KINDS.find(k => k[0] === TYPES[i].ref)[1]) + '</span>';
+    const n = $('yn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(TYPES[i].why); n.style.display = 'block';
+    const done = yAns.filter(Boolean).length; $('yProgress').textContent = done + ' of 7 sorted.' + (done === 7 ? ' Read the note below.' : ''); if (done === 7) $('yDone').style.display = 'block';
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 7 · THE PONZI MACHINE', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('GUESSES: Madoff recovery ' + (gM() ? gM() + '% (reference 88%)' : 'not answered') + '; firms settled ' + (gF() ? gF() + ' (reference 32)' : 'not answered') + '; theory ' + (gT() ? gT() + ' (reference int)' : 'not answered'));
+    lines.push('');
+    lines.push('RUN LOG (setting; promised %/yr; real %/yr; new money $M; growth %/mo; cut %; withdrawals %/mo; break; lasted; statements; hole; winner years)');
+    if (!LOG.length) lines.push('(no runs)'); LOG.forEach(r => lines.push(r.i + '. ' + r.setting + '; ' + r.p.r + '; ' + r.p.a + '; ' + r.p.B0 + '; ' + r.p.g + '; ' + r.p.skim + '; ' + r.p.w + '; ' + (r.p.shockM ? 'mo ' + r.p.shockM + ' at ' + r.p.shockW + '%' : 'none') + '; ' + r.lasted + '; ' + r.L + '; ' + r.hole + '; ' + r.win));
+    lines.push('');
+    lines.push('LOAN OFFICER STATEMENTS (your code / reference)'); NP.forEach((s, i) => lines.push((i + 1) + '. ' + (nAns[i] || 'not coded') + ' / ' + s.ref.p));
+    lines.push('');
+    lines.push('WHICH KIND OF SCHEME (your kind / reference)'); TYPES.forEach((v, i) => lines.push((i + 1) + '. ' + v.t + ': ' + (yAns[i] ? KINDS.find(k => k[0] === yAns[i])[1] : 'not sorted') + ' / ' + KINDS.find(k => k[0] === v.ref)[1]));
+    lines.push('');
+    lines.push('QUESTION 1 (your runs)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (net winners)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (Fligstein and Roehrkasse)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 7 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 7 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 7 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, LOG, nAns, yAns, runPonzi };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

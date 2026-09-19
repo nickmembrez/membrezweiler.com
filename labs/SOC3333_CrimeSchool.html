@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Taught You That? · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Who Taught You That? <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Last chapter argued that crime needs no teaching, only a failure of restraint.</strong> This chapter argues the opposite: that crime is learned the way everything else is learned, from the people closest to you, and that the pushing is the whole story. Both camps agree on one stubborn fact. People who offend have friends who offend, and that association is one of the strongest correlates in the entire field. They disagree completely about what it means. This page works through that disagreement, then shows you what happened when someone took learning theory seriously enough to build programs on it. The last two tabs are a review aid for the exam.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-rematch" type="button">The rematch</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-harm" type="button">When the theory was right</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-neut" type="button">Neutralization sorter</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-quiz" type="button">Exam 2 self-check</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-map" type="button">Your study map</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-rematch">
+      <div class="card">
+        <h2>One fact, two theories, no agreement</h2>
+        <p class="lede">Take an ordinary finding: adolescents who report delinquent friends report more delinquency themselves. Nobody disputes it. Here is what the two camps say it means.</p>
+        <div class="statrow">
+          <div class="stat"><div class="v" style="font-size:17px">Control theory says</div><div class="l">The bond broke first. Weak attachment to parents and school left these kids free to drift toward each other. The friendship is a symptom, not a cause, and the causal work was already done before they met.</div></div>
+          <div class="stat"><div class="v" style="font-size:17px">Learning theory says</div><div class="l">The friendship is the cause. Techniques, opportunities, and above all definitions favorable to law-breaking are transmitted in intimate groups. The friends taught them, exactly as friends teach everything else.</div></div>
+        </div>
+        <p class="lede">Criminologists call this the <strong>selection versus socialization</strong> problem, and it is the single most important methodological argument in this chapter. Before we get to the answer, commit to a number.</p>
+
+        <div class="guessbox">
+          <div class="gq">A meta-analysis pooled 133 studies of social learning theory covering 118,403 people. It reported the mean correlation between delinquent peer association and offending. Where do you think that number landed?</div>
+          <div class="gr">
+            <input type="range" id="gPeer" min="0" max="60" step="1" value="30">
+            <div class="gval" id="gPeerV">.30</div>
+            <button class="gbtn" id="gPeerBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gPeerVerdict"></div>
+        </div>
+
+        <div class="veiled" id="peerReveal">
+          <h3>The four components of Akers's theory, tested separately</h3>
+          <div class="bars">
+            <div class="brow"><div class="blabel">Differential association (who you are with)</div><div class="btrack"><div class="bfill" id="p1" style="width:0%"></div></div><div class="bval">.225</div></div>
+            <div class="brow"><div class="blabel">Definitions (attitudes toward the law)</div><div class="btrack"><div class="bfill" id="p2" style="width:0%"></div></div><div class="bval">.218</div></div>
+            <div class="brow"><div class="blabel">Modeling and imitation</div><div class="btrack"><div class="bfill warn" id="p3" style="width:0%"></div></div><div class="bval">.103</div></div>
+            <div class="brow"><div class="blabel">Differential reinforcement</div><div class="btrack"><div class="bfill warn" id="p4" style="width:0%"></div></div><div class="bval">.097</div></div>
+          </div>
+          <p class="srcnote">Pratt, T. C., Cullen, F. T., Sellers, C. S., Winfree, L. T. Jr., Madensen, T. D., Daigle, L. E., Fearn, N. E., and Gau, J. M. (2010). The empirical status of social learning theory: A meta-analysis. Justice Quarterly 27(6), 765 to 802. One hundred thirty-three studies from 1974 to 2003, 704 effect size estimates, 118,403 cases across 85 independent datasets. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Read this the way you read the Chapter 8 scorecard.</strong> The two components Sutherland gave the theory in 1947, association and definitions, are the ones carrying it. The two components Akers added in the 1960s, reinforcement and imitation, are less than half as strong. The authors said outright that the imitation portion may not be well supported by the existing literature. So the theory works, and it works mostly because of its oldest parts.</div>
+
+          <p class="note"><strong>How this compares.</strong> Chapter 8 gave you self-control at mean correlations of about .26 attitudinal and .28 behavioral. Differential association sits at .225. A 2019 review of the peer literature put it this way: the effects of delinquent peer associations are at least comparable to, if not larger than, the effects of other well-known correlates of crime such as self-control. Two theories that call each other wrong have produced predictors of roughly the same size, measured by different people over fifty years. That is worth sitting with.</p>
+
+          <h3>So which is it, selection or socialization</h3>
+          <p class="lede">Pick the position you find most defensible before you look at the answer. There is no trick here and the honest answer is not the boring one.</p>
+          <div id="ssPicks"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-harm">
+      <div class="card">
+        <h2>What happens when you take learning theory seriously</h2>
+        <p class="lede">Here is a genuine test. If crime is learned in intimate groups through definitions favorable to law-breaking, then <strong>deliberately gathering delinquent young people into a group should teach them more crime, not less.</strong> That is an uncomfortable prediction, it is unambiguous, and it has been tested many times, because a great deal of juvenile programming does exactly that.</p>
+        <p class="lede">Researchers named the mechanism <strong>deviancy training</strong>: within a group of high-risk peers, talk about rule-breaking gets laughter, attention, and status, which is textbook differential reinforcement. Take the most famous example, the programs in which young people are brought into a prison to be confronted by incarcerated adults. Guess what the randomized trials found before you look.</p>
+
+        <div id="ssPicks2"></div>
+
+        <div class="veiled" id="harmReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">1.68</div><div class="l">odds ratio for reoffending among participants compared with controls, 95 percent confidence interval 1.20 to 2.36</div></div>
+            <div class="stat"><div class="v">9</div><div class="l">randomized controlled trials, 7 of them pooled in the meta-analysis</div></div>
+            <div class="stat"><div class="v">946</div><div class="l">young people across all nine trials</div></div>
+          </div>
+          <p class="srcnote">Petrosino, A., Turpin-Petrosino, C., Hollis-Peel, M. E., and Lavenberg, J. G., Scared Straight and other juvenile awareness programs for preventing juvenile delinquency, Campbell Systematic Reviews. The National Institute of Justice rates this practice <strong>Ineffective</strong> at CrimeSolutions and states that participation increases the odds that youth will commit offenses in the future. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>An odds ratio above 1 means the program group did worse.</strong> Every analysis the reviewers ran pointed the same direction. Their conclusion was that jurisdictions already running these programs should reevaluate them, because they are at risk of causing harm to the very citizens they aim to help. This is one of the clearest cases in all of criminal justice of an intervention that is popular, intuitive, cheap, and actively counterproductive.</div>
+
+          <p class="note"><strong>Be careful about what this does and does not prove.</strong> These trials show that the programs made things worse. They do not by themselves prove that deviancy training was the mechanism, because a confrontational prison visit could backfire for several reasons at once. What makes the learning explanation credible is that the same harmful pattern shows up across a wider family of interventions that share one feature: they put high-risk young people in a room together. That is the pattern a 1999 review in American Psychologist called attention to under the heading of when interventions harm.</p>
+
+          <div class="teach"><strong>Now put this beside last week.</strong> Chapter 8 showed you a theory whose weakest strand, involvement, predicted correctly that keeping young people busy would not reduce crime. Chapter 9 shows you a theory that predicted correctly that grouping them would increase it. Two rival theories, two successful predictions, both about programs that sound obviously good. Theory is not decoration. It is the thing that would have told you, in advance and for free, that these were bad bets.</div>
+          <p class="srcnote">Dishion, T. J., McCord, J., and Poulin, F. (1999). When interventions harm: Peer groups and problem behavior. American Psychologist 54(9), 755 to 764. Retrieved August 2026.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-neut">
+      <div class="card">
+        <h2>The five techniques of neutralization</h2>
+        <p class="lede">Gresham Sykes and David Matza argued in 1957 that most people who break rules do not reject the rules. They excuse themselves from them, in advance, using a small and surprisingly standard set of moves. Matza called the resulting state <strong>drift</strong>: not committed to crime, not committed to conformity, floating between them and released episodically by whichever excuse is available.</p>
+        <p class="lede">This is also the exam-relevant bridge back to Sutherland, because these five are what definitions favorable to law-breaking look like when you catch them in the act. Sort each statement into the technique it uses.</p>
+        <div id="neut"></div>
+        <div class="teach" id="neutWrap" style="display:none"><strong>You got <span id="neutScore"></span>.</strong> Two things to carry into the exam. First, these are stated <em>before</em> the act as often as after it, which is what makes them causes rather than mere excuses, and it is the claim that distinguishes Sykes and Matza from ordinary talk about rationalizing. Second, notice how ordinary all five are. You have used every one of them this month about something, which is exactly the point Matza was making. Drift is the normal condition, not a deviant one.</div>
+        <p class="srcnote">Sykes, G. M., and Matza, D. (1957). Techniques of neutralization: A theory of delinquency. American Sociological Review 22(6), 664 to 670.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-quiz">
+      <div class="card">
+        <div class="scorebar" id="scorebar">Exam 2 self-check: <span id="quizScore">0 of 0</span> answered correctly. Fourteen questions across Chapters 6 through 9.</div>
+        <p class="lede">These are written in the style of the exam. Each one names the chapter it comes from, so if you miss several from the same chapter you know exactly where to spend tonight. Nothing here is recorded and you can be wrong as many times as you like.</p>
+        <div id="quiz"></div>
+        <div class="teach" id="quizWrap" style="display:none"><strong>Final score: <span id="quizFinal"></span>.</strong> Use the chapter tags on the ones you missed. If you missed more than one from a single chapter, go back to that chapter's cheat sheet slide and its vocabulary slide before you open the exam. If your misses are scattered evenly, you are in reasonable shape and the study map on the next tab is the more efficient use of your remaining time.</div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-map">
+      <div class="card">
+        <h2>Chapters 6 through 9 in one page</h2>
+        <p class="lede">The exam asks you to connect a theorist to a theory to a concept. Here is every triple you need, in order. Read down the list and say each one out loud. Anything you cannot finish from memory is where your studying should go.</p>
+        <div id="map"></div>
+        <div class="teach"><strong>One structural thing worth noticing before you close this.</strong> Chapters 6 and 7 are about what criminology thinks crime <em>is</em>. Chapters 8 and 9 are two answers to the same question about what makes an individual offend, and they are direct opposites: restraint failed, or motivation was taught. If a question gives you a scenario and asks which theory explains it, the fastest route is to ask whether the scenario is telling you about something that broke or something that was learned.</div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+
+  // ---------- TAB 1: guess + selection vs socialization ----------
+  const slP = $('gPeer'), outP = $('gPeerV'), btnP = $('gPeerBtn');
+  slP.addEventListener('input', () => { outP.textContent = '.' + String(slP.value).padStart(2, '0'); });
+  outP.textContent = '.' + String(slP.value).padStart(2, '0');
+  let peerLocked = false;
+  function lockPeer(){
+    if (peerLocked) return;
+    peerLocked = true;
+    const g = Number(slP.value);
+    slP.disabled = true; btnP.disabled = true;
+    const diff = Math.round(g - 22.5);
+    $('gPeerVerdict').textContent = Math.abs(diff) <= 1
+      ? 'You guessed .' + String(g).padStart(2,'0') + '. The published figure is .225, so that is close.'
+      : 'You guessed .' + String(g).padStart(2,'0') + '. The published figure is .225, so you were about ' + Math.abs(diff) + ' hundredths ' + (diff > 0 ? 'high' : 'low') + '.';
+    $('peerReveal').style.display = 'block';
+    fill('p1', 90); fill('p2', 87); fill('p3', 41); fill('p4', 39);
+  }
+  btnP.addEventListener('click', lockPeer);
+
+  const SS = [{
+    q: 'Which position on selection versus socialization does the evidence support?',
+    opts: [
+      'Selection. Delinquents choose each other, and the friendship adds nothing.',
+      'Socialization. The friends do the teaching, and who picked whom is beside the point.',
+      'Both, operating together and reinforcing each other.'
+    ],
+    a: 2,
+    v: '<strong>Both, and the review literature is emphatic that this is not a fence-sitting answer.</strong> A 2019 Annual Review of Criminology piece concluded that selection and socialization likely operate in a complementary, interactive way, such that engaging in delinquency increases exposure to delinquent peers, which in turn amplifies delinquency. Two things follow that are worth having on exam day. First, peer effects persist across many different study designs built specifically to strip out selection, so socialization is not an artifact. Second, Sutherland and Akers both already allowed for selection, which means the critique that supposedly destroys their theory was inside it from the beginning. The version of the question that treats these as rival answers is the version that gets you into trouble.',
+    src: 'McGloin, J. M., and Thomas, K. J. (2019). Peer influence and delinquency. Annual Review of Criminology 2, 241 to 264. Retrieved August 2026.'
+  }];
+  const ssEl = $('ssPicks');
+  const ssState = [null];
+  SS.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-ss="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="qopts">' + btns + '</div><div class="scv" id="ssv' + i + '"></div>';
+    ssEl.appendChild(d);
+  });
+  function pickSS(i, j){
+    const btns = ssEl.querySelectorAll('[data-ss="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === SS[i].a) b.classList.add('answer');
+    });
+    ssState[i] = (j === SS[i].a);
+    const el = $('ssv' + i);
+    el.innerHTML = '<div class="grade ' + (ssState[i] ? 'right' : 'mixed') + '">' + (ssState[i] ? 'that is it' : 'not quite') + '</div>' + SS[i].v + '<div class="srcnote">' + SS[i].src + '</div>';
+    el.style.display = 'block';
+  }
+  ssEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ss]');
+    if (b) pickSS(Number(b.dataset.ss), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 2: the harm prediction ----------
+  const HARM = [{
+    q: 'Across nine randomized controlled trials, how did young people who went through a Scared Straight style program compare with those who did not?',
+    opts: [
+      'They offended noticeably less afterward.',
+      'There was no detectable difference either way.',
+      'They offended MORE afterward.'
+    ],
+    a: 2
+  }];
+  const harmEl = $('ssPicks2');
+  HARM.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-hm="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="qopts">' + btns + '</div>';
+    harmEl.appendChild(d);
+  });
+  let harmPicked = null;
+  function pickHarm(i, j){
+    const btns = harmEl.querySelectorAll('[data-hm="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === HARM[i].a) b.classList.add('answer');
+    });
+    harmPicked = j;
+    $('harmReveal').style.display = 'block';
+  }
+  harmEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-hm]');
+    if (b) pickHarm(Number(b.dataset.hm), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 3: neutralization sorter ----------
+  const TECH = ['Denial of responsibility', 'Denial of injury', 'Denial of the victim', 'Condemning the condemners', 'Appeal to higher loyalties'];
+  const NEUT = [
+    { t: '"I was so drunk I barely remember doing it."', a: 'Denial of responsibility',
+      v: 'Denial of responsibility. The act is conceded and the authorship is not. Sykes and Matza noted that this move recasts the person as acted upon rather than acting, which is why it works even on the person using it.' },
+    { t: '"It is a huge chain. They will not even notice, and it is insured anyway."', a: 'Denial of injury',
+      v: 'Denial of injury. Nothing is denied about what happened, only about whether it harmed anyone. This is the most common technique in property offending and it is also the technique most available in Chapter 4 territory, where the victim is diffuse.' },
+    { t: '"He started it. He has had that coming for a year."', a: 'Denial of the victim',
+      v: 'Denial of the victim. The harm is admitted and the person harmed is reclassified as deserving it, which converts an offense into a punishment. Sykes and Matza pointed out that this one turns the offender into an avenger.' },
+    { t: '"Half the cops in this town are on the take. They are going to lecture me?"', a: 'Condemning the condemners',
+      v: 'Condemning the condemners. Attention is shifted from the act to the legitimacy of whoever is judging it. The question of whether the act was wrong never gets asked, which is precisely the function.' },
+    { t: '"I would not have done it for myself. My family needed it."', a: 'Appeal to higher loyalties',
+      v: 'Appeal to higher loyalties. This one does not reject the norm at all. It subordinates it to a competing norm that the person genuinely holds, which is why Sykes and Matza thought it was the most revealing of the five.' },
+    { t: '"They were going to fire the whole crew if somebody did not do it. What was I supposed to do?"', a: 'Denial of responsibility',
+      v: 'Denial of responsibility, through compulsion rather than impairment. Same technique, different route: pressure, desperation, and orders all locate the cause outside the actor.' },
+    { t: '"Nobody snitches. That is not something you do to your own people."', a: 'Appeal to higher loyalties',
+      v: 'Appeal to higher loyalties. Notice that this is also the convict code and a piece of the code of the street. Neutralization techniques and subcultural codes are not separate things. A code is what you get when a neutralization is shared and enforced.' },
+    { t: '"Rich people have been stealing wages for decades and nobody arrests them."', a: 'Condemning the condemners',
+      v: 'Condemning the condemners. This is the one worth thinking hardest about, because the empirical claim inside it is largely true, as Chapter 4 showed you. A neutralization can be factually correct and still be doing the psychological work of releasing someone from a rule. That is an uncomfortable and important point.' },
+  ];
+  const neutEl = $('neut');
+  const nstate = NEUT.map(() => null);
+  NEUT.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    TECH.forEach(o => { btns += '<button class="pick" data-n="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="nv' + i + '"></div>';
+    neutEl.appendChild(d);
+  });
+  function answerNeut(i, a){
+    const btns = neutEl.querySelectorAll('[data-n="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === NEUT[i].a) b.classList.add('answer');
+    });
+    nstate[i] = (a === NEUT[i].a);
+    const el = $('nv' + i);
+    el.innerHTML = '<div class="grade ' + (nstate[i] ? 'right' : 'mixed') + '">' + (nstate[i] ? 'that is it' : 'not quite') + '</div>' + NEUT[i].v;
+    el.style.display = 'block';
+    if (nstate.every(v => v !== null)) {
+      $('neutScore').textContent = nstate.filter(Boolean).length + ' of 8';
+      $('neutWrap').style.display = 'block';
+    }
+  }
+  neutEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-n]');
+    if (b) answerNeut(Number(b.dataset.n), b.dataset.a);
+  });
+
+  // ---------- TAB 4: the quiz ----------
+  const QUIZ = [
+    { ch: 'Chapter 6', q: 'Beccaria argued that three properties of punishment determine whether it deters. Which one does modern evidence identify as by far the most important?',
+      opts: ['Severity', 'Certainty', 'Celerity, meaning speed', 'All three equally'], a: 1,
+      v: 'Certainty. The National Institute of Justice summarizes the research by saying the certainty of being caught is a vastly more powerful deterrent than the punishment, and that increasing severity does little to deter crime. Beccaria reasoned his way there in 1764 without any data.' },
+    { ch: 'Chapter 6', q: 'What did the National Research Council conclude in 2012 about research on capital punishment and homicide?',
+      opts: ['It clearly deters homicide', 'It clearly does not deter homicide', 'The research is not informative about whether it decreases, increases, or has no effect', 'It increases homicide through brutalization'], a: 2,
+      v: 'The research is not informative either way. This is the answer students most often get wrong because it is not a finding about capital punishment, it is a finding about the state of the evidence, and the council recommended that these studies not be used to guide policy.' },
+    { ch: 'Chapter 6', q: 'FBI clearance data show roughly what share of violent crimes result in an arrest?',
+      opts: ['About 15 percent', 'About 45 percent', 'About 70 percent', 'About 90 percent'], a: 1,
+      v: 'About 45 percent for violent crime, and only about 17 percent for property crime. This is the concrete reason certainty is the weak link in the American system: for most offenses, punishment of any severity simply never arrives.' },
+    { ch: 'Chapter 7', q: 'Routine activity theory says a predatory crime requires three things to converge. Which set is correct?',
+      opts: ['A motivated offender, a suitable target, and the absence of a capable guardian', 'Poverty, opportunity, and weak policing', 'A motivated offender, a weak bond, and a criminal subculture', 'Strain, learning, and low self-control'], a: 0,
+      v: 'Motivated offender, suitable target, absence of a capable guardian. Note the asymmetry: the first two have to be present and the third has to be missing, which is why criminologists phrase the third element as an absence.' },
+    { ch: 'Chapter 7', q: 'In Cohen and Felson\'s framework, who counts as a capable guardian?',
+      opts: ['Police and private security only', 'Anyone whose presence would discourage the offense, usually an ordinary person going about ordinary life', 'A person legally responsible for the property', 'Someone trained in intervention'], a: 1,
+      v: 'Anyone whose presence would discourage it. A neighbor, a clerk who looks up, a roommate, a dog, a lit window. Cohen and Felson explicitly meant guardianship by ordinary citizens of one another as a side effect of routine activity, not enforcement.' },
+    { ch: 'Chapter 7', q: 'CrimeSolutions rates improved street lighting Promising for property offenses but Ineffective for violent offenses. What is the best explanation?',
+      opts: ['Violent crime happens indoors', 'Lighting works on offenses that depend on not being seen, and much violence involves people who already know they are visible', 'The violent crime studies were poor quality', 'Lighting increases the number of people on the street'], a: 1,
+      v: 'Lighting removes concealment, which matters enormously for offenses that depend on it and very little for conflicts between people who are already face to face. Same practice, two outcomes, two different answers.' },
+    { ch: 'Chapter 8', q: 'Which set is Hirschi\'s four elements of the social bond?',
+      opts: ['Attachment, commitment, involvement, belief', 'Attachment, supervision, punishment, belief', 'Trust, cohesion, efficacy, control', 'Certainty, severity, celerity, legitimacy'], a: 0,
+      v: 'Attachment, commitment, involvement, belief. Attachment and commitment together are what Hirschi called stakes in conformity, and involvement is the strand he himself ranked weakest.' },
+    { ch: 'Chapter 8', q: 'The tautology critique of self-control theory says the theory is circular. What feature of the Dunedin study is supposed to answer it?',
+      opts: ['The very large sample size', 'The 96 percent retention rate', 'Self-control was measured in early childhood, decades before the adult outcomes existed', 'It controlled for social class and IQ'], a: 2,
+      v: 'The timing. Controls and sample size are both good features, but neither answers circularity. Measuring the trait at ages 3 to 11 and the outcomes at 32 is what makes the concept do work independent of the behavior it is supposed to explain.' },
+    { ch: 'Chapter 8', q: 'Collective efficacy, as Sampson and colleagues measured it, is best defined as which of the following?',
+      opts: ['The number of police per resident', 'How friendly neighbors are with one another', 'Trust among neighbors combined with a shared willingness to intervene', 'The share of residents who own their homes'], a: 2,
+      v: 'Trust plus a shared willingness to act on it. Friendliness alone is cohesion without control, which is why the measure combined two scales. Notice the echo of Chapter 7: willingness to intervene was the narrowest stage of capable guardianship there too.' },
+    { ch: 'Chapter 8', q: 'Pratt and Cullen found the self-control effect was substantially weaker in longitudinal studies than in cross-sectional ones. Why does that matter?',
+      opts: ['It proves the theory is wrong', 'Cross-sectional designs measure trait and offending at the same moment, which is where circularity would inflate the number', 'Longitudinal studies have smaller samples', 'It shows self-control changes over time'], a: 1,
+      v: 'Because the shrinkage appears exactly where a tautology would have been doing the work. The effect does not vanish, and Dunedin shows it survives a thirty-year gap, but Gottfredson and Hirschi specifically predicted design would not matter and it does.' },
+    { ch: 'Chapter 9', q: 'In Sutherland\'s differential association theory, a person becomes delinquent because of which of the following?',
+      opts: ['Contact with delinquent people', 'An excess of definitions favorable to violation of law over definitions unfavorable to it', 'A failure of parental supervision', 'Exposure to violent media'], a: 1,
+      v: 'An excess of definitions favorable over unfavorable. This is the ratio at the center of the theory and the wording matters. Mere contact is not the claim, and Sutherland was explicit that associations vary in frequency, duration, priority, and intensity.' },
+    { ch: 'Chapter 9', q: 'In Akers\'s framework, a young man stops shoplifting after his friends stop inviting him out over it. Which cell is that?',
+      opts: ['Positive reinforcement', 'Negative reinforcement', 'Positive punishment', 'Negative punishment'], a: 3,
+      v: 'Negative punishment. Something was removed, which is the negative part, and the behavior decreased, which is the punishment part. Remember that positive and negative mean add and remove, not good and bad. This is the single most missed distinction in the chapter.' },
+    { ch: 'Chapter 9', q: 'Cohen argued that lower-class boys judged by a middle-class measuring rod respond with reaction formation. What does that produce?',
+      opts: ['Withdrawal from school and quiet conformity', 'A delinquent subculture that inverts the values they cannot achieve', 'Migration to a neighborhood with better opportunities', 'An appeal to higher loyalties'], a: 1,
+      v: 'A delinquent subculture that flips the yardstick, so status now comes from breaking the rules that were used to rank them. Cohen used this to explain non-utilitarian delinquency, meaning vandalism and fighting that earn nothing but standing.' },
+    { ch: 'Chapter 9', q: '"Nobody got hurt, the store is insured." Which technique of neutralization is that?',
+      opts: ['Denial of responsibility', 'Denial of injury', 'Denial of the victim', 'Condemning the condemners'], a: 1,
+      v: 'Denial of injury. The act is admitted and the harm is denied. Compare denial of the victim, which admits the harm and reclassifies the person harmed as deserving it.' },
+  ];
+  const quizEl = $('quiz');
+  const qstate = QUIZ.map(() => null);
+  QUIZ.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-q="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="qtag">' + item.ch + '</div><div class="sclaim">' + (i+1) + '. ' + item.q + '</div><div class="qopts">' + btns + '</div><div class="scv" id="qv' + i + '"></div>';
+    quizEl.appendChild(d);
+  });
+  function answerQ(i, j){
+    const btns = quizEl.querySelectorAll('[data-q="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (Number(b.dataset.j) === j) b.classList.add('chosen');
+      if (Number(b.dataset.j) === QUIZ[i].a) b.classList.add('answer');
+    });
+    qstate[i] = (j === QUIZ[i].a);
+    const el = $('qv' + i);
+    el.innerHTML = '<div class="grade ' + (qstate[i] ? 'right' : 'mixed') + '">' + (qstate[i] ? 'correct' : 'not quite') + '</div>' + QUIZ[i].v;
+    el.style.display = 'block';
+    const done = qstate.filter(v => v !== null).length;
+    const right = qstate.filter(Boolean).length;
+    $('quizScore').textContent = right + ' of ' + done;
+    if (done === QUIZ.length) {
+      $('quizFinal').textContent = right + ' of ' + QUIZ.length;
+      $('quizWrap').style.display = 'block';
+    }
+  }
+  quizEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-q]');
+    if (b) answerQ(Number(b.dataset.q), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 5: study map ----------
+  const MAP = [
+    ['Chapter 6', 'Beccaria · Classical School · certainty over severity', 'Free will, the social contract, and punishment as arithmetic. His certainty claim is the one that held up.'],
+    ['Chapter 6', 'Lombroso · biological positivism · the born criminal', 'Science replacing philosophy, and getting it spectacularly wrong. The method was the advance, the conclusion was the disaster.'],
+    ['Chapter 6', 'Quetelet and Guerry · moral statistics · social physics', 'Crime has stable, mappable patterns. The beginning of criminology as a data science.'],
+    ['Chapter 6', 'Du Bois · U.S. origins · structure over pathology', 'Real data and structural explanation decades ahead of the field\'s methods.'],
+    ['Chapter 7', 'Cohen and Felson · routine activity theory · the three elements', 'Offender, target, absent guardian, converging in time and space. Crime as an event, not a person.'],
+    ['Chapter 7', 'Clarke and Eck · problem analysis triangle · handler, manager, guardian', 'Each element has a controller. Six things have to go wrong, not three.'],
+    ['Chapter 7', 'Reynald · guardianship in action · available, monitoring, willing', 'Capable is an outcome that survives three filters, and the last one is the narrowest.'],
+    ['Chapter 7', 'Thomas and Thomas · definition of the situation', 'If people define situations as real, they are real in their consequences. Why a room full of guardians can produce nothing.'],
+    ['Chapter 7', 'The other four schools · biosocial, radical, feminist, critical', 'Risk factors not destiny; capitalism and selective enforcement; gendered pathways and intersectionality; whose harms the field cannot see.'],
+    ['Chapter 8', 'Hirschi · social bond theory · attachment, commitment, involvement, belief', 'The inverted question. Weak bonds do not push, they stop holding.'],
+    ['Chapter 8', 'Sampson and Laub · age-graded informal social control · turning points', 'Bonds have a biography. Marriage, work, and service rebuild them, which is why offending falls with age.'],
+    ['Chapter 8', 'Shaw and McKay · social disorganization · the zone in transition', 'Succession: the crime stayed with the zone while every population moved through it.'],
+    ['Chapter 8', 'Sampson · collective efficacy · trust plus willingness to intervene', 'The modern refinement. Not poverty itself but what poverty does to a neighborhood\'s capacity to act.'],
+    ['Chapter 8', 'Gottfredson and Hirschi · the general theory · versatility and analogous behaviors', 'One trait, set early. Strong as a predictor, overreaching as a general explanation.'],
+    ['Chapter 9', 'Sutherland · differential association · excess of definitions', 'Learned in interaction within intimate personal groups. Frequency, duration, priority, intensity.'],
+    ['Chapter 9', 'Akers · social learning · differential reinforcement and imitation', 'Sutherland plus an engine. The two added components test weaker than the two he started with.'],
+    ['Chapter 9', 'Miller · focal concerns · trouble, toughness, smartness, excitement, fate, autonomy', 'Delinquency as conformity to a different code rather than failure at the mainstream one.'],
+    ['Chapter 9', 'Cohen · status frustration · the middle-class measuring rod and reaction formation', 'Judged by a standard you cannot meet, so invert the standard. Explains non-utilitarian delinquency.'],
+    ['Chapter 9', 'Cloward and Ohlin · differential opportunity · criminal, conflict, retreatist', 'Illegitimate success needs opportunity too, and neighborhood structure decides which subculture forms.'],
+    ['Chapter 9', 'Anderson · code of the street · respect as protection, decent and street', 'An ecology people code-switch into where police protection is not trusted, not an identity anyone owns.'],
+    ['Chapter 9', 'Sykes and Matza · techniques of neutralization · drift', 'Five standard moves that release people from rules they still hold. Definitions favorable to law-breaking, caught in the act.'],
+  ];
+  const mapEl = $('map');
+  MAP.forEach(([ch, t, d]) => {
+    const row = document.createElement('div');
+    row.className = 'maprow';
+    row.innerHTML = '<div class="mapch">' + ch + '</div><div class="mapbody"><div class="mapt">' + t + '</div><div class="mapd">' + d + '</div></div>';
+    mapEl.appendChild(row);
+  });
+
+  window.__S = {
+    activate, lockPeer, pickSS, pickHarm, answerNeut, answerQ,
+    state: () => ({ peerLocked, ssState, harmPicked, nstate, qstate })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

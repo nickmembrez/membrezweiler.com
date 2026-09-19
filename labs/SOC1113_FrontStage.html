@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front Stage · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 200px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 5.5ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 4.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .pickbtn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .pickbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+  .pickbtn:disabled { opacity: 0.55; cursor: default; }
+  .pickbtn.picked { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+  .picktag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warn); color: #fff; margin-left: 8px; vertical-align: 2px; }
+
+  .pollrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .pollq { font-size: 14px; font-weight: 600; margin-top: 12px; line-height: 1.45; }
+
+  .simgrid { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .simgrid th { font-size: 12px; font-weight: 700; color: var(--text-secondary); padding: 6px 8px; text-align: center; border-bottom: 1px solid var(--border); }
+  .simgrid th:first-child { text-align: left; }
+  .simgrid td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: center; }
+  .simgrid td:first-child { text-align: left; font-size: 13.5px; color: var(--text-primary); }
+  .simgrid input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+  .simgrid tr.lost td:first-child { color: var(--warn); text-decoration: line-through; }
+  .simgrid tr.kept td:first-child { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .simnote { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Front Stage <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Goffman said social life is theater: you stage a performance of yourself for every audience you face.</strong> He wrote that in 1959, about dinner parties and shop counters. This page tests the theory against the platform where your generation performs most, using published survey data on what American teens post, what they refuse to post, and what the performance costs. Then a simulator puts you in the manager's chair and takes your separate audiences away. Guess before you reveal. The gaps between your guesses and the data are part of the lesson.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ WHAT GETS POSTED ============ -->
+    <div class="section active" id="sec-posted">
+      <div class="card">
+        <h2>What goes on the front stage</h2>
+        <p class="lede">Pew asked teens which topics they ever post about on social media. Before the chart appears, make a call: which topic do you think tops the list? The options are alphabetical.</p>
+        <div class="guessbox" id="postedBox">
+          <div class="gq">Which topic do teens post about most?</div>
+          <div class="pickrow" id="topicRow"></div>
+          <div class="verdict" id="postedVerdict"></div>
+        </div>
+        <div class="veiled" id="postedReveal">
+          <h3 style="margin-top:14px">Share of teens who ever post about each topic, 2022</h3>
+          <div class="bars" id="topicBars"></div>
+          <div class="teach"><strong>Read it as a stage manager would:</strong> accomplishments and family go out front. Personal problems, dating, religion, and politics stay behind the curtain. That is not an accident and it is not new. It is front stage and back stage, measured. The feed is a highlight reel because everyone is running the same stagecraft you are.</div>
+          <p class="srcnote">Source: Pew Research Center, Connection, Creativity and Drama: Teen Life on Social Media in 2022 (1,316 U.S. teens 13 to 17, April 14 to May 4, 2022). Pew reports the bottom four topics only as about one in ten, so the bars show 10% as an approximation for those.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE EDIT ============ -->
+    <div class="section" id="sec-edit">
+      <div class="card">
+        <h2>The posts that never happen</h2>
+        <p class="lede">Impression management is easiest to see in what gets cut. Pew asked teens how often they decide NOT to post something, and why. One of the reasons is about an audience that is not even there yet: schools and employers who might look later.</p>
+        <div class="guessbox" id="editBox">
+          <div class="gq">What share of teens say they often or sometimes hold back a post because it could hurt them when applying for schools or jobs? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="editSlider" min="0" max="100" value="50" step="1">
+            <span class="gval" id="editSliderVal">50%</span>
+            <button class="gbtn" id="editLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="editVerdict"></div>
+        </div>
+        <div class="veiled" id="editReveal">
+          <h3 style="margin-top:14px">Reasons teens often or sometimes decide not to post, 2022</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">People might use it to embarrass them</span><div class="btrack"><div class="bfill" style="width:40%"></div></div><span class="bval">40%</span></div>
+            <div class="brow"><span class="blabel">Does not fit how they want to represent themselves</span><div class="btrack"><div class="bfill" style="width:38%"></div></div><span class="bval">38%</span></div>
+            <div class="brow"><span class="blabel">It might offend others</span><div class="btrack"><div class="bfill" style="width:33%"></div></div><span class="bval">33%</span></div>
+            <div class="brow"><span class="blabel">Could hurt school or job applications</span><div class="btrack"><div class="bfill warn" id="editRealFill" style="width:27%"></div></div><span class="bval">27%</span></div>
+            <div class="brow" id="editGuessRow"><span class="blabel">your guess on the last one</span><div class="btrack"><div class="bfill ghost" id="editGuessFill" style="width:0%"></div></div><span class="bval" id="editGuessVal"></span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">~50%</div><div class="l">of girls 15 to 17 often or sometimes hold back posts that do not fit how they want to represent themselves, the highest of any group</div></div>
+          </div>
+          <div class="teach"><strong>Every row is Goffman:</strong> the second row is impression management in the survey's own words. The third row is face-work, protecting other people's performances as well as your own. And the fourth row means one in four teens performs for an audience that has not arrived yet. Notice who does the most editing: the group under the most watching does the most stagecraft.</div>
+          <p class="srcnote">Source: Pew Research Center, Connection, Creativity and Drama: Teen Life on Social Media in 2022.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE PRESSURE ============ -->
+    <div class="section" id="sec-pressure">
+      <div class="card">
+        <h2>The pressure to stay in character</h2>
+        <p class="lede">A performance you cannot leave becomes work. Pew has asked teens directly about the pressure to keep the front stage polished.</p>
+        <div class="guessbox" id="pressBox">
+          <div class="gq">In 2018, what share of teens said they feel pressure to only post content that makes them look good to others? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="pressSlider" min="0" max="100" value="50" step="1">
+            <span class="gval" id="pressSliderVal">50%</span>
+            <button class="gbtn" id="pressLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="pressVerdict"></div>
+        </div>
+        <div class="veiled" id="pressReveal">
+          <h3 style="margin-top:14px">The pressure, measured</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Pressure to only post what makes them look good (2018)</span><div class="btrack"><div class="bfill warn" id="pressRealFill" style="width:43%"></div></div><span class="bval">43%</span></div>
+            <div class="brow"><span class="blabel">Pressure to post what gets likes and comments (2018)</span><div class="btrack"><div class="bfill" style="width:37%"></div></div><span class="bval">37%</span></div>
+            <div class="brow"><span class="blabel">Pressure to post what gets likes and comments (2022)</span><div class="btrack"><div class="bfill" style="width:29%"></div></div><span class="bval">29%</span></div>
+            <div class="brow" id="pressGuessRow"><span class="blabel">your guess on the first one</span><div class="btrack"><div class="bfill ghost" id="pressGuessFill" style="width:0%"></div></div><span class="bval" id="pressGuessVal"></span></div>
+          </div>
+          <h3 style="margin-top:14px">Who feels the audience most, 2022</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Overwhelmed by drama: girls</span><div class="btrack"><div class="bfill warn" style="width:45%"></div></div><span class="bval">45%</span></div>
+            <div class="brow"><span class="blabel">Overwhelmed by drama: boys</span><div class="btrack"><div class="bfill" style="width:32%"></div></div><span class="bval">32%</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">Feel worse about their own life: girls</span><div class="btrack"><div class="bfill warn" style="width:28%"></div></div><span class="bval">28%</span></div>
+            <div class="brow"><span class="blabel">Feel worse about their own life: boys</span><div class="btrack"><div class="bfill" style="width:18%"></div></div><span class="bval">18%</span></div>
+          </div>
+          <div class="teach"><strong>The audience is the pressure.</strong> Goffman called the strain of staying in character dramaturgical discipline. The gender gap in every row is a sociological finding on its own: the performers held to the highest staging standards report the most strain from the show. Connect this to the edit tab, where the same group did the most cutting.</div>
+          <p class="srcnote">Sources: Pew Research Center, Teens' Social Media Habits and Experiences (743 U.S. teens, March 7 to April 10, 2018). Pew Research Center, Connection, Creativity and Drama (2022). The look-good pressure question was asked in 2018 and not repeated in 2022, so the two years are shown separately, not as a trend.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ EVERYONE ELSE ============ -->
+    <div class="section" id="sec-others">
+      <div class="card">
+        <h2>Everyone else seems fine</h2>
+        <p class="lede">Answer the two questions below the way you honestly would, then the national numbers appear. Pew asked teens the same pair in fall 2024.</p>
+        <div class="guessbox" id="othersBox">
+          <div class="pollq">Is social media mostly negative for people your age?</div>
+          <div class="pollrow">
+            <button class="pickbtn" id="oPeersYes" type="button">Yes</button>
+            <button class="pickbtn" id="oPeersNo" type="button">No</button>
+          </div>
+          <div class="pollq">Is social media mostly negative for you personally?</div>
+          <div class="pollrow">
+            <button class="pickbtn" id="oSelfYes" type="button">Yes</button>
+            <button class="pickbtn" id="oSelfNo" type="button">No</button>
+          </div>
+          <div class="verdict" id="othersVerdict"></div>
+        </div>
+        <div class="veiled" id="othersReveal">
+          <h3 style="margin-top:14px">Teens who say social media is mostly negative for...</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">people their age (2024)</span><div class="btrack"><div class="bfill warn" style="width:48%"></div></div><span class="bval">48%</span></div>
+            <div class="brow"><span class="blabel">themselves (2024)</span><div class="btrack"><div class="bfill" style="width:14%"></div></div><span class="bval">14%</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">people their age (2022)</span><div class="btrack"><div class="bfill then" style="width:32%"></div></div><span class="bval">32%</span></div>
+            <div class="brow"><span class="blabel">themselves (2022)</span><div class="btrack"><div class="bfill then" style="width:9%"></div></div><span class="bval">9%</span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">45%</div><div class="l">say social media hurts the amount of sleep they get (2024)</div></div>
+            <div class="stat"><div class="v">44%</div><div class="l">say they have tried to cut back (2024)</div></div>
+            <div class="stat ok"><div class="v">74%</div><div class="l">say it makes them feel more connected to friends (2024)</div></div>
+          </div>
+          <div class="teach"><strong>A 34-point gap, and Goffman predicts it.</strong> You see everyone else's front stage and compare it with your own back stage, the one place the staging is visible to you. So everyone else's life looks smoother than yours from where you sit, and yours looks smoother than it is from where they sit. The gap more than doubled from 2022 to 2024 for people their age while barely moving for themselves.</div>
+          <p class="srcnote">Source: Pew Research Center, Teens, Social Media and Mental Health (1,391 U.S. teens 13 to 17, September 18 to October 10, 2024). Your two answers stay on this page and are not recorded anywhere.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CONTEXT COLLAPSE ============ -->
+    <div class="section" id="sec-collapse">
+      <div class="card">
+        <h2>The simulator: your audiences, merged</h2>
+        <p class="lede">Offline, your audiences arrive one at a time, and you stage a different performance for each. Goffman called that audience segregation. Platforms remove it: one post, every audience at once. Researchers call the result context collapse. Run it on yourself. For each post below, check the audiences you would let see it. Then merge them.</p>
+        <table class="simgrid" id="simGrid">
+          <thead>
+            <tr><th>The post</th><th>Close friends</th><th>Family</th><th>A boss or coach</th><th>Everyone at school</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p class="simnote">This is a mechanism demonstration, not survey data. The only numbers in it are your own checkboxes.</p>
+        <div class="guessbox" style="margin-top:14px">
+          <div class="gr">
+            <button class="gbtn" id="mergeBtn" type="button">Merge my audiences</button>
+            <button class="gbtn" id="simReset" type="button" style="background:var(--text-muted)">Start over</button>
+          </div>
+          <div class="verdict" id="simVerdict"></div>
+        </div>
+        <div class="veiled" id="collapseReveal">
+          <div class="teach" id="simTeach"></div>
+          <div class="teach"><strong>What people actually do about it:</strong> run a second account and rebuild the segregation by hand, post things so vague no audience can object, or go quiet and lurk. Each is a rational stage-management response, and each has a cost. The survey tabs on this page are what those costs look like measured at national scale.</div>
+          <p class="srcnote">The term context collapse comes from research by Alice Marwick and danah boyd (2011) on how social platforms flatten multiple audiences into one, building on Goffman's audience segregation. The simulator demonstrates the mechanism only. It records nothing.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS ============ -->
+    <div class="section" id="sec-questions">
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>In the simulator, which post lost the most audiences when the merge came? What does that post have in common with the topics teens keep off the feed on the first tab?</li>
+          <li>The edit tab shows 27% of teens performing for schools and employers who are not watching yet. Is a performance for a future audience still impression management, or something new that Goffman did not describe? Defend your answer.</li>
+          <li>Girls 15 to 17 do the most editing and report the most pressure and drama. Using this chapter and the socialization chapter, explain the gap sociologically rather than psychologically.</li>
+          <li>The 34-point gap on the everyone-else tab: explain it in Goffman's terms in two sentences, as if to a friend who thinks everyone else really is doing better.</li>
+          <li>Where is your back stage, the place you drop the act? Now the hard question: name one way even that space has a script and an audience.</li>
+          <li>If the self is a set of performances, is there anything underneath them? Goffman's answer was unsettling. Give yours, in three sentences.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Pew Research Center, Teens' Social Media Habits and Experiences (2018, 743 U.S. teens 13 to 17). Pew Research Center, Connection, Creativity and Drama: Teen Life on Social Media in 2022 (1,316 U.S. teens 13 to 17). Pew Research Center, Teens, Social Media and Mental Health (2025 report, 1,391 U.S. teens surveyed September to October 2024). Context collapse: Marwick and boyd (2011). All survey values as published. Where Pew reports only about one in ten, the chart says so rather than inventing a figure. The simulator is a mechanism demonstration and uses no survey data. Nothing you click on this page is recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TABS = [
+  { id: 'sec-posted', label: 'What gets posted' },
+  { id: 'sec-edit', label: 'The edit' },
+  { id: 'sec-pressure', label: 'The pressure' },
+  { id: 'sec-others', label: 'Everyone else' },
+  { id: 'sec-collapse', label: 'Context collapse' },
+  { id: 'sec-questions', label: 'Questions' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// ---- Tab 1: What gets posted. Pick the top topic, then the chart appears. ----
+const TOPICS = [
+  { name: 'Their accomplishments', pct: 43, approx: false },
+  { name: 'Their family', pct: 34, approx: false },
+  { name: 'Their emotions and feelings', pct: 25, approx: false },
+  { name: 'Their dating life', pct: 10, approx: true },
+  { name: 'Their personal problems', pct: 10, approx: true },
+  { name: 'Their religious beliefs', pct: 10, approx: true },
+  { name: 'Their political beliefs', pct: 10, approx: true },
+];
+const topicRow = document.getElementById('topicRow');
+let topicPicked = null;
+TOPICS.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(t => {
+  const b = document.createElement('button');
+  b.className = 'pickbtn'; b.type = 'button';
+  b.textContent = t.name;
+  b.addEventListener('click', () => pickTopic(t.name));
+  topicRow.appendChild(b);
+});
+function pickTopic(name) {
+  if (topicPicked) return;
+  topicPicked = name;
+  topicRow.querySelectorAll('.pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === name) b.classList.add('picked');
+  });
+  const bars = document.getElementById('topicBars');
+  TOPICS.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'brow';
+    const tag = t.name === name ? '<span class="picktag">your pick</span>' : '';
+    const val = t.approx ? '~10%' : t.pct + '%';
+    row.innerHTML = '<span class="blabel">' + t.name + '</span><div class="btrack"><div class="bfill' + (t.approx ? ' then' : '') + '" style="width:' + t.pct + '%"></div></div><span class="bval">' + val + '</span>' + (tag ? '<span style="flex-shrink:0">' + tag + '</span>' : '');
+    bars.appendChild(row);
+  });
+  const verdict = document.getElementById('postedVerdict');
+  verdict.textContent = name === 'Their accomplishments'
+    ? 'Right. Accomplishments top the list at 43%.'
+    : 'You picked ' + name.toLowerCase() + '. The top topic is accomplishments, at 43%.';
+  document.getElementById('postedReveal').classList.remove('veiled');
+}
+
+// ---- Guess sliders: The edit (27%) and The pressure (43%). ----
+function setupGuess(cfg) {
+  const slider = document.getElementById(cfg.slider);
+  const sliderVal = document.getElementById(cfg.sliderVal);
+  const lockBtn = document.getElementById(cfg.lock);
+  slider.addEventListener('input', () => { sliderVal.textContent = slider.value + '%'; });
+  function lock(valOverride) {
+    if (lockBtn.disabled) return;
+    const guess = valOverride == null ? +slider.value : valOverride;
+    lockBtn.disabled = true;
+    slider.disabled = true;
+    sliderVal.textContent = guess + '%';
+    document.getElementById(cfg.guessFill).style.width = guess + '%';
+    document.getElementById(cfg.guessVal).textContent = guess + '%';
+    const diff = guess - cfg.actual;
+    let msg;
+    if (diff === 0) msg = 'You guessed it exactly. The published figure is ' + cfg.actual + '%.';
+    else msg = 'You guessed ' + guess + '%. The published figure is ' + cfg.actual + '%. You were ' + Math.abs(diff) + ' ' + (Math.abs(diff) === 1 ? 'point' : 'points') + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    document.getElementById(cfg.verdict).textContent = msg;
+    document.getElementById(cfg.reveal).classList.remove('veiled');
+  }
+  lockBtn.addEventListener('click', () => lock());
+  return lock;
+}
+const lockEdit = setupGuess({
+  slider: 'editSlider', sliderVal: 'editSliderVal', lock: 'editLock',
+  guessFill: 'editGuessFill', guessVal: 'editGuessVal', verdict: 'editVerdict',
+  reveal: 'editReveal', actual: 27,
+});
+const lockPressure = setupGuess({
+  slider: 'pressSlider', sliderVal: 'pressSliderVal', lock: 'pressLock',
+  guessFill: 'pressGuessFill', guessVal: 'pressGuessVal', verdict: 'pressVerdict',
+  reveal: 'pressReveal', actual: 43,
+});
+
+// ---- Everyone else: answer both questions, then the national numbers appear. ----
+const oAnswers = { peers: null, self: null };
+function bindPair(yesId, noId, key) {
+  const yes = document.getElementById(yesId), no = document.getElementById(noId);
+  [yes, no].forEach(btn => btn.addEventListener('click', () => {
+    if (oAnswers.peers !== null && oAnswers.self !== null) return;
+    if (oAnswers[key] !== null) return;
+    oAnswers[key] = btn === yes;
+    btn.classList.add('picked');
+    yes.disabled = true; no.disabled = true;
+    maybeRevealOthers();
+  }));
+}
+bindPair('oPeersYes', 'oPeersNo', 'peers');
+bindPair('oSelfYes', 'oSelfNo', 'self');
+function answerOthers(peersYes, selfYes) {
+  if (oAnswers.peers === null) { document.getElementById(peersYes ? 'oPeersYes' : 'oPeersNo').click(); }
+  if (oAnswers.self === null) { document.getElementById(selfYes ? 'oSelfYes' : 'oSelfNo').click(); }
+}
+function maybeRevealOthers() {
+  if (oAnswers.peers === null || oAnswers.self === null) return;
+  let msg;
+  if (oAnswers.peers && !oAnswers.self) msg = 'Bad for them, fine for you. That is the most common pattern in the data, and the tension worth sitting with.';
+  else if (oAnswers.peers && oAnswers.self) msg = 'You said mostly negative for both. In the national data, saying it about yourself is the rare answer.';
+  else if (!oAnswers.peers && !oAnswers.self) msg = 'You said mostly negative for neither. Compare your answers with the national pattern below.';
+  else msg = 'Bad for you but not for people your age. Almost nobody answers this way in the national data.';
+  document.getElementById('othersVerdict').textContent = msg;
+  document.getElementById('othersReveal').classList.remove('veiled');
+}
+
+// ---- Context collapse simulator. Mechanism demonstration, records nothing. ----
+const SIM_POSTS = [
+  'A photo from a party',
+  'A political opinion',
+  'A gym selfie',
+  'A meme that is a little edgy',
+  'Complaining about class or work',
+  'An award you just won',
+  'A post about feeling down this week',
+  'An inside joke with your friends',
+];
+const AUDS = 4;
+const simBody = document.querySelector('#simGrid tbody');
+SIM_POSTS.forEach((p, r) => {
+  const tr = document.createElement('tr');
+  let cells = '<td>' + p + '</td>';
+  for (let a = 0; a < AUDS; a++) {
+    cells += '<td><input type="checkbox" data-r="' + r + '" data-a="' + a + '"></td>';
+  }
+  tr.innerHTML = cells;
+  simBody.appendChild(tr);
+});
+let merged = false;
+function setSim(r, a, on) {
+  const box = simBody.querySelector('input[data-r="' + r + '"][data-a="' + a + '"]');
+  if (box) box.checked = on;
+}
+function runMerge() {
+  if (merged) return;
+  merged = true;
+  const rows = Array.from(simBody.querySelectorAll('tr'));
+  let kept = 0, lost = 0, silent = 0;
+  const lostNames = [];
+  rows.forEach((tr, r) => {
+    const boxes = Array.from(tr.querySelectorAll('input'));
+    const n = boxes.filter(b => b.checked).length;
+    boxes.forEach(b => { b.disabled = true; });
+    if (n === AUDS) { kept++; tr.classList.add('kept'); }
+    else if (n > 0) { lost++; tr.classList.add('lost'); lostNames.push(SIM_POSTS[r]); }
+    else silent++;
+  });
+  const v = document.getElementById('simVerdict');
+  const teach = document.getElementById('simTeach');
+  if (kept + lost === 0) {
+    v.textContent = 'You checked nothing, so the merge changes nothing. You were already silent. That is one real response to context collapse, and the loneliest one.';
+    teach.innerHTML = '<strong>Try it again with real choices.</strong> The demonstration only works if you first build the separate performances the platform then takes away.';
+  } else {
+    v.textContent = 'Merged. One audience now. ' + kept + ' of ' + (kept + lost) + ' shareable posts survive.';
+    let t = '<strong>What just happened:</strong> before the merge you were running up to four tailored performances, deciding post by post who counts as the audience. The merge keeps only what every audience can see. ';
+    if (lost > 0) t += 'You lost ' + lost + ' ' + (lost === 1 ? 'post' : 'posts') + ' (' + lostNames.join(', ').toLowerCase() + '), each fine for someone and wrong for someone else. ';
+    if (kept > 0) t += 'What survives is the intersection: the safest, smoothest, least specific version of you. ';
+    if (kept === SIM_POSTS.length) t = '<strong>What just happened:</strong> you showed everything to everyone, so the merge cost you nothing. Either your audiences are unusually alike or you were already performing the one merged self the platform rewards. Both are worth examining. ';
+    t += 'That shrinkage is context collapse, and it is one reason the feed on the first tab looks the way it does.';
+    teach.innerHTML = t;
+  }
+  document.getElementById('collapseReveal').classList.remove('veiled');
+}
+document.getElementById('mergeBtn').addEventListener('click', runMerge);
+document.getElementById('simReset').addEventListener('click', () => {
+  merged = false;
+  simBody.querySelectorAll('tr').forEach(tr => {
+    tr.classList.remove('kept', 'lost');
+    tr.querySelectorAll('input').forEach(b => { b.checked = false; b.disabled = false; });
+  });
+  document.getElementById('simVerdict').textContent = '';
+  document.getElementById('collapseReveal').classList.add('veiled');
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, pickTopic, lockEdit, lockPressure, answerOthers, setSim, runMerge };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fix the Place · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Fix the Place <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Thirteen chapters have been about people.</strong> Why they offend, how we measure it, what we do to them afterward. This last chapter changes the unit of analysis. It studies criminal events in space rather than criminal propensity in persons, and it asks a question none of the other thirteen asked: what if you could stop the event without ever identifying an offender? That turns out to be possible more often than the rest of the course would lead you to expect, and the evidence for it is unusually good. Nothing on this page is recorded and no guess is graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-addr" type="button">Crime has an address</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-bw" type="button">Broken windows, three things</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-lot" type="button">The vacant lot trial</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-design" type="button">Design it away</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-move" type="button">Will it just move?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-addr">
+      <div class="card">
+        <h2>Crime concentrates at addresses, not in neighborhoods</h2>
+        <p class="lede">Chapter 5 told you crime clusters. This chapter tells you how tightly, and the answer is tighter than almost anyone guesses. Researchers have counted crime at the level of the street segment, meaning one block face between two intersections, in city after city. Take a whole city, sort its street segments by how much crime each one produces, and start at the top. Guess what share of segments you need before you have accounted for half of all the crime in the city.</p>
+
+        <div class="guessbox">
+          <div class="gq">Percentage of a city's street segments that together produce half of its crime.</div>
+          <div class="gr">
+            <input type="range" id="gConc" min="1" max="50" step="1" value="25">
+            <div class="gval" id="gConcV">25%</div>
+            <button class="gbtn" id="gConcBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gConcVerdict"></div>
+        </div>
+
+        <div class="veiled" id="revConc">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Share of street segments</div><div class="btrack"><div class="bfill good" id="c1" style="width:0%"></div></div><div class="bval">2 to 6%</div></div>
+            <div class="brow"><div class="blabel">Share of the city's crime</div><div class="btrack"><div class="bfill warn" id="c2" style="width:0%"></div></div><div class="bval">50%</div></div>
+          </div>
+          <p class="srcnote">Weisburd, D. (2015). The law of crime concentration and the criminology of place. Criminology 53(2), 133 to 157. Across eight cities, between 2.1 and 6.0 percent of street segments accounted for 50 percent of crime, and between 0.4 and 1.6 percent accounted for 25 percent. In Seattle, tracked every year for sixteen years, half of all crime sat on between 4.7 and 6.1 percent of segments. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Now the part that makes it a law rather than a fact.</strong> The Seattle segments held their rank for sixteen years while citywide crime fell by more than a fifth. The same blocks stayed hot and the same blocks stayed cold, through a crime decline, through changes in who lived there, through changes in policing. Whatever is producing crime at those addresses is a property of the addresses.</div>
+
+          <div class="note"><strong>Why this reframes everything behind you.</strong> If crime concentrates that tightly at places, then a policy aimed at the average offender is aimed at the wrong unit. Chapters 8 through 11 asked what is different about the person. This chapter asks what is different about the corner, and it turns out you can answer that question without ever answering the first one. That is the whole argument of environmental criminology, and it is why the field sometimes calls itself crime science rather than criminology.</div>
+
+          <p class="lede">Two kinds of hot place, which need opposite fixes.</p>
+          <div class="teach"><strong>Crime generators</strong> gather large numbers of ordinary people for ordinary reasons. A mall, a stadium, a transit hub. Crime arrives with the foot traffic rather than because anyone sought the place out, so the fix is crowd and flow management.<br><br><strong>Crime attractors</strong> are places offenders travel to because of the opportunities there. An unguarded lot, an open-air market for something illegal. The fix is removing the opportunity, because managing the crowd does nothing when the crowd is the point.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-bw">
+      <div class="card">
+        <h2>Broken windows is three separate things</h2>
+        <p class="lede">Almost every argument about broken windows goes wrong in the same way, which is that people argue about all three at once. Keep them apart and the evidence becomes readable.</p>
+
+        <div class="teach"><strong>One, the theory.</strong> Visible disorder signals that nobody is in charge of a place. Unrepaired windows, blight, and unchecked incivility communicate an absence of guardianship, and that invites more serious offending. Physical disorder and social disorder both count.<br><br><strong>Two, the policing style.</strong> Order maintenance and zero tolerance. Arrest for the small things so the big things never arrive. New York adopted a version of this at scale in the 1990s and it was widely credited with the crime decline there, a claim that remains contested because crime fell in cities that did nothing of the kind.<br><br><strong>Three, the backlash.</strong> Aggressive order maintenance fell hardest on poor communities of color, produced the stop-and-frisk era, and fed exactly the labeling machine Chapter 11 described. Perceptions of what counts as disorder track racial composition, which means the input to the whole strategy is contaminated. George Kelling, who co-wrote the original article, objected that the theory had asked for order and had been turned into mass arrest.</div>
+
+        <p class="lede">So does policing disorder reduce crime? A 2024 systematic review pooled 54 tests and answered it two ways, once for community and problem-solving approaches that fix the disorder, and once for aggressive order maintenance that arrests people associated with it. Predict both before you look.</p>
+        <div id="bwpick"></div>
+
+        <div class="veiled" id="revBw">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Community problem-solving</div><div class="btrack"><div class="bfill good" id="b1" style="width:0%"></div></div><div class="bval">33.1%</div></div>
+            <div class="brow"><div class="blabel">Aggressive order maintenance</div><div class="btrack"><div class="bfill warn" id="b2" style="width:0%"></div></div><div class="bval">no effect</div></div>
+          </div>
+          <p class="srcnote">Braga, A. A., Schnell, C., and Welsh, B. C. (2024). Disorder policing to reduce crime: an updated systematic review and meta-analysis. Criminology and Public Policy 23, 745 to 775. Fifty six eligible studies, 54 tests analyzed. Overall crime reduction 26.2 percent, with benefits spilling over into surrounding areas. Community problem-solving 33.1 percent. Aggressive order maintenance was not statistically significant. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Read the two numbers together.</strong> The theory survives and the policing style does not. Disorder does matter, and dealing with it does reduce crime, but the version that works is the one that repairs the place rather than the one that arrests the people standing near it. You can fix broken windows with glaziers instead of handcuffs, and on this evidence the glaziers work better.</div>
+
+          <div class="note"><strong>The methodological caution.</strong> Studies of a policing style are not randomized in the way the next tab's experiment is. Departments choose where to concentrate, and places chosen for intensive attention differ from places not chosen. The review handles this as carefully as the literature allows, and it is still weaker evidence than a trial. Notice that the weaker evidence favors the approach with the smaller civil liberties cost, which is a convenient result and therefore one to hold at arm's length.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-lot">
+      <div class="card">
+        <h2>The best experiment in the course</h2>
+        <p class="lede">Philadelphia has tens of thousands of vacant lots. In 2013 researchers took 541 of them, grouped them into 110 geographically contiguous clusters, and randomly assigned each cluster to one of three conditions. Randomly. This is the Chapter 2 gold standard, applied to city blocks instead of people, and it is why this study carries more weight than anything else in the chapter.</p>
+
+        <div class="teach"><strong>The three arms.</strong> Full greening: remove the trash and debris, grade the land, plant grass and a few trees, install a low wooden fence, and maintain it. Mowing and trash cleanup only: the cheap version, no planting and no fence. And a no-intervention control, left exactly as it was. Outcomes came from police records and from repeated interviews with 445 residents living nearby, measured before and after.</div>
+
+        <p class="lede">Before the results, commit to a prediction. In the neighborhoods below the poverty line, what happened to gun violence around the greened lots?</p>
+        <div id="lotpick"></div>
+
+        <div class="veiled" id="revLot">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Gun violence, below poverty line</div><div class="btrack"><div class="bfill good" id="l1" style="width:0%"></div></div><div class="bval">-29%</div></div>
+            <div class="brow"><div class="blabel">Burglary</div><div class="btrack"><div class="bfill good" id="l2" style="width:0%"></div></div><div class="bval">-22%</div></div>
+            <div class="brow"><div class="blabel">Nuisance complaints</div><div class="btrack"><div class="bfill good" id="l3" style="width:0%"></div></div><div class="bval">-30%</div></div>
+            <div class="brow"><div class="blabel">Residents afraid to go outside</div><div class="btrack"><div class="bfill good" id="l4" style="width:0%"></div></div><div class="bval">-58%</div></div>
+          </div>
+          <p class="srcnote">Branas, C. C., et al. (2018). Citywide cluster randomized trial to restore blighted vacant land and its effects on violence, crime, and fear. Proceedings of the National Academy of Sciences 115(12). 541 lots in 110 clusters, three arms, outcomes measured 18 months before and after. Residents near treated lots also reported 37 percent less perceived crime, 39 percent less vandalism, and more than 75 percent reported using outdoor space more for socializing. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Nobody was arrested and nobody was treated.</strong> No offender was identified, deterred, incapacitated, rehabilitated, or reintegrated. The place changed, and the events stopped happening there. Every theory in Chapters 6 through 13 needs a person to act on. This one does not, and that is the argument the chapter is making.</div>
+
+          <div class="cn"><strong>An honesty note you should carry into the forum.</strong> The 29 percent figure is the effect on gun violence around greened lots in neighborhoods below the poverty line, which is a specific subgroup and the largest effect the trial produced. A later analysis by the same research group, looking at shootings citywide rather than in that subgroup, reported smaller reductions of about 7 percent for greening and about 9 percent for mowing and trash cleanup. Both findings are real and they are not in conflict, because they answer different questions. If you cite the 29 percent, say which condition and which neighborhoods it refers to. Reporting the biggest number in a study without its qualifier is the single most common way a good finding turns into a bad claim.</div>
+
+          <div class="note"><strong>And notice which arm was cheapest.</strong> In the citywide shooting analysis the mowing and trash cleanup arm performed at least as well as full greening. Mowing a lot costs almost nothing next to a year of anything discussed in Chapter 13. Whatever your view of punishment, the cost comparison is not close.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-design">
+      <div class="card">
+        <h2>Name the mechanism</h2>
+        <p class="lede">Ten real prevention measures. For each one, name what it does to the crime triangle from Chapter 7. Every measure here works by removing one leg, and being able to say which leg is the skill this chapter is teaching.</p>
+        <div id="mech"></div>
+        <div class="veiled" id="mechWrap">
+          <div class="scorebar">You named <strong id="mechScore">0 of 10</strong>.</div>
+          <div class="teach"><strong>Situational prevention is offense-specific by design.</strong> There is no general fix. The measure that stops bar fights does nothing about catalytic converter theft, and the measure that stops converter theft does nothing about phishing. That is a feature rather than a limitation, because it forces you to analyze one problem at one place rather than to legislate against a category.</div>
+        </div>
+
+        <h3>The design tradition, in one paragraph</h3>
+        <p>Crime prevention through environmental design, usually shortened to CPTED, rests on three ideas. Natural surveillance means arranging space so that ordinary people can see it without trying, through windows facing the street, clear sightlines, and lighting. Access control means using real and symbolic gateways to channel movement. Territoriality means designing space so that it reads as belonging to somebody. Oscar Newman's insight was that architecture can do a guardian's job, permanently and without wages.</p>
+
+        <div class="cn"><strong>And the ethical test this chapter cannot avoid.</strong> The same logic produces hostile architecture: spikes under bridges, armrests bisecting benches, boulders under overpasses. Those designs do not prevent a crime event. They relocate an unwanted person, almost always an unhoused one, and they do it without anyone having to make an argument in public. The test to apply is simple. Does this design prevent a criminal event, or does it just move a person somebody would rather not see? One of those is crime science. The other is the conflict-theory question from Week 1, poured in concrete.</div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-move">
+      <div class="card">
+        <h2>Will it just move somewhere else?</h2>
+        <p class="lede">This is the objection every student raises, and it deserves a serious answer rather than a reassurance. If prevention only squeezes the balloon, nothing has been gained and the resources were wasted. Crime could displace in six ways: to another place, another time, another target, another tactic, another offense, or to a different offender who steps into the gap.</p>
+
+        <p>Researchers reviewed 102 evaluations of situational prevention and examined every observation where displacement or diffusion could have been detected. Guess what share of those observations showed displacement of any kind.</p>
+        <div class="guessbox">
+          <div class="gq">Percentage of observations in which displacement was detected.</div>
+          <div class="gr">
+            <input type="range" id="gDisp" min="0" max="100" step="1" value="50">
+            <div class="gval" id="gDispV">50%</div>
+            <button class="gbtn" id="gDispBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gDispVerdict"></div>
+        </div>
+
+        <div class="veiled" id="revDisp">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Showed displacement</div><div class="btrack"><div class="bfill warn" id="d1" style="width:0%"></div></div><div class="bval">26%</div></div>
+            <div class="brow"><div class="blabel">Showed diffusion of benefits</div><div class="btrack"><div class="bfill good" id="d2" style="width:0%"></div></div><div class="bval">27%</div></div>
+          </div>
+          <p class="srcnote">Guerette, R. T. and Bowers, K. J. (2009). Assessing the extent of crime displacement and diffusion of benefits. Criminology 47(4). 102 evaluations reviewed. Displacement observed in 26 percent of observations and diffusion of benefits in 27 percent. Where spatial displacement did occur, it was generally smaller than the reduction achieved in the treated area. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Diffusion of benefits is the finding nobody expects.</strong> Crime often falls in the surrounding area too, not only in the place that was treated, and it happens about as often as displacement does. Offenders do not know exactly where the intervention stops, so uncertainty spreads outward from it. The 2024 disorder policing review found the same thing, with effects spilling over into surrounding areas rather than pushing crime into them.</div>
+
+          <div class="note"><strong>Why the balloon metaphor fails.</strong> It assumes a fixed quantity of crime looking for somewhere to go, which assumes an offender with a fixed determination to offend that day. Routine activity theory from Chapter 7 says otherwise. Many offenses are opportunistic, and when the easy opportunity is gone a good share of people simply do not go looking for a harder one. Displacement is real and it is partial. It is a reason to measure the surrounding area, not a reason to do nothing.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Take this to the forum</h2>
+        <p class="lede">This is the last forum of the semester, and it asks you to do the thing the whole course has been building toward: take the offense you have studied all term and design a response to it that prevents harm without manufacturing a criminal.</p>
+
+        <div class="teach"><strong>Your forum prompt.</strong> Design one place-based intervention for the offense in your term paper. Name the place, name the mechanism you are using, and name the displacement objection you would expect. Then answer it.</div>
+
+        <p>Four things that separate an adequate post from a strong one.</p>
+        <p><strong>One. Pick a real place, not a category.</strong> Not neighborhoods with high burglary rates, but the kind of specific setting your offense actually happens in. Chapter 14's whole claim is that the unit of analysis is the address. If your intervention could be described without naming a place, it is not a place-based intervention.</p>
+        <p><strong>Two. Say which leg of the triangle you are removing.</strong> Motivated offender, suitable target, or capable guardian. The tab above walks through ten examples. If your measure does not obviously attack one of the three, work out which one it is before you post, because that is the question a reply will ask you.</p>
+        <p><strong>Three. Take the displacement objection seriously.</strong> The honest answer is not that displacement never happens. It is that it is partial, that diffusion of benefits is about as common, and that you would want to measure the surrounding area rather than assume either way. Say what you would measure.</p>
+        <p><strong>Four. Apply the ethics test.</strong> Does your design prevent an event, or does it move a person? If your intervention would make life harder for people who are not offending, say so and defend it, or change it. That distinction is the last thing this course has to teach you and it is the one most likely to matter after the semester ends.</p>
+
+        <div class="note"><strong>If your offense does not happen in a physical place.</strong> Fraud, identity theft, and most cybercrime still have settings, they are just not street corners. A platform, a payment flow, a login page, a customer service script that can be socially engineered. Routine activity theory made the move online intact: two-factor authentication is guardianship and a password manager is target hardening. Name the digital setting with the same specificity you would give a corner.</div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+
+  function setupGuess(cfg){
+    const sl = $(cfg.slider), out = $(cfg.val), btn = $(cfg.btn), vd = $(cfg.verdict), rv = $(cfg.reveal);
+    let locked = false;
+    const fmt = cfg.fmt || (v => v + '%');
+    sl.addEventListener('input', () => { out.textContent = fmt(sl.value); });
+    out.textContent = fmt(sl.value);
+    function lock(){
+      if (locked) return;
+      locked = true;
+      const g = Number(sl.value);
+      sl.disabled = true; btn.disabled = true;
+      const diff = Math.round(g - cfg.answer);
+      vd.textContent = Math.abs(diff) < 1
+        ? 'You guessed ' + fmt(g) + '. That is the published figure.'
+        : 'You guessed ' + fmt(g) + '. The published figure is ' + cfg.label + '. You were about ' + Math.abs(diff) + ' ' + cfg.unit + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+      rv.style.display = 'block';
+      if (cfg.after) cfg.after();
+    }
+    btn.addEventListener('click', lock);
+    return lock;
+  }
+
+  function buildPick(mountId, item, revealId, after){
+    const el = $(mountId);
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach((o, j) => { btns += '<button class="qopt" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + item.q + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v"></div>';
+    el.appendChild(d);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-j]');
+      if (!b || b.disabled) return;
+      const j = Number(b.dataset.j);
+      el.querySelectorAll('[data-j]').forEach(x => {
+        x.disabled = true;
+        if (Number(x.dataset.j) === j) x.classList.add('chosen');
+        if (Number(x.dataset.j) === item.a) x.classList.add('answer');
+      });
+      const box = $(mountId + 'v');
+      box.innerHTML = '<div class="grade ' + (j === item.a ? 'right' : 'mixed') + '">' + (j === item.a ? 'that is it' : 'not quite') + '</div>' + item.v;
+      box.style.display = 'block';
+      $(revealId).style.display = 'block';
+      if (after) after();
+    });
+  }
+
+  // ---------- TAB 1 ----------
+  setupGuess({ slider:'gConc', val:'gConcV', btn:'gConcBtn', verdict:'gConcVerdict', reveal:'revConc',
+    answer:5, label:'between 2 and 6 percent', unit:'points', after: () => { fill('c1', 6); fill('c2', 100); } });
+
+  // ---------- TAB 2 ----------
+  buildPick('bwpick', {
+    q: 'Pooling 54 tests, which version of disorder policing reduced crime?',
+    opts: [
+      'Both worked, and aggressive enforcement worked better',
+      'Both worked about equally well',
+      'Only community and problem-solving approaches worked',
+      'Neither worked, so the theory is dead'
+    ],
+    a: 2,
+    v: 'Only the community and problem-solving version. Those approaches produced an estimated 33.1 percent crime reduction, and it was highly statistically significant. Aggressive order maintenance produced an estimate that was not statistically distinguishable from no effect at all. Overall, across every kind of disorder policing pooled together, the reduction was 26.2 percent, and benefits spilled over into surrounding areas rather than pushing crime into them. So the theory that disorder matters survives the test. The enforcement style built on it does not.'
+  }, 'revBw', () => { fill('b1', 100); fill('b2', 8); });
+
+  // ---------- TAB 3 ----------
+  buildPick('lotpick', {
+    q: 'Around greened lots in neighborhoods below the poverty line, gun violence:',
+    opts: [
+      'Rose, because the improved lots attracted more foot traffic',
+      'Did not change measurably',
+      'Fell by about 10 percent',
+      'Fell by about 29 percent'
+    ],
+    a: 3,
+    v: 'Fell by about 29 percent, and that was the largest effect in the trial. Burglary fell about 22 percent and nuisance complaints about 30 percent. Residents living near treated lots reported 58 percent less fear of going outside and more than 75 percent said they used outdoor space more for socializing. Read the honesty note below before you quote any of these numbers, because the 29 percent figure carries conditions.'
+  }, 'revLot', () => { fill('l1', 50); fill('l2', 38); fill('l3', 52); fill('l4', 100); });
+
+  // ---------- TAB 4 ----------
+  const MECH_OPTS = ['Removes the offender', 'Hardens the target', 'Adds a guardian'];
+  const MECH = [
+    { t: 'An engine immobilizer that will not let a car start without the right key, which is the fix eventually shipped for the Kia and Hyundai theft wave.', a: 'Hardens the target',
+      v: 'Hardens the target. The car is still there, the person is still there, and the theft has become technically impossible with the tools that worked before. Chapter 3 gave you the pattern, Chapter 7 gave you the theory, and this is the same theory shipped as a software update.' },
+    { t: 'Two-factor authentication on a student email account.', a: 'Hardens the target',
+      v: 'Hardens the target, in the online version of the triangle. The account is as valuable as it was and the attacker is as motivated, and the stolen password stopped being enough. Routine activity theory made the move to the internet without needing any modification.' },
+    { t: 'A doorman in the lobby of an apartment building.', a: 'Adds a guardian',
+      v: 'Adds a guardian, and the most literal one in the list. Note that the doorman need not intervene in anything. Chapter 7 showed you that most guardianship is monitoring rather than confrontation, and the deterrent is the plausible prospect of being noticed.' },
+    { t: 'Street lighting improved along a stretch of road at night.', a: 'Adds a guardian',
+      v: 'Adds a guardian, by making ordinary passersby into potential witnesses. The evidence here is mixed and worth knowing precisely: CrimeSolutions rates improved street lighting as promising for property crime and ineffective for violent crime.' },
+    { t: 'Mowing a vacant lot, clearing the trash, and putting a low fence around it.', a: 'Adds a guardian',
+      v: 'Adds a guardian, in the sense that matters most in this chapter. Nobody is standing there. The maintained lot signals that somebody is responsible for this ground, which is exactly the message disorder sends in reverse, and the randomized trial in the previous tab is what happens next.' },
+    { t: 'Moving a bus stop away from a bar entrance so that the two crowds stop mixing at closing time.', a: 'Removes the offender',
+      v: 'Removes the offender from the setting, which situational prevention calls deflecting offenders. Nobody is arrested or deterred. The two crowds simply stop occupying the same fifteen feet at the same moment, and the fights that used to start there stop starting there.' },
+    { t: 'Limiting the number of paracetamol tablets sold in a single package.', a: 'Hardens the target',
+      v: 'Hardens the target by controlling the tool, which is one of Clarke’s standard techniques. It is included here because it is the clearest demonstration that opportunity matters even for the most determined-seeming acts, and because the evidence for it is unusually strong.' },
+    { t: 'A convenience store policy that two clerks must be on duty after midnight.', a: 'Adds a guardian',
+      v: 'Adds a guardian, and this one has a real evaluation literature behind it in robbery prevention. Two people means one can call for help while the other complies, which changes the arithmetic of the robbery before it starts.' },
+    { t: 'Barring a person with a history of violence at one bar from entering any licensed venue in the entertainment district.', a: 'Removes the offender',
+      v: 'Removes the offender from the setting. Note where this one sits ethically. It is the measure in this list that operates on a person rather than a place, and it is the point at which situational prevention starts to look like the exclusion practices you will meet in the ethics note below.' },
+    { t: 'Requiring a screen between the driver and passengers in a taxi or rideshare vehicle.', a: 'Hardens the target',
+      v: 'Hardens the target, the target here being the driver. Occupational homicide risk for drivers is among the highest of any job, and the screen is the intervention with the clearest logic behind it: it does not change who gets in the car, only what they can reach.' },
+  ];
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+    return { answer };
+  }
+  buildSorter('mech', MECH, MECH_OPTS, (right, total) => {
+    $('mechScore').textContent = right + ' of ' + total;
+    $('mechWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 5 ----------
+  setupGuess({ slider:'gDisp', val:'gDispV', btn:'gDispBtn', verdict:'gDispVerdict', reveal:'revDisp',
+    answer:26, label:'26 percent', unit:'points', after: () => { fill('d1', 26); fill('d2', 27); } });
+
+  window.__S = { activate, MECH };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

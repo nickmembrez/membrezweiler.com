@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Pattern Is Not the Reason · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h3 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+  .checklist { margin: 14px 0 4px; }
+  .cki { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cki:last-child { border-bottom: 0; }
+  .ckbox { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--surface-1); font-weight: 700; }
+  .cki.on .ckbox { background: var(--good); border-color: var(--good); color: #fff; }
+  .cki.on .ckt { color: var(--text-muted); }
+  .ckt { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
+  .ckt strong { color: var(--text-primary); }
+  .ckcount { font-size: 13px; font-weight: 700; color: var(--accent); margin-top: 10px; }
+  .ref { font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.7; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  #apa .sclaim { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 14px; line-height: 1.7; }
+  .ref em { font-style: italic; }
+  .ref .lbl { display: block; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .refbad { border-color: var(--warn); }
+  .refgood { border-color: var(--good); }
+  .steps { counter-reset: st; margin: 12px 0; }
+  .step { border-left: 3px solid var(--grid); padding: 2px 0 12px 16px; margin-left: 6px; }
+  .step:last-child { padding-bottom: 0; }
+  .step h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--accent); }
+  .step .qv { font-family: Georgia, "Times New Roman", serif; font-size: 15px; color: var(--text-primary); margin: 4px 0 6px; }
+  .step .why { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .step.on { border-left-color: var(--good); }
+  .src { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin: 12px 0; background: var(--surface-1); }
+  .src h3 { margin: 0 0 2px; font-size: 15px; color: var(--text-primary); }
+  .src .where { font-size: 12px; color: var(--accent); word-break: break-all; margin: 0 0 8px; }
+  .src p { margin: 0 0 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .src .lim { font-size: 13px; color: var(--text-primary); background: var(--wash); border-radius: 6px; padding: 8px 10px; margin: 8px 0 0; }
+  .src .lim strong { color: var(--text-primary); }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 780px) { .twocol { grid-template-columns: 1fr; } }
+  .rival { border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 12px 14px; margin: 10px 0; background: var(--surface-1); }
+  .rival h3 { margin: 0 0 4px; font-size: 14.5px; color: var(--text-primary); }
+  .rival p { margin: 0 0 6px; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  .rival .sep { font-size: 13px; color: var(--text-primary); background: var(--wash); border-radius: 6px; padding: 8px 10px; margin: 6px 0 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+  .gcell { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .gcell h3 { margin: 0 0 6px; font-size: 14px; color: var(--accent); }
+  .gcell p { margin: 0; font-size: 13.5px; color: var(--text-secondary); line-height: 1.55; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Pattern Is Not the Reason <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Part 3 is where papers go wrong, and they go wrong in one specific way.</strong> A student finds a real pattern, reports it accurately, and then stops. The pattern sits on the page looking like an explanation, and because nobody wrote a false sentence, nobody notices that no explaining happened. This page is about the step after the pattern. It is also about doing that step responsibly, because the patterns in this part are about people, and a pattern reported without a mechanism invites the reader to supply their own. Nothing here is recorded and nothing is graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-gap" type="button">Pattern or explanation</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-dispro" type="button">Disparity and disproportionality</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-rivals" type="button">Four rivals, one gap</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-find" type="button">Find your own patterns</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-write" type="button">Writing it responsibly</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-check" type="button">Before you submit</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-gap">
+      <div class="card">
+        <h2>A pattern tells you where to look. It does not tell you why.</h2>
+        <p class="lede">Every statement below is true. Some of them describe a pattern and some of them propose an explanation for one. Sorting them apart is the whole skill, and it is harder than it sounds, because a well-worded pattern can feel like it already contains its own reason.</p>
+        <div id="sortpe"></div>
+        <div class="veiled" id="sortpeWrap">
+          <div class="scorebar">You sorted <strong id="sortpeScore">0 of 10</strong>.</div>
+          <div class="teach"><strong>The test that separates them.</strong> Ask whether the statement could be checked by counting. If yes, it is a pattern. If checking it would require you to establish why something happens rather than that it happens, it is an explanation, and explanations can be wrong in ways that counting will not reveal. Chapter 5 gave you the patterns. Chapters 6 through 12 are the competing explanations for them, and this course spent nine weeks on the second job because it is much harder than the first.</div>
+          <div class="note"><strong>Why this matters for your grade and beyond it.</strong> A Part 3 that reports six patterns and explains none of them is a description of a spreadsheet. A Part 3 that reports three patterns and works carefully through what might produce each one is a piece of criminology. The rubric weights the second, and Part 4 is built directly on top of it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-dispro">
+      <div class="card">
+        <h2>Two words that get used as if they were one</h2>
+        <p class="lede">Part 3 asks who offends and who is victimized. That means you will be reporting group differences, and the vocabulary for doing it precisely exists for a reason.</p>
+
+        <div class="grid2">
+          <div class="gcell">
+            <h3>Disparity</h3>
+            <p>A difference between groups in an outcome. Group A is arrested at a higher rate than Group B. This is an observation. It says nothing about why, and by itself it accuses nobody of anything.</p>
+          </div>
+          <div class="gcell">
+            <h3>Disproportionality</h3>
+            <p>A group's share of an outcome compared to its share of the population. A group that is 13 percent of the population and 30 percent of arrests is over-represented by that measure. Also an observation, and a different one.</p>
+          </div>
+        </div>
+
+        <div class="teach"><strong>Neither one is a finding about people.</strong> Both are findings about a rate, and a rate has a numerator and a denominator, both of which were produced by something. Chapter 5 spent its whole length on this. A disparity in arrests can come from a difference in offending, a difference in reporting, a difference in police deployment, a difference in what gets charged, or any combination, and the arrest number alone cannot distinguish them.</div>
+
+        <p class="lede">Three sentences about the same finding. Only one of them is defensible. Pick it.</p>
+        <div id="pickd"></div>
+        <div class="veiled" id="pickdWrap">
+          <div class="teach"><strong>The rule for this course, and for your paper.</strong> State the pattern as a statement about rates in populations. Name the mechanism you think produces it. Say what would have to be true for a different mechanism to be the real one. That is three sentences, and doing it costs you nothing except the temptation to sound certain.</div>
+          <div class="cn"><strong>The reason this is a rule and not a preference.</strong> A group difference reported without a mechanism does not stay neutral in a reader's mind. It gets filled in, and the thing readers reach for first is usually a claim about the people rather than about their circumstances, their treatment, or the instrument that counted them. You are not being asked to soften a finding. You are being asked to finish it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-rivals">
+      <div class="card">
+        <h2>One gap, four explanations that all fit it</h2>
+        <p class="lede">Here is a pattern of the kind you will report. Imagine that arrest rates for your offense are substantially higher in one neighborhood than in a demographically similar one nearby. That is real, and it is the beginning of the work rather than the end. At least four different mechanisms produce that same observation, and the arrest data cannot tell them apart.</p>
+
+        <div id="rivals"></div>
+
+        <div class="veiled" id="rivalsDone">
+          <div class="teach"><strong>Notice what just happened.</strong> Four mechanisms, one observation, and each one implies a completely different response. If it is a difference in offending, the answer is in Chapters 8 through 10. If it is a difference in reporting, the answer is Chapter 2. If it is a difference in deployment, the answer is Chapter 14. If it is a difference in what gets charged, the answer is Chapter 11. Writing a Part 3 that names which one you think it is, and why, is worth more than a paper that reports six patterns and interrogates none.</div>
+          <div class="note"><strong>You are not expected to settle it.</strong> Most of these questions are unsettled in the published literature, and a paper that claims to resolve one is overreaching. What earns the points is naming the rival explanations, saying which the evidence best supports, and saying what evidence would change your mind. That last clause is the one that separates a strong Part 3 from a competent one.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-find">
+      <div class="card">
+        <h2>Getting the patterns for your own offense</h2>
+        <p class="lede">Start with the five sources you already have. Most research articles report demographic and situational breakdowns somewhere, and students routinely miss them because of where they sit in the paper.</p>
+
+        <div class="teach"><strong>Where the breakdowns hide in a research article.</strong> Table 1 is almost always sample descriptives, and it will give you age, sex, and often race and class for whoever was studied. The methods section tells you where and when the data came from, which is your geography and your period. The results tables carry the group comparisons. The limitations paragraph tells you which patterns the authors themselves do not trust. Read those four places before you decide you need a new source.</div>
+
+        <p class="lede">Six kinds of pattern, and where each one usually lives.</p>
+        <div id="pat"></div>
+
+        <div class="note"><strong>When your existing sources genuinely cannot answer it.</strong> Then find another one, and hold it to the same standard as Parts 1 and 2. The journal is in criminology, criminal justice, or sociology, or it is a psychology journal about crime and the legal system. It reports a study rather than an opinion. You found it yourself in a library database. Adding a source because you need it is good practice. Adding one to hit a number is not.</div>
+
+        <div class="teach"><strong>And if a pattern simply is not known for your offense.</strong> Say so, the same way Part 2 handled missing data. Nobody has broken your offense down by age. Here is why that is hard to do. Here is the nearest thing anyone has measured. That is a real finding about the state of the field and it earns full credit.</div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-write">
+      <div class="card">
+        <h2>How to write a group difference without writing something false</h2>
+        <p class="lede">This is a short tab and it is the one worth rereading before you submit. Four habits, each of which takes one clause.</p>
+
+        <p><strong>One. Attach the rate to the category, not the person.</strong> Write that arrest rates were higher among a group, not that a group is more criminal. The first is what the data says. The second is a claim about people that no arrest count can support, and the distance between them is the entire difference between criminology and prejudice with a citation attached.</p>
+        <p><strong>Two. Name the instrument in the same sentence.</strong> Arrest rates, self-reported offending, and victimization rates give different pictures of the same phenomenon, and the gaps between them are themselves findings. A pattern in arrests is a pattern in arrests. Say so and the sentence becomes both more accurate and more interesting.</p>
+        <p><strong>Three. Give the mechanism, even provisionally.</strong> A pattern without a proposed mechanism is an invitation for the reader to invent one. You do not have to be certain. You do have to say what you think is producing it and on what basis.</p>
+        <p><strong>Four. Say what would change your mind.</strong> One sentence. If this evidence appeared, I would think the other explanation was right. It is the cheapest credibility available in academic writing and almost nobody in an undergraduate paper does it.</p>
+
+        <div class="teach"><strong>The same discipline you have already met three times.</strong> Chapter 5 on race and class, Chapter 10 on discrimination and strain, and Chapter 12 on the victim-offender overlap all made the same demand: state the claim as a claim about rates, name the mechanism, and license no inference from the group to the individual. Part 3 is where you do it in your own writing rather than reading someone else do it.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-check">
+      <div class="card">
+        <h2>Before you submit Part 3</h2>
+        <p class="lede">Work down this list with your draft open. Click a line when it is true. Nothing here is recorded.</p>
+        <div class="checklist" id="ck"></div>
+        <div class="ckcount" id="ckCount">0 of 13 checked</div>
+        <div class="veiled" id="ckDone">
+          <div class="teach"><strong>That is the list.</strong> Part 4 asks you to apply two course theories to your offense and judge which the evidence supports. The patterns you establish here are the evidence those theories will be judged against, so a careful Part 3 makes Part 4 mostly a matter of choosing well.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Nothing on this page is recorded and nobody sees your answers but you. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+  }
+
+  // ---------- TAB 1 ----------
+  const PE_OPTS = ['A pattern', 'An explanation'];
+  const PE = [
+    { t: 'Offending rises sharply in the late teens and falls steeply through the twenties.', a: 'A pattern',
+      v: 'A pattern, and the most stable one in criminology. The age-crime curve is an observation repeated across countries and decades. Notice that it explains nothing on its own. Why offending falls with age is contested, and Chapters 8 and 9 disagree about it.' },
+    { t: 'Young people offend more because they have not yet developed self-control.', a: 'An explanation',
+      v: 'An explanation, and a specific one from Chapter 8. It could be wrong. A competing explanation says that offending falls with age because people acquire jobs, partners, and other things they do not want to lose, which is Chapter 8 in its life-course form rather than its trait form.' },
+    { t: 'About half of a city\'s crime occurs on between two and six percent of its street segments.', a: 'A pattern',
+      v: 'A pattern, and one that has held for years at a time in the cities where it has been measured. Chapter 14 gave you this. Why those particular segments is a separate question with several candidate answers.' },
+    { t: 'Crime concentrates at those addresses because guardianship is absent there.', a: 'An explanation',
+      v: 'An explanation, drawn from routine activity theory. It is plausible and partly supported. It is not the only candidate, since crime generators pull crowds for reasons that have nothing to do with guardianship, and the two mechanisms would need different interventions.' },
+    { t: 'Men are arrested for violent offenses at higher rates than women.', a: 'A pattern',
+      v: 'A pattern, and it is a pattern in arrests specifically. Self-report and victimization data give a related but not identical picture. Any of the four rival explanations in the next tab could contribute, and the arrest number cannot separate them.' },
+    { t: 'The sex difference in violent offending reflects differences in how boys and girls are supervised.', a: 'An explanation',
+      v: 'An explanation, and one version of a control-theory account. Others exist. Naming which explanation you are using, and acknowledging that others exist, is the move that Part 3 is asking you to make.' },
+    { t: 'Households in the lowest income bracket reported violent victimization at 38.3 per 1,000, against 22.1 in the highest.', a: 'A pattern',
+      v: 'A pattern, from the 2024 NCVS, and notice how precisely it can be stated: a rate, a year, an instrument, and two named groups. That precision is what makes it a pattern rather than an impression, and it is what your own pattern sentences should look like.' },
+    { t: 'Poorer people are victimized more because they cannot afford to avoid risky places.', a: 'An explanation',
+      v: 'An explanation, and a lifestyle-exposure one. It is testable in principle. A rival explanation points at differences in how much protection housing and neighborhoods provide, which is a claim about what is supplied rather than what is chosen.' },
+    { t: 'People who offend are victimized at higher rates than people who do not.', a: 'A pattern',
+      v: 'A pattern, supported by 84 percent of the 37 studies in the review from Chapter 12. It is a statement about rates in populations. It says nothing about any individual, and Chapter 12 was emphatic that it licenses no inference about desert.' },
+    { t: 'The victim-offender overlap exists because both roles come with the same routines and settings.', a: 'An explanation',
+      v: 'An explanation, and the one routine activity theory offers. It is not the only one on the table, and a competing account points to shared underlying characteristics rather than shared situations. Both fit the observed overlap.' },
+  ];
+  buildSorter('sortpe', PE, PE_OPTS, (right, total) => {
+    $('sortpeScore').textContent = right + ' of ' + total;
+    $('sortpeWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 2 ----------
+  const D_OPTS = ['Defensible', 'Not defensible'];
+  const DEE = [
+    { t: 'Group A commits more crime than Group B.', a: 'Not defensible',
+      v: 'Not defensible from any arrest or police statistic. It states a fact about behavior, and the number you have is a fact about official records. It also attaches the claim to a group of people rather than to a rate, which is the move Chapter 5 warned you about most directly.' },
+    { t: 'Group A was arrested for this offense at a higher rate than Group B in these years, according to police records.', a: 'Defensible',
+      v: 'Defensible, and this is the model sentence. It names the outcome (arrest), the instrument (police records), the comparison (rate, not count), and the period. Everything it claims is something the source can support. Your Part 3 sentences should look like this one.' },
+    { t: 'Group A is over-represented in arrests for this offense relative to its share of the population, and several mechanisms could produce that.', a: 'Defensible',
+      v: 'Defensible, and it does two things well. It uses disproportionality correctly, as a comparison of shares. And it signals that the observation does not settle the question, which is accurate rather than evasive. The next sentence in your paper should name the mechanisms.' },
+  ];
+  buildSorter('pickd', DEE, D_OPTS, () => {
+    $('pickdWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 3 ----------
+  const RIVALS = [
+    { h: '1. A difference in offending', p: 'More of this offense is actually happening in the first neighborhood. This is the explanation everyone reaches for first, and sometimes it is correct.',
+      s: 'What would separate it: self-report data, or victimization data from residents of both neighborhoods. If the offense is happening at similar rates but arrests differ, this explanation is in trouble.' },
+    { h: '2. A difference in reporting', p: 'The same amount is happening and residents of one neighborhood call the police more often. Trust in police, insurance requirements, and prior experience with the system all move reporting rates.',
+      s: 'What would separate it: the victim survey, which asks people whether they told the police. That is the one instrument built to see the gap between what happened and what got reported.' },
+    { h: '3. A difference in police deployment', p: 'Officers spend more hours in one neighborhood, so more of what happens there is seen and recorded. Chapter 14 showed you that departments concentrate deliberately, which means enforcement is unevenly distributed by design.',
+      s: 'What would separate it: patrol allocation data, or a comparison of offense types that require an officer present to be detected against those reported by victims. Drug offenses and public order offenses are especially sensitive to this.' },
+    { h: '4. A difference in what happens after contact', p: 'Similar incidents lead to arrest in one place and to a warning in the other. Chapter 11 called this the exercise of discretion, and it operates at every stage from stop to charge.',
+      s: 'What would separate it: outcome data conditional on contact. If arrest rates differ but rates of arrest per encounter are equal, this explanation is weakened. If they differ, it is strengthened.' },
+  ];
+  (function buildRivals(){
+    const el = $('rivals');
+    let opened = 0;
+    RIVALS.forEach(r => {
+      const d = document.createElement('div');
+      d.className = 'rival';
+      d.innerHTML = '<h3>' + r.h + '</h3><p>' + r.p + '</p><p class="sep" style="display:none">' + r.s + '</p>';
+      d.addEventListener('click', () => {
+        const sep = d.querySelector('.sep');
+        if (sep.style.display === 'block') return;
+        sep.style.display = 'block';
+        opened++;
+        if (opened === RIVALS.length) $('rivalsDone').style.display = 'block';
+      });
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 4 ----------
+  const PAT = [
+    { h: 'Age', p: 'Almost every study reports it, usually in the sample table. If your sources do not break your offense down by age, the arrest data in the Crime Data Explorer does it for many offenses.' },
+    { h: 'Sex', p: 'Same place, same table. Note whether your source reports sex of offender, sex of victim, or both, because they are different patterns and mixing them is a common error.' },
+    { h: 'Race and ethnicity', p: 'Reported by arrest data and by the victim survey, and the two do not always agree. Where they disagree, that disagreement is one of the most useful things you can write about, and it goes straight into the mechanism discussion.' },
+    { h: 'Class and income', p: 'The victim survey reports victimization by household income. Offending by class is measured far less well, and self-report studies are usually the best available source. Say which one you have.' },
+    { h: 'Place', p: 'Urban against rural, and within cities, the concentration finding from Chapter 14. Police data supports geography down to the agency level and sometimes finer.' },
+    { h: 'Time and situation', p: 'Time of day, day of week, season, and the relationship between victim and offender. Incident-based police data carries this and summary data does not, which is one of the concrete gains from the NIBRS transition.' },
+  ];
+  (function buildPat(){
+    const el = $('pat');
+    PAT.forEach(x => {
+      const d = document.createElement('div');
+      d.className = 'src';
+      d.innerHTML = '<h3>' + x.h + '</h3><p>' + x.p + '</p>';
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 6 ----------
+  const CK = [
+    'Every pattern I report names the <strong>instrument</strong> that produced it, not just the number.',
+    'Every pattern is stated as a claim about <strong>rates</strong>, with the year and the place.',
+    'I report patterns for <strong>age and sex</strong>, or I say why my offense has no such data.',
+    'I report patterns for <strong>place and time</strong>, or I say why my offense has no such data.',
+    'Where I report a <strong>group difference</strong>, I use disparity or disproportionality correctly and I say which I mean.',
+    'No sentence in my draft attaches criminality to a <strong>group of people</strong> rather than to a rate.',
+    'For at least one pattern, I name <strong>more than one mechanism</strong> that could produce it.',
+    'I say which mechanism the <strong>evidence best supports</strong>, and on what basis.',
+    'I say what evidence would <strong>change my mind</strong>.',
+    'I checked <strong>Table 1, the methods section, the results, and the limitations</strong> of my existing sources before looking for new ones.',
+    'Any new source I added clears the <strong>same journal check</strong> and is not a book review.',
+    'Every reference follows <strong>APA 7th edition</strong>, including the ones carried over.',
+    'My <strong>prompt index</strong> lists every prompt I gave an AI tool, in order, with nothing left out.',
+  ];
+  (function buildCk(){
+    const el = $('ck');
+    CK.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'cki';
+      d.innerHTML = '<div class="ckbox">&#10003;</div><div class="ckt">' + t + '</div>';
+      d.addEventListener('click', () => {
+        d.classList.toggle('on');
+        const n = document.querySelectorAll('.cki.on').length;
+        $('ckCount').textContent = n + ' of ' + CK.length + ' checked';
+        $('ckDone').style.display = n === CK.length ? 'block' : 'none';
+      });
+      el.appendChild(d);
+    });
+    $('ckCount').textContent = '0 of ' + CK.length + ' checked';
+  })();
+
+  window.__S = { activate, PE, DEE, RIVALS, PAT, CK };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

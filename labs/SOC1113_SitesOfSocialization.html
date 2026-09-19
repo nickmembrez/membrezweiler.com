@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sites of Socialization · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .agentgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .agentcard { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; cursor: pointer; background: var(--surface-1); text-align: left; font: inherit; }
+  .agentcard:hover { border-color: var(--accent); }
+  .agentcard .aname { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+  .agentcard .astat { font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .agentcard.unrevealed .astat { color: var(--text-muted); }
+  .agentcard .asub { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 3px; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 170px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 5ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 4.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .calcrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 0; }
+  .calcrow .cl { font-size: 13.5px; min-width: 130px; color: var(--text-secondary); }
+  .calcrow input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+  .calcrow .cv { font-size: 15px; font-weight: 800; min-width: 8ch; font-variant-numeric: tabular-nums; }
+  .calcout { font-size: 15px; margin-top: 10px; line-height: 1.5; }
+  .calcout .big { font-size: 30px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .pickbtn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .pickbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+  .pickbtn:disabled { opacity: 0.55; cursor: default; }
+  .pickbtn.picked { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+  .picktag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warn); color: #fff; margin-left: 8px; vertical-align: 2px; }
+
+  .rankcols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 10px; }
+  .rankpanel { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+  .rankpanel h3 { margin-bottom: 10px; }
+  .rankbtn { display: flex; align-items: center; gap: 10px; width: 100%; font: inherit; font-size: 14px; font-weight: 600; padding: 9px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); cursor: pointer; margin-bottom: 7px; text-align: left; }
+  .rankbtn:hover { border-color: var(--accent); }
+  .rankbtn .rb { width: 24px; height: 24px; border-radius: 50%; border: 1.5px dashed var(--text-muted); color: var(--text-muted); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rankbtn.ranked .rb { background: var(--accent); border: none; color: #fff; }
+  .rankreset { font: inherit; font-size: 12.5px; background: none; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline; padding: 2px 0; }
+  .rankreset:hover { color: var(--text-primary); }
+  .rankout { margin-top: 12px; }
+  .rankout .rline { font-size: 14px; line-height: 1.6; }
+  .rankout .rline strong { font-variant-numeric: tabular-nums; }
+  .rankout .mover { color: var(--warn); font-weight: 700; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Sites of Socialization <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Somebody built the person you are, and it was not just you.</strong> Sociologists call the builders agents of socialization: family, school, peers, media, and religion. Every number on this page is a published measurement of how much of American childhood each agent claims, and the numbers have been moving for two generations. On four of the five tabs the key number is hidden until you commit a guess, so guess first. Then ask the question this page is really about: who is raising Americans now, and who was doing it when your grandparents were young?</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ LINEUP ============ -->
+    <div class="section active" id="sec-lineup">
+      <div class="card">
+        <h2>The five builders. Four numbers are hidden until you guess them.</h2>
+        <div class="agentgrid" id="agentGrid"></div>
+        <p class="lede" style="font-size:13.5px; margin-top:12px">The agents do not cooperate. They compete, and the mix is shifting. Open each tab, make your guess, and the card above fills in with the published number. When all five are showing, go to the last tab and rank the builders.</p>
+      </div>
+    </div>
+
+    <!-- ============ FAMILY ============ -->
+    <div class="section" id="sec-family">
+      <div class="card">
+        <h2>Family: the first agent</h2>
+        <p class="lede">The family gets you first. Language, class position, first norms, and your earliest sense of self all arrive through it, and you do not choose it. The data show the form changing, not the function.</p>
+        <h3 style="margin-top:14px">Children living with two parents in a first marriage</h3>
+        <div class="bars">
+          <div class="brow"><span class="blabel">1960</span><div class="btrack"><div class="bfill then" style="width:73%"></div></div><span class="bval">73%</span></div>
+          <div class="brow"><span class="blabel">1980</span><div class="btrack"><div class="bfill then" style="width:61%"></div></div><span class="bval">61%</span></div>
+          <div class="brow"><span class="blabel">2014</span><div class="btrack"><div class="bfill" id="famRealFill" style="width:0%"></div></div><span class="bval" id="famRealVal">?</span></div>
+          <div class="brow veiled" id="famGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="famGuessFill" style="width:0%"></div></div><span class="bval" id="famGuessVal"></span></div>
+        </div>
+        <div class="guessbox" id="famBox">
+          <div class="gq">The 1960 and 1980 bars are shown. Where did this figure land by 2014? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="famSlider" min="0" max="100" value="50" step="1">
+            <span class="gval" id="famSliderVal">50%</span>
+            <button class="gbtn" id="famLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="famVerdict"></div>
+        </div>
+        <div class="veiled" id="famReveal">
+          <div class="statrow">
+            <div class="stat ok"><div class="v">69%</div><div class="l">of children live with two parents in some form (2014)</div></div>
+            <div class="stat warn"><div class="v">26%</div><div class="l">live with a single parent, the highest share recorded</div></div>
+          </div>
+          <div class="teach"><strong>What the family teaches:</strong> language, attachment, class position, and the first version of the looking-glass self. The sociological point of the data: the agent stayed powerful while its household shapes multiplied. Remarriages, single parents, cohabiting parents, and grandparents all run the first classroom now.</div>
+          <p class="srcnote">Source: Pew Research Center, The American Family Today (2015), based on Census data.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ SCHOOL ============ -->
+    <div class="section" id="sec-school">
+      <div class="card">
+        <h2>School: the first institution you meet alone</h2>
+        <p class="lede">School is where a child first faces an institution without family in the room, and it teaches far more than the syllabus admits. The big number on this tab is arithmetic, not a survey, so instead of guessing it you get to set the assumptions yourself and watch the total move.</p>
+        <h3 style="margin-top:14px">Build the number: hours in class by graduation</h3>
+        <div class="calcrow"><span class="cl">School days per year</span><input type="range" id="calcDays" min="150" max="200" value="180" step="1"><span class="cv" id="calcDaysVal">180 days</span></div>
+        <div class="calcrow"><span class="cl">Hours per day</span><input type="range" id="calcHours" min="4" max="8" value="6.5" step="0.5"><span class="cv" id="calcHoursVal">6.5 hours</span></div>
+        <div class="calcrow"><span class="cl">Years, K to 12</span><input type="range" id="calcYears" min="10" max="14" value="13" step="1"><span class="cv" id="calcYearsVal">13 years</span></div>
+        <div class="calcout" id="calcOut"></div>
+        <div class="statrow">
+          <div class="stat"><div class="v">K to 12</div><div class="l">the only agent attendance at which is legally required</div></div>
+        </div>
+        <div class="teach"><strong>What school teaches beyond the syllabus:</strong> sociologists call it the hidden curriculum. Punctuality, standing in line, raising your hand for permission to speak, deference to adult authority, being graded and ranked, treating time in blocks. Nobody posts these lessons on the board. Everyone learns them. Push the sliders to their lowest settings and the total still lands in the thousands of hours. That is the point: thousands of hours of rehearsal for institutional life, whatever the exact assumptions.</div>
+        <p class="srcnote">The hours figure is stated arithmetic with its assumptions shown, not a measurement. Requirements vary by state. The default settings, 180 days at 6.5 hours for 13 years, are the ones used on the lineup card.</p>
+      </div>
+    </div>
+
+    <!-- ============ PEERS ============ -->
+    <div class="section" id="sec-peers">
+      <div class="card">
+        <h2>Peers: the first agent you choose</h2>
+        <p class="lede">In adolescence the peer group can outweigh the family: it is the one arena where the norms are set by people your own age. The chart tracks minutes per day spent with friends in person, for all Americans.</p>
+        <h3 style="margin-top:14px">Minutes per day spent with friends in person, all Americans</h3>
+        <div class="bars">
+          <div class="brow"><span class="blabel">2003</span><div class="btrack"><div class="bfill then" style="width:100%"></div></div><span class="bval">60</span></div>
+          <div class="brow"><span class="blabel">2020</span><div class="btrack"><div class="bfill warn" id="peerRealFill" style="width:0%"></div></div><span class="bval" id="peerRealVal">?</span></div>
+          <div class="brow veiled" id="peerGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="peerGuessFill" style="width:0%"></div></div><span class="bval" id="peerGuessVal"></span></div>
+        </div>
+        <div class="guessbox" id="peerBox">
+          <div class="gq">In 2003 the average was 60 minutes a day. Where was it by 2020? Drag your guess in minutes, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="peerSlider" min="0" max="60" value="30" step="1">
+            <span class="gval" id="peerSliderVal">30 min</span>
+            <button class="gbtn" id="peerLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="peerVerdict"></div>
+        </div>
+        <div class="veiled" id="peerReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">−70%</div><div class="l">drop in friend time for ages 15 to 24 over the same period, the steepest of any age group</div></div>
+          </div>
+          <div class="teach"><strong>What peers teach:</strong> the norms adults cannot see, status, taste, loyalty, and the first experience of building rules with equals instead of receiving them from above. The question the data raise: peer socialization did not stop, so where did it go? Check the next tab.</div>
+          <p class="srcnote">Source: U.S. Surgeon General's advisory on loneliness and isolation (2023), based on American Time Use Survey data.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MEDIA ============ -->
+    <div class="section" id="sec-media">
+      <div class="card">
+        <h2>Media: the newest agent, and the only one that never closes</h2>
+        <p class="lede">For most of history the media agent was a shared living-room screen with a schedule. It is now a personalized feed that knows its audience one person at a time. These are the 2024 numbers for American teenagers.</p>
+        <div class="statrow">
+          <div class="stat ok"><div class="v">95%</div><div class="l">of teens have access to a smartphone</div></div>
+          <div class="stat warn"><div class="v">46%</div><div class="l">say they are online almost constantly</div></div>
+        </div>
+        <div class="guessbox" id="mediaBox">
+          <div class="gq">Pew asked teens which platforms they use. Which one do you think came out on top in 2024? Pick one and the full chart appears. The list is alphabetical.</div>
+          <div class="pickrow" id="pickRow"></div>
+          <div class="verdict" id="mediaVerdict"></div>
+        </div>
+        <div class="veiled" id="mediaReveal">
+          <h3 style="margin-top:14px">Share of teens who use each platform, 2024</h3>
+          <div class="bars" id="mediaBars"></div>
+          <div class="teach"><strong>What the feed teaches:</strong> how to look, what to want, how to argue, what counts as success, and how a self gets performed for an audience, which is next week's chapter. The sociological point is not that this is good or bad. It is that an agent as powerful as family or school now operates continuously, personally, and with no adult in the room.</div>
+          <p class="srcnote">Source: Pew Research Center, Teens, Social Media and Technology 2024 (survey of U.S. teens 13 to 17, fall 2024).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ RELIGION ============ -->
+    <div class="section" id="sec-religion">
+      <div class="card">
+        <h2>Religion: the agent in retreat</h2>
+        <p class="lede">For most of American history, congregations were a primary site of moral socialization. The membership data cover eight decades. Three points on the line are shown. You supply the fourth.</p>
+        <h3 style="margin-top:14px">Share of Americans belonging to a church, synagogue, or mosque</h3>
+        <div class="bars">
+          <div class="brow"><span class="blabel">1937</span><div class="btrack"><div class="bfill then" style="width:73%"></div></div><span class="bval">73%</span></div>
+          <div class="brow"><span class="blabel">1999</span><div class="btrack"><div class="bfill then" style="width:70%"></div></div><span class="bval">70%</span></div>
+          <div class="brow"><span class="blabel">2010</span><div class="btrack"><div class="bfill" style="width:61%"></div></div><span class="bval">61%</span></div>
+          <div class="brow"><span class="blabel">2020</span><div class="btrack"><div class="bfill warn" id="relRealFill" style="width:0%"></div></div><span class="bval" id="relRealVal">?</span></div>
+          <div class="brow veiled" id="relGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="relGuessFill" style="width:0%"></div></div><span class="bval" id="relGuessVal"></span></div>
+        </div>
+        <div class="guessbox" id="relBox">
+          <div class="gq">The figure held near 70% for six decades, then started moving. Where was it by 2020? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="relSlider" min="0" max="100" value="50" step="1">
+            <span class="gval" id="relSliderVal">50%</span>
+            <button class="gbtn" id="relLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="relVerdict"></div>
+        </div>
+        <div class="veiled" id="relReveal">
+          <h3 style="margin-top:14px">Membership by generation, 2018 to 2020</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Born before 1946</span><div class="btrack"><div class="bfill" style="width:66%"></div></div><span class="bval">66%</span></div>
+            <div class="brow"><span class="blabel">Baby Boomers</span><div class="btrack"><div class="bfill" style="width:58%"></div></div><span class="bval">58%</span></div>
+            <div class="brow"><span class="blabel">Generation X</span><div class="btrack"><div class="bfill" style="width:50%"></div></div><span class="bval">50%</span></div>
+            <div class="brow"><span class="blabel">Millennials</span><div class="btrack"><div class="bfill warn" style="width:36%"></div></div><span class="bval">36%</span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat"><div class="v">16% → 29%</div><div class="l">religiously unaffiliated adults, 2007 to 2024 (Pew)</div></div>
+            <div class="stat warn"><div class="v">43%</div><div class="l">of adults 18 to 24 are unaffiliated, the highest of any age group</div></div>
+          </div>
+          <div class="teach"><strong>What congregations taught:</strong> moral vocabulary, weekly ritual, multigenerational community, and an authority outside the family reinforcing its lessons. The question the decline raises is not whether values disappeared but who teaches them now. Look at which other agents grew over the same decades.</div>
+          <p class="srcnote">Sources: Gallup, church membership series, 1937 to 2020. Pew Research Center, Religious Landscape Study, 2007, 2014, and 2023-24.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE SHIFT ============ -->
+    <div class="section" id="sec-shift">
+      <div class="card">
+        <h2>The shifting mix, on one card</h2>
+        <div class="bars">
+          <div class="brow"><span class="blabel">Church membership</span><div class="btrack"><div class="bfill then" style="width:70%"></div></div><span class="bval">70%</span></div>
+          <div class="brow"><span class="blabel">same, two decades later</span><div class="btrack"><div class="bfill warn" style="width:47%"></div></div><span class="bval">47%</span></div>
+          <div class="brow" style="margin-top:8px"><span class="blabel">Minutes with friends</span><div class="btrack"><div class="bfill then" style="width:60%"></div></div><span class="bval">60</span></div>
+          <div class="brow"><span class="blabel">same, in 2020</span><div class="btrack"><div class="bfill warn" style="width:20%"></div></div><span class="bval">20</span></div>
+          <div class="brow" style="margin-top:8px"><span class="blabel">Teens online almost constantly</span><div class="btrack"><div class="bfill" style="width:46%"></div></div><span class="bval">46%</span></div>
+          <div class="brow"><span class="blabel">Teens with smartphone access</span><div class="btrack"><div class="bfill" style="width:95%"></div></div><span class="bval">95%</span></div>
+        </div>
+        <p class="lede" style="margin-top:10px">Within living memory, two of the oldest agents lost a large share of their hours and one brand-new agent moved in. The generalized other, the internalized voice of everybody, is being assembled from different sources than it was for your grandparents. What that produces is one of the open questions of current sociology, and you are the data.</p>
+      </div>
+      <div class="card">
+        <h2>Rank the builders</h2>
+        <p class="lede">Tap the agents in order, most influential first. Do it twice: once for you today, once for a parent or grandparent when they were your age. There is no scoring here. The gap between the two lists is the finding.</p>
+        <div class="rankcols">
+          <div class="rankpanel">
+            <h3>For you, today</h3>
+            <div id="rankYou"></div>
+            <button class="rankreset" id="resetYou" type="button">Start over</button>
+          </div>
+          <div class="rankpanel">
+            <h3>For a parent or grandparent at your age</h3>
+            <div id="rankThem"></div>
+            <button class="rankreset" id="resetThem" type="button">Start over</button>
+          </div>
+        </div>
+        <div class="rankout" id="rankOut"></div>
+      </div>
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Use the ranking panel above. Where do your two lists differ most, and what happened between their childhood and yours to cause the move?</li>
+          <li>The agents compete. Name one concrete lesson where two of your agents taught you opposite things, and which one won.</li>
+          <li>Peer time in person fell by more than two thirds for your age group, and peer socialization obviously did not stop. What changed about how peers socialize each other when it moved onto platforms?</li>
+          <li>The hidden curriculum card lists what school teaches without saying so. Name one hidden lesson from your own schooling that took years to notice.</li>
+          <li>If congregations taught moral vocabulary and community for most of American history, what is teaching those now for the 43% of young adults outside any religion? Be specific.</li>
+          <li>Every number here is a country-level average. Which of these trends does not describe your own life, and what does that mismatch tell you about averages?</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Pew Research Center, The American Family Today (2015). U.S. Surgeon General's advisory, Our Epidemic of Loneliness and Isolation (2023), American Time Use Survey figures. Pew Research Center, Teens, Social Media and Technology 2024. Gallup, U.S. church membership series, 1937 to 2020. Pew Research Center, Religious Landscape Study, 2007 to 2024. The school hours figure is arithmetic with stated assumptions, not a survey estimate. All other values as published. Country-level averages describe populations, not individuals. Your guesses stay on this page and are not recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const AGENTS = [
+  { id: 'sec-family', name: 'Family', stat: '46%', sub: 'of children live with two parents in a first marriage, down from 73% in 1960', hidden: true },
+  { id: 'sec-school', name: 'School', stat: '~15,200', sub: 'hours in class by graduation, most of them teaching more than the syllabus', hidden: false },
+  { id: 'sec-peers', name: 'Peers', stat: '60 → 20', sub: 'minutes per day with friends in person, 2003 to 2020', hidden: true },
+  { id: 'sec-media', name: 'Media', stat: '46%', sub: 'of teens say they are online almost constantly (2024)', hidden: true },
+  { id: 'sec-religion', name: 'Religion', stat: '73% → 47%', sub: 'church membership, 1937 to 2020', hidden: true },
+];
+const TABS = [
+  { id: 'sec-lineup', label: 'The lineup' },
+  { id: 'sec-family', label: 'Family' },
+  { id: 'sec-school', label: 'School' },
+  { id: 'sec-peers', label: 'Peers' },
+  { id: 'sec-media', label: 'Media' },
+  { id: 'sec-religion', label: 'Religion' },
+  { id: 'sec-shift', label: 'The shifting mix' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// Lineup cards. Hidden stats show a question mark until the guess on that tab is made.
+const grid = document.getElementById('agentGrid');
+const cardEls = {};
+AGENTS.forEach(a => {
+  const c = document.createElement('button');
+  c.className = 'agentcard' + (a.hidden ? ' unrevealed' : '');
+  c.addEventListener('click', () => activate(a.id));
+  grid.appendChild(c);
+  cardEls[a.id] = c;
+  renderCard(a);
+});
+function renderCard(a) {
+  const c = cardEls[a.id];
+  if (a.hidden) {
+    c.innerHTML = '<div class="aname">' + a.name + '</div><div class="astat">?</div><div class="asub">Open the tab and make your guess. The number appears after you lock it in.</div>';
+  } else {
+    c.classList.remove('unrevealed');
+    c.innerHTML = '<div class="aname">' + a.name + '</div><div class="astat">' + a.stat + '</div><div class="asub">' + a.sub + '</div>';
+  }
+}
+function revealCard(id) {
+  const a = AGENTS.find(x => x.id === id);
+  if (a && a.hidden) { a.hidden = false; renderCard(a); }
+}
+
+// Guess-before-reveal widgets: Family, Peers, Religion.
+// The real value is hidden until the guess locks. The verdict states the guess, the published figure, and the miss, nothing else.
+function setupGuess(cfg) {
+  const slider = document.getElementById(cfg.slider);
+  const sliderVal = document.getElementById(cfg.sliderVal);
+  const lockBtn = document.getElementById(cfg.lock);
+  const fmt = v => cfg.unit === 'min' ? v + ' min' : v + '%';
+  slider.addEventListener('input', () => { sliderVal.textContent = fmt(+slider.value); });
+  function lock(valOverride) {
+    if (lockBtn.disabled) return;
+    const guess = valOverride == null ? +slider.value : valOverride;
+    lockBtn.disabled = true;
+    slider.disabled = true;
+    sliderVal.textContent = fmt(guess);
+    const scale = cfg.max || 100;
+    document.getElementById(cfg.realFill).style.width = (cfg.actual / scale * 100) + '%';
+    document.getElementById(cfg.realVal).textContent = cfg.unit === 'min' ? cfg.actual : cfg.actual + '%';
+    const gRow = document.getElementById(cfg.guessRow);
+    gRow.classList.remove('veiled');
+    document.getElementById(cfg.guessFill).style.width = (guess / scale * 100) + '%';
+    document.getElementById(cfg.guessVal).textContent = cfg.unit === 'min' ? guess : guess + '%';
+    const diff = guess - cfg.actual;
+    const unitWord = cfg.unit === 'min' ? 'minutes' : 'points';
+    let msg;
+    if (diff === 0) msg = 'You guessed it exactly. The published figure is ' + fmt(cfg.actual).replace(' min', ' minutes') + '.';
+    else if (Math.abs(diff) === 1) msg = 'You guessed ' + fmt(guess) + '. The published figure is ' + fmt(cfg.actual) + '. You were 1 ' + (cfg.unit === 'min' ? 'minute' : 'point') + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    else msg = 'You guessed ' + fmt(guess) + '. The published figure is ' + fmt(cfg.actual) + '. You were ' + Math.abs(diff) + ' ' + unitWord + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    document.getElementById(cfg.verdict).textContent = msg;
+    document.getElementById(cfg.reveal).classList.remove('veiled');
+    revealCard(cfg.section);
+  }
+  lockBtn.addEventListener('click', () => lock());
+  return lock;
+}
+const lockFamily = setupGuess({
+  section: 'sec-family', slider: 'famSlider', sliderVal: 'famSliderVal', lock: 'famLock',
+  realFill: 'famRealFill', realVal: 'famRealVal', guessRow: 'famGuessRow',
+  guessFill: 'famGuessFill', guessVal: 'famGuessVal', verdict: 'famVerdict',
+  reveal: 'famReveal', actual: 46, max: 100, unit: 'pct',
+});
+const lockPeers = setupGuess({
+  section: 'sec-peers', slider: 'peerSlider', sliderVal: 'peerSliderVal', lock: 'peerLock',
+  realFill: 'peerRealFill', realVal: 'peerRealVal', guessRow: 'peerGuessRow',
+  guessFill: 'peerGuessFill', guessVal: 'peerGuessVal', verdict: 'peerVerdict',
+  reveal: 'peerReveal', actual: 20, max: 60, unit: 'min',
+});
+const lockReligion = setupGuess({
+  section: 'sec-religion', slider: 'relSlider', sliderVal: 'relSliderVal', lock: 'relLock',
+  realFill: 'relRealFill', realVal: 'relRealVal', guessRow: 'relGuessRow',
+  guessFill: 'relGuessFill', guessVal: 'relGuessVal', verdict: 'relVerdict',
+  reveal: 'relReveal', actual: 47, max: 100, unit: 'pct',
+});
+
+// School calculator. Open arithmetic: the product of the three sliders, nothing hidden.
+const calcDays = document.getElementById('calcDays');
+const calcHours = document.getElementById('calcHours');
+const calcYears = document.getElementById('calcYears');
+function updateCalc() {
+  const d = +calcDays.value, h = +calcHours.value, y = +calcYears.value;
+  document.getElementById('calcDaysVal').textContent = d + ' days';
+  document.getElementById('calcHoursVal').textContent = h + ' hours';
+  document.getElementById('calcYearsVal').textContent = y + ' years';
+  const total = d * h * y;
+  document.getElementById('calcOut').innerHTML =
+    d + ' days × ' + h + ' hours × ' + y + ' years = <span class="big">' +
+    Math.round(total).toLocaleString('en-US') + '</span> hours in class';
+}
+[calcDays, calcHours, calcYears].forEach(el => el.addEventListener('input', updateCalc));
+updateCalc();
+
+// Media: pick the platform you think ranked first, then the full chart appears.
+const PLATFORMS = [
+  { name: 'YouTube', pct: 90 },
+  { name: 'TikTok', pct: 60 },
+  { name: 'Instagram', pct: 60 },
+  { name: 'Snapchat', pct: 55 },
+  { name: 'Facebook', pct: 32 },
+  { name: 'X', pct: 17 },
+  { name: 'Reddit', pct: 14 },
+];
+const pickRow = document.getElementById('pickRow');
+let mediaPicked = null;
+PLATFORMS.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(p => {
+  const b = document.createElement('button');
+  b.className = 'pickbtn'; b.type = 'button';
+  b.textContent = p.name;
+  b.addEventListener('click', () => pickPlatform(p.name));
+  pickRow.appendChild(b);
+});
+function pickPlatform(name) {
+  if (mediaPicked) return;
+  mediaPicked = name;
+  pickRow.querySelectorAll('.pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === name) b.classList.add('picked');
+  });
+  const bars = document.getElementById('mediaBars');
+  PLATFORMS.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'brow';
+    const tag = p.name === name ? '<span class="picktag">your pick</span>' : '';
+    row.innerHTML = '<span class="blabel">' + p.name + '</span><div class="btrack"><div class="bfill" style="width:' + p.pct + '%"></div></div><span class="bval">' + p.pct + '%</span>' + (tag ? '<span style="flex-shrink:0">' + tag + '</span>' : '');
+    bars.appendChild(row);
+  });
+  const top = PLATFORMS[0];
+  const verdict = document.getElementById('mediaVerdict');
+  verdict.textContent = name === top.name
+    ? 'Right. ' + top.name + ' tops the list, used by ' + top.pct + '% of teens.'
+    : 'You picked ' + name + '. The most used platform is ' + top.name + ', at ' + top.pct + '% of teens.';
+  document.getElementById('mediaReveal').classList.remove('veiled');
+  revealCard('sec-media');
+}
+
+// Ranking widget. Tap agents in order, most influential first. No scoring, the comparison is the output.
+const AGENT_NAMES = ['Family', 'School', 'Peers', 'Media', 'Religion'];
+const rankState = { you: [], them: [] };
+function buildRankPanel(key, boxId) {
+  const box = document.getElementById(boxId);
+  AGENT_NAMES.forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'rankbtn'; b.type = 'button';
+    b.dataset.name = name;
+    b.innerHTML = '<span class="rb"></span><span>' + name + '</span>';
+    b.addEventListener('click', () => rankTap(key, name));
+    box.appendChild(b);
+  });
+}
+function rankTap(key, name) {
+  const list = rankState[key];
+  const idx = list.indexOf(name);
+  if (idx >= 0) list.splice(idx, 1);
+  else list.push(name);
+  redrawRanks(key);
+  updateRankOut();
+}
+function resetRanks(key) {
+  rankState[key] = [];
+  redrawRanks(key);
+  updateRankOut();
+}
+function redrawRanks(key) {
+  const boxId = key === 'you' ? 'rankYou' : 'rankThem';
+  document.getElementById(boxId).querySelectorAll('.rankbtn').forEach(b => {
+    const pos = rankState[key].indexOf(b.dataset.name);
+    const badge = b.querySelector('.rb');
+    if (pos >= 0) { b.classList.add('ranked'); badge.textContent = pos + 1; }
+    else { b.classList.remove('ranked'); badge.textContent = ''; }
+  });
+}
+function updateRankOut() {
+  const out = document.getElementById('rankOut');
+  if (rankState.you.length < 5 || rankState.them.length < 5) {
+    const done = rankState.you.length + rankState.them.length;
+    out.innerHTML = done > 0 ? '<div class="rline">' + rankState.you.length + ' of 5 ranked for you, ' + rankState.them.length + ' of 5 for them. Tap a ranked agent to remove it.</div>' : '';
+    return;
+  }
+  let html = '';
+  let maxMove = 0;
+  const moves = [];
+  AGENT_NAMES.forEach(name => {
+    const a = rankState.you.indexOf(name) + 1;
+    const b = rankState.them.indexOf(name) + 1;
+    const move = Math.abs(a - b);
+    moves.push({ name, move });
+    if (move > maxMove) maxMove = move;
+    html += '<div class="rline"><strong>' + name + '</strong>: #' + a + ' on your list, #' + b + ' on theirs' + (move >= 2 ? ' <span class="mover">moved ' + move + ' places</span>' : '') + '</div>';
+  });
+  if (maxMove === 0) {
+    html += '<div class="rline" style="margin-top:8px">Your two lists match exactly. That would make you unusual: the whole page is about how the mix shifted between generations. Worth a second look, or worth defending out loud.</div>';
+  } else {
+    const biggest = moves.filter(m => m.move === maxMove).map(m => m.name);
+    html += '<div class="rline" style="margin-top:8px">Biggest move between the two lists: <span class="mover">' + biggest.join(' and ') + '</span>, ' + maxMove + (maxMove === 1 ? ' place' : ' places') + ' apart. Question 1 below asks what happened between their childhood and yours to cause it.</div>';
+  }
+  out.innerHTML = html;
+}
+buildRankPanel('you', 'rankYou');
+buildRankPanel('them', 'rankThem');
+document.getElementById('resetYou').addEventListener('click', () => resetRanks('you'));
+document.getElementById('resetThem').addEventListener('click', () => resetRanks('them'));
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, lockFamily, lockPeers, lockReligion, pickPlatform, rankTap, resetRanks, rankState };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

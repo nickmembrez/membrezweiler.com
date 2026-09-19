@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Three Drivers · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 200px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Three Drivers <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every population story on Earth reduces to three numbers: births, deaths, and moves.</strong> This page holds the published versions of all three, plus the two forecasts they add up to: the shape of the age pyramid and the size of the century. Demography is the rare corner of sociology that genuinely predicts, because the people who will be middle-aged in 2060 have already been born. Guess before each reveal. The gaps between your guesses and the projections are mostly the gap between the population panic you have absorbed and what demographers actually expect.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ THE COUNT ============ -->
+    <div class="section active" id="sec-count">
+      <div class="card">
+        <h2>Where the century is headed</h2>
+        <p class="lede">There are 8.2 billion people alive in 2024. What does the UN project for the year 2100?</p>
+        <div class="guessbox" id="countBox">
+          <div class="gq">Drag your guess in billions, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="countSlider" min="4" max="16" value="10" step="0.1">
+            <span class="gval" id="countSliderVal">10.0B</span>
+            <button class="gbtn" id="countLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="countVerdict"></div>
+        </div>
+        <div class="veiled" id="countReveal">
+          <h3 style="margin-top:14px">World population, UN World Population Prospects 2024</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">2024</span><div class="btrack"><div class="bfill" style="width:51%"></div></div><span class="bval">8.2B</span></div>
+            <div class="brow"><span class="blabel">Peak, mid-2080s</span><div class="btrack"><div class="bfill warn" style="width:64%"></div></div><span class="bval">10.3B</span></div>
+            <div class="brow"><span class="blabel">2100</span><div class="btrack"><div class="bfill" style="width:63.7%"></div></div><span class="bval">10.2B</span></div>
+            <div class="brow" id="countGuessRow"><span class="blabel">your guess for 2100</span><div class="btrack"><div class="bfill ghost" id="countGuessFill" style="width:0%"></div></div><span class="bval" id="countGuessVal"></span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat"><div class="v">700M</div><div class="l">fewer people expected in 2100 than the UN projected just a decade ago, a 6% cut to the forecast</div></div>
+          </div>
+          <div class="teach"><strong>The century levels off.</strong> Not endless explosion, and not collapse: growth, a peak within most students' lifetimes, then a gentle decline. If you guessed high, you are carrying the population-bomb story of the 1970s. If you guessed low, you are carrying the newer collapse panic. The projection sits between them, and the next tab holds the reason.</div>
+          <p class="srcnote">Source: United Nations, World Population Prospects 2024 (medium scenario): 8.2 billion in 2024, peak around 10.3 billion in the mid-2080s, roughly 10.2 billion in 2100. Bars scaled to 16 billion.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ BIRTHS ============ -->
+    <div class="section" id="sec-births">
+      <div class="card">
+        <h2>Births: the engine that is winding down</h2>
+        <p class="lede">The fertility rate is the average number of children born per woman. Replacement level, the rate that holds a population steady without migration, is about 2.1.</p>
+        <div class="guessbox" id="tfrBox">
+          <div class="gq">What is the world's fertility rate today? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="tfrSlider" min="0.5" max="7" value="3.5" step="0.05">
+            <span class="gval" id="tfrSliderVal">3.50</span>
+            <button class="gbtn" id="tfrLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="tfrVerdict"></div>
+        </div>
+        <div class="veiled" id="tfrReveal">
+          <h3 style="margin-top:14px">Children per woman, worldwide</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1990</span><div class="btrack"><div class="bfill then" style="width:47.3%"></div></div><span class="bval">3.31</span></div>
+            <div class="brow"><span class="blabel">2024</span><div class="btrack"><div class="bfill" style="width:32.1%"></div></div><span class="bval">2.25</span></div>
+            <div class="brow"><span class="blabel">replacement level</span><div class="btrack"><div class="bfill warn" style="width:30%"></div></div><span class="bval">~2.1</span></div>
+            <div class="brow" id="tfrGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="tfrGuessFill" style="width:0%"></div></div><span class="bval" id="tfrGuessVal"></span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">1 in 2</div><div class="l">more than half of all countries are already below replacement (UN 2024)</div></div>
+            <div class="stat"><div class="v">1 in 5</div><div class="l">nearly a fifth of countries are at ultra-low fertility, under 1.4 (UN 2024)</div></div>
+            <div class="stat"><div class="v">1.62</div><div class="l">children per woman in the United States, 2023, a record low (CDC)</div></div>
+          </div>
+          <div class="teach"><strong>The mechanism, and it works everywhere:</strong> as child survival rises and women gain education and opportunity, families choose fewer children. No exceptions have appeared on any continent. Worldwide, women now have one child fewer on average than around 1990. That single fact is why the explosion levels off, and it is the answer to the opening poll.</div>
+          <p class="srcnote">Sources: United Nations, World Population Prospects 2024 (global fertility 2.25 in 2024, down from 3.31 in 1990; country counts as stated). CDC/NCHS, Births: Final Data for 2023 (U.S. total fertility rate about 1.62). Bars scaled to 7.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DEATHS ============ -->
+    <div class="section" id="sec-deaths">
+      <div class="card">
+        <h2>Deaths: the driver that started the boom</h2>
+        <p class="lede">The population explosion was never about people suddenly having more babies. It was about people finally not dying.</p>
+        <div class="guessbox" id="lifeBox">
+          <div class="gq">What is life expectancy at birth for the whole world today? Drag your guess in years, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="lifeSlider" min="50" max="90" value="65" step="0.5">
+            <span class="gval" id="lifeSliderVal">65.0</span>
+            <button class="gbtn" id="lifeLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="lifeVerdict"></div>
+        </div>
+        <div class="veiled" id="lifeReveal">
+          <h3 style="margin-top:14px">Life expectancy at birth, worldwide (bars start at 50)</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1995</span><div class="btrack"><div class="bfill then" style="width:39.8%"></div></div><span class="bval">65.9</span></div>
+            <div class="brow"><span class="blabel">2024</span><div class="btrack"><div class="bfill" style="width:58.3%"></div></div><span class="bval">73.3</span></div>
+            <div class="brow"><span class="blabel">2054, projected</span><div class="btrack"><div class="bfill" style="width:68.5%"></div></div><span class="bval">77.4</span></div>
+            <div class="brow" id="lifeGuessRow"><span class="blabel">your guess for today</span><div class="btrack"><div class="bfill ghost" id="lifeGuessFill" style="width:0%"></div></div><span class="bval" id="lifeGuessVal"></span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat ok"><div class="v">+8.4</div><div class="l">years added to global life expectancy since 1995 (UN 2024)</div></div>
+            <div class="stat"><div class="v">78.4</div><div class="l">years, U.S. life expectancy at birth, 2023 (CDC), up from 77.5 in 2022</div></div>
+            <div class="stat warn"><div class="v">70.9</div><div class="l">the pandemic dip at its 2020-21 depth, since recovered nearly everywhere (UN)</div></div>
+          </div>
+          <div class="teach"><strong>Stage two of the transition, explained.</strong> Medicine, food, and sanitation cut deaths decades before birth rates followed. The gap between fast-falling deaths and still-high births is the entire population boom: not the end state of humanity, just the middle of a transition that births are now closing from the other side.</div>
+          <p class="srcnote">Sources: United Nations, World Population Prospects 2024 (73.3 years in 2024, up 8.4 since 1995; 77.4 projected for 2054; pandemic figures as stated). CDC/NCHS, Mortality in the United States, 2023. Bar widths measured from a baseline of 50 years.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE PYRAMID ============ -->
+    <div class="section" id="sec-pyramid">
+      <div class="card">
+        <h2>The pyramid: age structure is the forecast</h2>
+        <p class="lede">A population's age mix predicts its future the way little else in social science can. Start with the country you live in.</p>
+        <div class="guessbox" id="ageBox">
+          <div class="gq">What share of the U.S. population is 65 or older today? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="ageSlider" min="0" max="40" value="20" step="0.5">
+            <span class="gval" id="ageSliderVal">20%</span>
+            <button class="gbtn" id="ageLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="ageVerdict"></div>
+        </div>
+        <div class="veiled" id="ageReveal">
+          <h3 style="margin-top:14px">Share of population 65 and older</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">United States, 1960</span><div class="btrack"><div class="bfill then" style="width:22%"></div></div><span class="bval">8.8%</span></div>
+            <div class="brow"><span class="blabel">United States, 2024</span><div class="btrack"><div class="bfill" style="width:44.8%"></div></div><span class="bval">17.9%</span></div>
+            <div class="brow"><span class="blabel">Japan, ~2025</span><div class="btrack"><div class="bfill warn" style="width:75%"></div></div><span class="bval">~30%</span></div>
+            <div class="brow"><span class="blabel">Nigeria, ~2025</span><div class="btrack"><div class="bfill" style="width:7.7%"></div></div><span class="bval">~3%</span></div>
+            <div class="brow" id="ageGuessRow"><span class="blabel">your guess for the U.S.</span><div class="btrack"><div class="bfill ghost" id="ageGuessFill" style="width:0%"></div></div><span class="bval" id="ageGuessVal"></span></div>
+          </div>
+          <h3 style="margin-top:14px">Share of population under 15</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Japan, ~2025</span><div class="btrack"><div class="bfill warn" style="width:28%"></div></div><span class="bval">~11%</span></div>
+            <div class="brow"><span class="blabel">Nigeria, ~2025</span><div class="btrack"><div class="bfill" style="width:100%"></div></div><span class="bval">~40%</span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat warn"><div class="v">5.1 → 2.7</div><div class="l">workers paying into Social Security per beneficiary, 1960 to 2024, and still inching down (SSA)</div></div>
+          </div>
+          <div class="teach"><strong>Read the shapes.</strong> Nigeria is a wide-based triangle: enormous young cohorts, fast growth ahead. Japan is top-heavy: three in ten people are 65 or older and one in nine is a child, so shrinkage is already arithmetic. The United States is a triangle turning into a column, aging steadily with the gray share doubled since 1960. The shape is the forecast: schools, labor markets, housing, health care, and the Social Security ratio in the tile above all follow from it, decades in advance.</div>
+          <p class="srcnote">Sources: World Bank (U.S. population 65 and older: 8.8% in 1960, 17.9% in 2024). Japan and Nigeria figures are approximate 2025 values from published World Bank and UN data compilations, marked with tildes. Workers per beneficiary: Social Security Administration figures as reported by AARP (5.1 in 1960, 2.7 in 2024). Under-15 bars scaled to 40%.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ MOVES ============ -->
+    <div class="section" id="sec-moves">
+      <div class="card">
+        <h2>Moves: the fastest driver</h2>
+        <p class="lede">Births and deaths change a population slowly. Migration can reshape its size and composition within a decade, which is why demographers watch it hardest.</p>
+        <div class="guessbox" id="fbBox">
+          <div class="gq">What share of the U.S. population today was born in another country? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="fbSlider" min="0" max="30" value="15" step="0.5">
+            <span class="gval" id="fbSliderVal">15%</span>
+            <button class="gbtn" id="fbLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="fbVerdict"></div>
+        </div>
+        <div class="veiled" id="fbReveal">
+          <h3 style="margin-top:14px">Foreign-born share of the U.S. population</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1890, the old record</span><div class="btrack"><div class="bfill then" style="width:49.3%"></div></div><span class="bval">14.8%</span></div>
+            <div class="brow"><span class="blabel">1970, the low point</span><div class="btrack"><div class="bfill then" style="width:15.7%"></div></div><span class="bval">4.7%</span></div>
+            <div class="brow"><span class="blabel">2024</span><div class="btrack"><div class="bfill" style="width:52%"></div></div><span class="bval">15.6%</span></div>
+            <div class="brow" id="fbGuessRow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="fbGuessFill" style="width:0%"></div></div><span class="bval" id="fbGuessVal"></span></div>
+          </div>
+          <div class="teach"><strong>Why this number matters demographically.</strong> With U.S. fertility at 1.62, well below replacement, immigration is what keeps the population and the workforce growing, and what helps support the aging structure on the previous tab. Whatever position anyone holds politically, the demographic accounting is the same arithmetic for everyone: a below-replacement country grows through migration or not at all. Note the longer story too: today's share is near the level of the 1890s. The country has been here before.</div>
+          <p class="srcnote">Sources: Census Bureau data as compiled in published series: foreign-born share 14.8% in 1890, 4.7% in 1970, and 15.6% (51.6 million people) as of March 2024. Bars scaled to 30%.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS ============ -->
+    <div class="section" id="sec-questions">
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Which guess missed by the most, and which panic, the 1970s population bomb or the newer collapse story, does your miss suggest you had absorbed?</li>
+          <li>Walk the four stages of the demographic transition using only numbers from this page: which tab is stage two, and which tabs show stage four arriving?</li>
+          <li>The fertility mechanism runs through child survival plus women's education and opportunity. Connect that to two earlier chapters of this course by name.</li>
+          <li>Japan's age structure at ~30% over 65: name three concrete things that must change in a society with that shape, and who pays for each.</li>
+          <li>Use the three drivers to write the United States in 2060 in three sentences: births at 1.62, life expectancy rising, migration near record share. What kind of country is that arithmetic building?</li>
+          <li>Demography is the forecast you can read decades ahead. Name one decision in your own next ten years that these numbers should actually change.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: United Nations, World Population Prospects 2024 (population 8.2B in 2024, peak ~10.3B mid-2080s, ~10.2B in 2100, 700 million below the decade-ago forecast; global fertility 2.25 in 2024 vs 3.31 in 1990, over half of countries below replacement, nearly a fifth under 1.4; life expectancy 73.3 in 2024, up 8.4 years since 1995, 77.4 projected for 2054). CDC/NCHS: U.S. fertility about 1.62 (2023 final data) and life expectancy 78.4 (2023). World Bank: U.S. 65+ share 8.8% (1960) and 17.9% (2024). Japan and Nigeria age shares are approximate published compilation values, tilde-marked. SSA via AARP: workers per beneficiary 5.1 (1960), 2.7 (2024). Census series: foreign-born 14.8% (1890), 4.7% (1970), 15.6% (March 2024). Reference years labeled throughout. Your guesses stay on this page and are not recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TABS = [
+  { id: 'sec-count', label: 'The count' },
+  { id: 'sec-births', label: 'Births' },
+  { id: 'sec-deaths', label: 'Deaths' },
+  { id: 'sec-pyramid', label: 'The pyramid' },
+  { id: 'sec-moves', label: 'Moves' },
+  { id: 'sec-questions', label: 'Questions' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// Generic guess slider with formatter and scaled ghost bar.
+function setupGuess(cfg) {
+  const slider = document.getElementById(cfg.slider);
+  const sliderVal = document.getElementById(cfg.sliderVal);
+  const lockBtn = document.getElementById(cfg.lock);
+  slider.addEventListener('input', () => { sliderVal.textContent = cfg.fmt(+slider.value); });
+  function lock(valOverride) {
+    if (lockBtn.disabled) return;
+    const guess = valOverride == null ? +slider.value : valOverride;
+    lockBtn.disabled = true;
+    slider.disabled = true;
+    sliderVal.textContent = cfg.fmt(guess);
+    if (cfg.guessFill) {
+      document.getElementById(cfg.guessFill).style.width = cfg.scale(guess) + '%';
+      document.getElementById(cfg.guessVal).textContent = cfg.fmt(guess);
+    }
+    const diff = guess - cfg.actual;
+    let msg;
+    if (Math.abs(diff) < cfg.closeEnough) msg = 'Very close. The published figure is ' + cfg.actualText + '.';
+    else msg = 'You guessed ' + cfg.fmt(guess) + '. The published figure is ' + cfg.actualText + '. You were ' + cfg.diffText(Math.abs(diff)) + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    document.getElementById(cfg.verdict).textContent = msg;
+    document.getElementById(cfg.reveal).classList.remove('veiled');
+  }
+  lockBtn.addEventListener('click', () => lock());
+  return lock;
+}
+
+const lockCount = setupGuess({
+  slider: 'countSlider', sliderVal: 'countSliderVal', lock: 'countLock',
+  guessFill: 'countGuessFill', guessVal: 'countGuessVal', verdict: 'countVerdict', reveal: 'countReveal',
+  actual: 10.2, actualText: 'about 10.2 billion', closeEnough: 0.25,
+  fmt: v => v.toFixed(1) + 'B', scale: v => v / 16 * 100, diffText: d => d.toFixed(1) + ' billion',
+});
+const lockTFR = setupGuess({
+  slider: 'tfrSlider', sliderVal: 'tfrSliderVal', lock: 'tfrLock',
+  guessFill: 'tfrGuessFill', guessVal: 'tfrGuessVal', verdict: 'tfrVerdict', reveal: 'tfrReveal',
+  actual: 2.25, actualText: '2.25 children per woman', closeEnough: 0.08,
+  fmt: v => v.toFixed(2), scale: v => v / 7 * 100, diffText: d => d.toFixed(2),
+});
+const lockLife = setupGuess({
+  slider: 'lifeSlider', sliderVal: 'lifeSliderVal', lock: 'lifeLock',
+  guessFill: 'lifeGuessFill', guessVal: 'lifeGuessVal', verdict: 'lifeVerdict', reveal: 'lifeReveal',
+  actual: 73.3, actualText: '73.3 years', closeEnough: 0.6,
+  fmt: v => v.toFixed(1), scale: v => Math.max(0, (v - 50) / 40 * 100), diffText: d => d.toFixed(1) + ' years',
+});
+const lockAge = setupGuess({
+  slider: 'ageSlider', sliderVal: 'ageSliderVal', lock: 'ageLock',
+  guessFill: 'ageGuessFill', guessVal: 'ageGuessVal', verdict: 'ageVerdict', reveal: 'ageReveal',
+  actual: 17.9, actualText: '17.9%', closeEnough: 0.6,
+  fmt: v => v.toFixed(1).replace(/\.0$/, '') + '%', scale: v => v / 40 * 100, diffText: d => d.toFixed(1) + ' points',
+});
+const lockFB = setupGuess({
+  slider: 'fbSlider', sliderVal: 'fbSliderVal', lock: 'fbLock',
+  guessFill: 'fbGuessFill', guessVal: 'fbGuessVal', verdict: 'fbVerdict', reveal: 'fbReveal',
+  actual: 15.6, actualText: '15.6% as of March 2024', closeEnough: 0.6,
+  fmt: v => v.toFixed(1).replace(/\.0$/, '') + '%', scale: v => v / 30 * 100, diffText: d => d.toFixed(1) + ' points',
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, lockCount, lockTFR, lockLife, lockAge, lockFB };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beccaria's Arithmetic · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 200px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+  .brow.total .blabel, .brow.total .bval { color: var(--text-primary); font-weight: 700; }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .dials { display: flex; gap: 16px; flex-wrap: wrap; margin: 14px 0 6px; }
+  .dial { flex: 1; min-width: 230px; background: var(--wash); border-radius: 11px; padding: 14px 16px; }
+  .dial .dn { font-size: 15px; font-weight: 800; }
+  .dial .dq { font-size: 12px; color: var(--text-secondary); margin: 2px 0 10px; line-height: 1.4; }
+  .dial input[type=range] { width: 100%; accent-color: var(--accent); }
+  .dial .dv { font-size: 13px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .meter { height: 26px; border-radius: 13px; background: var(--grid); overflow: hidden; margin: 6px 0 4px; }
+  .meterfill { height: 100%; border-radius: 13px; background: var(--warn); transition: width 0.5s ease, background 0.5s ease; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 12px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 8px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Beccaria's Arithmetic <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>In 1764 a twenty-six-year-old Italian named Cesare Beccaria published an anonymous pamphlet arguing that punishment should work like arithmetic.</strong> People weigh what they might gain against what it might cost them, so the job of the law is to make crime a bad bargain. He said the calculation has three parts: how likely you are to be caught, how quickly punishment follows, and how harsh it is. Then he made a claim that got him denounced across Europe: <strong>the first one matters most, and the third one matters least.</strong> Two and a half centuries of research later, this page shows you how that claim held up.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-dials" type="button">The three dials</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-certainty" type="button">What certainty really is</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-severity" type="button">Testing severity</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-score" type="button">Beccaria's report card</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-dials">
+      <div class="card">
+        <h2>Turn the dials</h2>
+        <p class="lede">Here are Beccaria's three levers, and a meter showing roughly how much deterrent effect the research says you get. Move them and watch. The weights in this model come from the balance of evidence rather than from any single study, so treat the meter as a teaching device rather than a prediction, and read the honesty note underneath before you draw any conclusions from it.</p>
+        <div class="dials">
+          <div class="dial">
+            <div class="dn">Certainty</div>
+            <div class="dq">How likely is it that someone who commits this offense gets caught?</div>
+            <input type="range" id="dCert" min="0" max="100" step="1" value="20">
+            <div class="dv" id="vCert">20 out of 100 offenses cleared</div>
+          </div>
+          <div class="dial">
+            <div class="dn">Celerity</div>
+            <div class="dq">How quickly does punishment follow the offense?</div>
+            <input type="range" id="dCel" min="0" max="100" step="1" value="30">
+            <div class="dv" id="vCel">Slow, months to years</div>
+          </div>
+          <div class="dial">
+            <div class="dn">Severity</div>
+            <div class="dq">How harsh is the punishment if it arrives?</div>
+            <input type="range" id="dSev" min="0" max="100" step="1" value="50">
+            <div class="dv" id="vSev">Moderate</div>
+          </div>
+        </div>
+        <h3>Estimated deterrent effect</h3>
+        <div class="meter"><div class="meterfill" id="meterFill" style="width:20%"></div></div>
+        <p class="verdict" id="meterVerdict"></p>
+        <p class="teach" id="dialTeach"><strong>Try this.</strong> Push severity all the way to the top and leave certainty near the bottom. Then do the reverse. The difference between those two settings is the entire argument of this page, and it is also the difference between most crime policy of the last fifty years and what the evidence supports.</p>
+        <p class="note"><strong>What this meter is and is not.</strong> It is a weighted illustration built to reflect one robust finding, that certainty dominates severity, plus the well-supported claim that severity has sharply diminishing returns. It is not a validated model, it does not predict crime rates, and no responsible criminologist would use it to set policy. Chapter 1 asked you to notice when a model is a mechanism demonstration rather than a measurement. This is one.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-certainty">
+      <div class="card">
+        <h2>Certainty is not a slogan. It is a number.</h2>
+        <p class="lede">Deterrence talk usually stays abstract. It does not have to. Police departments report how many offenses they clear, meaning solved by arrest or closed by other means, so we can look at what the certainty of getting caught actually is in the United States.</p>
+        <div class="guessbox">
+          <p class="gq">Out of every 100 burglaries reported to police, how many are cleared?</p>
+          <div class="gr">
+            <input type="range" id="clSlider" min="0" max="100" step="1" value="40">
+            <span class="gval" id="clVal">40</span>
+            <button class="gbtn" id="clLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="clVerdict"></p>
+        </div>
+        <div class="veiled" id="clReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Murder</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="61.4%"></div></div><span class="bval">61.4%</span></div>
+            <div class="brow"><span class="blabel">Aggravated assault</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="52.3%"></div></div><span class="bval">52.3%</span></div>
+            <div class="brow total"><span class="blabel">All violent crime</span><div class="btrack"><div class="bfill" style="width:0%" data-w="45.5%"></div></div><span class="bval">45.5%</span></div>
+            <div class="brow"><span class="blabel">Rape</span><div class="btrack"><div class="bfill" style="width:0%" data-w="32.9%"></div></div><span class="bval">32.9%</span></div>
+            <div class="brow"><span class="blabel">Robbery</span><div class="btrack"><div class="bfill" style="width:0%" data-w="30.5%"></div></div><span class="bval">30.5%</span></div>
+            <div class="brow"><span class="blabel">Arson</span><div class="btrack"><div class="bfill" style="width:0%" data-w="23.8%"></div></div><span class="bval">23.8%</span></div>
+            <div class="brow"><span class="blabel">Larceny-theft</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="18.4%"></div></div><span class="bval">18.4%</span></div>
+            <div class="brow total"><span class="blabel">All property crime</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="17.2%"></div></div><span class="bval">17.2%</span></div>
+            <div class="brow"><span class="blabel">Burglary</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="14.1%"></div></div><span class="bval">14.1%</span></div>
+            <div class="brow"><span class="blabel">Motor vehicle theft</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="13.8%"></div></div><span class="bval">13.8%</span></div>
+          </div>
+          <p class="teach"><strong>About 14 in 100 burglaries end in a clearance.</strong> Now stack that on top of what you learned in Chapter 2. Only about 40 percent of burglaries are reported to police in the first place, so the odds that any given burglary produces an arrest are far lower than the clearance rate alone suggests. Multiply the two and you are somewhere near 6 in 100. Beccaria's first dial, the one he said matters most, is turned down close to the floor for most property crime in America.</p>
+          <p class="teach"><strong>This is why the certainty finding is not an argument for doing nothing.</strong> If certainty is what deters, then the policy lever that matters is the one that raises the chance of being caught, not the one that raises the sentence for the small share who are. That is also why the research on visible policing in high-crime places shows effects while the research on longer sentences mostly does not. Both findings are the same finding wearing different clothes.</p>
+          <p class="note"><strong>Read clearance rates carefully.</strong> A clearance is not a conviction, and cleared by exceptional means can include cases closed without an arrest. Clearance rates also depend on reporting, on how agencies count, and on which agencies submit data at all, which is the Chapter 2 problem arriving again. Use these numbers to make the point that certainty is low, not to rank police departments.</p>
+        </div>
+        <p class="srcnote">Source: FBI Uniform Crime Reports, Clearances, 2019 (violent crime 45.5 percent, property crime 17.2 percent, murder and nonnegligent manslaughter 61.4, aggravated assault 52.3, rape 32.9, robbery 30.5, arson 23.8, larceny-theft 18.4, burglary 14.1, motor vehicle theft 13.8). Burglary reporting rate from BJS, Criminal Victimization, 2024 (40.7 percent of burglary or trespassing victimizations reported to police). The roughly 6 in 100 figure is arithmetic combining those two published numbers and is an illustration rather than a published statistic. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-severity">
+      <div class="card">
+        <h2>Testing the dial Beccaria said to leave alone</h2>
+        <p class="lede">Severity is the lever American policy has pulled hardest for fifty years: longer sentences, mandatory minimums, three-strikes laws, capital punishment. Beccaria predicted in 1764 that this lever would do the least work. Before you see what the research says, commit to an answer.</p>
+        <div class="guessbox">
+          <p class="gq">What does the weight of criminological research find about increasing the severity of punishment?</p>
+          <div class="pickrow">
+            <button class="pick" data-sev="strong" type="button">It strongly deters crime</button>
+            <button class="pick" data-sev="little" type="button">It does little to deter crime</button>
+            <button class="pick" data-sev="increase" type="button">It increases crime</button>
+            <button class="pick" data-sev="unknown" type="button">Nobody has studied it</button>
+          </div>
+          <p class="verdict" id="sevVerdict"></p>
+        </div>
+        <div class="veiled" id="sevReveal">
+          <p class="teach"><strong>The National Institute of Justice puts it about as plainly as a federal agency ever puts anything.</strong> Its summary of the research says the certainty of being caught is a vastly more powerful deterrent than the punishment, that increasing the severity of punishment does little to deter crime, and that sending someone to prison is not a very effective way to deter crime. It notes two reasons severity underperforms. First, people considering an offense usually do not know the specific penalty attached to it, so a legislature can raise a sentence without changing anyone's perceived cost. Second, prison itself can be criminogenic, meaning it can make future offending more likely rather than less, partly through what people learn and who they meet inside.</p>
+          <h3>The hardest case: does the death penalty deter?</h3>
+          <p class="teach"><strong>In 2012 a National Research Council committee reviewed three decades of studies and reached an unusually blunt conclusion.</strong> Research on the effect of capital punishment on homicide, it found, is not informative about whether capital punishment decreases, increases, or has no effect on homicide rates. It recommended that these studies not be used to guide policy at all. That is a stronger statement than saying the death penalty does not deter. It says the evidence cannot currently answer the question, which is a different claim and a more honest one.</p>
+          <p class="teach"><strong>Now notice how well Beccaria anticipated all of this without any data.</strong> He argued that a punishment should be only as severe as necessary to make crime a bad bargain, and that going beyond that point is not just cruel but counterproductive. He even named a mechanism, arguing that public executions could brutalize a population rather than restrain it, which is why the modern literature still uses the term brutalization effect. He reasoned his way to a conclusion in 1764 that took criminology two hundred years and a great deal of data to confirm.</p>
+          <p class="note"><strong>Say this precisely on the exam.</strong> The finding is not that punishment does not matter. It is that the certainty of apprehension does far more deterrent work than the severity of the sentence, and that severity has sharply diminishing returns. A student who writes that criminologists think punishment does not work has written something the research does not say.</p>
+        </div>
+        <p class="srcnote">Sources: National Institute of Justice, Five Things About Deterrence (certainty of being caught is a vastly more powerful deterrent than punishment; increasing severity does little to deter; prison is not an effective deterrent; police deter by increasing the perception that offenders will be caught). National Research Council, Deterrence and the Death Penalty, 2012 (research to date is not informative about whether capital punishment decreases, increases, or has no effect on homicide rates). Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-score">
+      <div class="card">
+        <h2>Beccaria's report card</h2>
+        <p class="lede">He was a philosopher with no data, writing before criminology existed. Grade him. For each claim, decide whether modern evidence supports it, then see how it actually scored.</p>
+        <div id="claims"></div>
+        <div class="veiled" id="scoreWrap">
+          <div class="statrow">
+            <div class="stat good"><div class="v" id="scScore">0 of 5</div><div class="l">Times you matched the evidence</div></div>
+            <div class="stat"><div class="v">3</div><div class="l">Of his five claims that modern research supports</div></div>
+            <div class="stat warn"><div class="v">2</div><div class="l">That are more complicated than he thought</div></div>
+          </div>
+          <p class="teach"><strong>A philosopher with no data got the biggest question right.</strong> Beccaria had no crime statistics, no control groups, and no way to test anything. He reasoned from an assumption about human beings, that we weigh costs against benefits, and he followed it carefully. On the central question of which lever matters most, he beat two centuries of policy intuition. That is a real argument for the value of clear reasoning.</p>
+          <p class="teach"><strong>And now the other half of the lesson, which matters more.</strong> Being right by reasoning alone is not the same as knowing. Beccaria had no way to tell whether he was right, and neither did anyone else for two hundred years. Lombroso, whom you meet in the same chapter, reasoned just as confidently from an assumption about human beings and was catastrophically wrong, and it took Goring's control group to prove it. The difference between the two men is not that one was smarter. It is that eventually someone checked. Chapter 1 called this falsifiability, and this chapter is the story of the field learning to insist on it.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum 5: your post</h2>
+        <p class="lede">Write roughly 250 to 300 words for your initial post, then reply to two classmates. Check that week’s module in the LMS for the posting and reply deadlines. This week's forum is a museum visit.</p>
+        <ol class="qs" style="margin-top:12px">
+          <li>Visit the Lombroso Museum of Criminal Anthropology site or the Atlas Obscura write-up, both linked in the module. Pick <strong>one</strong> artifact or one specific claim.</li>
+          <li>Explain what Lombroso believed it proved. Be fair to him and describe the theory as he understood it, using the chapter's vocabulary: atavism, stigmata, criminal anthropology, the born criminal.</li>
+          <li>Dissect it with the tools from Chapters 1 and 2. Was the claim falsifiable? What was his comparison group, and what should it have been? What did his measurements actually measure? Goring's 1913 study is the model here, so use it.</li>
+          <li>Close with the transfer question. Name one claim you have encountered outside this class that shows the same failure pattern: strong determinism, weak measurement, and a conclusion that happens to match an existing prejudice.</li>
+        </ol>
+        <p class="teach"><strong>How this is graded:</strong> the points are in the dissection, not the outrage. Everyone agrees Lombroso was wrong. What earns credit is showing exactly <em>how</em> the reasoning failed, in the specific technical language this course has given you. A post that says his ideas were racist and harmful is true and earns little. A post that explains that he measured only convicts and therefore could not distinguish criminal traits from ordinary human variation earns full marks.</p>
+        <p class="teach"><strong>If you would rather argue than dissect,</strong> this week's tool gives you a second option. Take a position on Beccaria's central claim, that certainty deters more than severity, and argue what American criminal justice would look like if policy actually followed the evidence. Use the clearance rates and at least one finding from the tool. Either path is acceptable, and say at the top of your post which one you chose.</p>
+        <p class="teach"><strong>Also this week:</strong> Term Paper Part 2 is introduced, covering how your offense is defined and measured. The data sources table from Chapter 2 is your map for it, and starting early matters because the measurement section takes real research time.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for SOC 3333 Criminology, Midwestern State University. All figures are from the published sources cited on each tab, retrieved August 2026. Your guesses, dial settings, and clicks stay on this page and are never recorded or transmitted.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  function animateBars(c){
+    c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); });
+  }
+
+  // ---------- tab 1: dials ----------
+  function celLabel(v){
+    if (v < 20) return 'Glacial, years if ever';
+    if (v < 45) return 'Slow, months to years';
+    if (v < 70) return 'Weeks';
+    if (v < 88) return 'Days';
+    return 'Immediate';
+  }
+  function sevLabel(v){
+    if (v < 15) return 'A warning';
+    if (v < 35) return 'A fine';
+    if (v < 55) return 'Probation or a short jail term';
+    if (v < 75) return 'Years in prison';
+    if (v < 92) return 'Decades in prison';
+    return 'Life, or the maximum available';
+  }
+  function updateDials(){
+    const c = Number($('dCert').value), l = Number($('dCel').value), s = Number($('dSev').value);
+    $('vCert').textContent = c + ' out of 100 offenses cleared';
+    $('vCel').textContent = celLabel(l);
+    $('vSev').textContent = sevLabel(s);
+    // certainty dominates; severity has sharply diminishing returns; celerity modest
+    const certPart = 62 * (c / 100);
+    const celPart = 16 * (l / 100);
+    const sevPart = 22 * Math.sqrt(s / 100);
+    const total = Math.round(certPart + celPart + sevPart);
+    const fill = $('meterFill');
+    fill.style.width = total + '%';
+    const root = getComputedStyle(document.querySelector('.viz-root'));
+    fill.style.background = total >= 60 ? root.getPropertyValue('--good').trim()
+      : (total >= 35 ? root.getPropertyValue('--accent').trim() : root.getPropertyValue('--warn').trim());
+    let msg = 'Estimated deterrent effect: ' + total + ' out of 100. ';
+    if (c < 25 && s > 75) msg += 'This is the classic American setting: severe punishment that rarely arrives. The model gives it a weak score, and so does the research.';
+    else if (c > 70 && s < 40) msg += 'High certainty with modest punishment. This is the setting Beccaria argued for in 1764, and the one the evidence supports.';
+    else if (total >= 60) msg += 'Strong, and notice that you got here mainly by raising certainty.';
+    else if (total < 30) msg += 'Weak. Almost any increase in certainty would buy more than any increase in severity.';
+    else msg += 'Middling. Try moving one dial at a time and watch which one moves the meter.';
+    $('meterVerdict').textContent = msg;
+  }
+  ['dCert','dCel','dSev'].forEach(id => $(id).addEventListener('input', updateDials));
+  updateDials();
+
+  // ---------- tab 2 ----------
+  (function(){
+    const slider = $('clSlider'), val = $('clVal'), lock = $('clLock');
+    slider.addEventListener('input', () => { val.textContent = slider.value; });
+    function doLock(){
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = 14.1, d = g - a;
+      let t = 'You guessed ' + g + '. The published figure is 14.1 percent. ';
+      if (Math.abs(d) <= 5) t += 'You were close.';
+      else if (d > 0) t += 'You were ' + Math.abs(d).toFixed(1) + ' points high.';
+      else t += 'You were ' + Math.abs(d).toFixed(1) + ' points low.';
+      $('clVerdict').textContent = t;
+      $('clReveal').style.display = 'block';
+      animateBars($('clReveal'));
+    }
+    lock.addEventListener('click', doLock);
+    window.__lockCl = doLock;
+  })();
+
+  // ---------- tab 3 ----------
+  let sevPicked = null;
+  document.querySelectorAll('#sec-severity .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (sevPicked) return;
+      sevPicked = btn.dataset.sev;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-severity .pick').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.sev === 'little') b.classList.add('answer');
+      });
+      $('sevVerdict').textContent = sevPicked === 'little'
+        ? 'Right. The research finds that increasing severity does little to deter.'
+        : 'The weight of the research says it does little to deter. Your pick is marked above.';
+      $('sevReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- tab 4: report card ----------
+  const CLAIMS = [
+    { c: 'People weigh the expected benefits of an offense against the expected costs before acting.',
+      verdict: 'mixed', label: 'partly holds up',
+      v: '<strong>Partly.</strong> Modern rational choice theory, which you meet in the next chapter, is built directly on this and finds real support, especially for planned property offenses. But the calculation is far more limited than Beccaria imagined. People act under time pressure, alcohol, emotion, and terrible information about the odds. Criminologists now speak of bounded rationality rather than a clean ledger. He was right that a calculation happens and wrong about how good the arithmetic is.' },
+    { c: 'The certainty of getting caught deters more than the severity of the punishment.',
+      verdict: 'right', label: 'strongly supported',
+      v: '<strong>This is his big win.</strong> The National Institute of Justice summarizes the research by saying the certainty of being caught is a vastly more powerful deterrent than the punishment. He had no data and reasoned his way to the finding that has held up best. Two and a half centuries later it is still the single most policy-relevant sentence in deterrence research, and still the one most often ignored.' },
+    { c: 'Punishment should follow the offense swiftly to be effective.',
+      verdict: 'mixed', label: 'weaker than he thought',
+      v: '<strong>Weaker than he assumed.</strong> Celerity is the least supported leg of the three. Some evidence suggests swift and certain sanctioning matters, particularly in supervision settings, but the effects are modest and harder to isolate than the certainty findings. It has proved difficult to test cleanly, partly because speed and certainty tend to move together in the real world.' },
+    { c: 'Punishment more severe than necessary is counterproductive and can breed more violence.',
+      verdict: 'right', label: 'supported',
+      v: '<strong>Supported, and he even named the mechanism.</strong> Research finds that severity has sharply diminishing returns, that prison can be criminogenic rather than deterrent, and the literature still uses his term, the brutalization effect, for the finding that harsh public punishment can increase violence rather than reduce it. He argued this against a Europe that was still breaking people on wheels in public squares.' },
+    { c: 'The death penalty is a poor deterrent and should be abolished.',
+      verdict: 'mixed', label: 'the evidence cannot say',
+      v: '<strong>Honest answer: the evidence cannot settle it.</strong> A 2012 National Research Council review of three decades of studies concluded that research is not informative about whether capital punishment decreases, increases, or has no effect on homicide rates, and recommended that these studies not guide policy. Notice that this is not agreement with Beccaria. It is a finding that the question remains open empirically, which means his abolition argument rests on moral and practical grounds rather than on demonstrated deterrence.' },
+  ];
+  const claimsEl = $('claims');
+  const cstate = CLAIMS.map(() => null);
+  CLAIMS.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.c + '</div>' +
+      '<div class="pickrow">' +
+        '<button class="pick" data-c="'+i+'" data-a="yes" type="button">The evidence supports him</button>' +
+        '<button class="pick" data-c="'+i+'" data-a="no" type="button">It is more complicated</button>' +
+      '</div><div class="scv" id="sv'+i+'"></div>';
+    claimsEl.appendChild(d);
+  });
+  function answerClaim(i, a){
+    const btns = claimsEl.querySelectorAll('[data-c="'+i+'"]');
+    if (btns[0].disabled) return;
+    const correct = CLAIMS[i].verdict === 'right' ? 'yes' : 'no';
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === correct) b.classList.add('answer');
+    });
+    cstate[i] = (a === correct);
+    const el = $('sv'+i);
+    el.innerHTML = '<div class="grade ' + (CLAIMS[i].verdict === 'right' ? 'right' : 'mixed') + '">' + CLAIMS[i].label + '</div>' + CLAIMS[i].v;
+    el.style.display = 'block';
+    if (cstate.every(v => v !== null)) {
+      $('scScore').textContent = cstate.filter(Boolean).length + ' of 5';
+      $('scoreWrap').style.display = 'block';
+    }
+  }
+  claimsEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]');
+    if (b) answerClaim(Number(b.dataset.c), b.dataset.a);
+  });
+
+  window.__S = {
+    activate, updateDials,
+    setDials: (c, l, s) => { $('dCert').value = c; $('dCel').value = l; $('dSev').value = s; updateDials(); },
+    lockCl: () => window.__lockCl(),
+    pickSev: (k) => { const b = document.querySelector('#sec-severity .pick[data-sev="'+k+'"]'); if (b) b.click(); },
+    answerClaim,
+    state: () => ({ sevPicked, cstate })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

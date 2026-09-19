@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Three Things Have to Line Up · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 210px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scenrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 14px; }
+  .scen { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .scen[aria-pressed="true"] { background: var(--text-primary); border-color: var(--text-primary); color: var(--page); }
+
+  .tri { display: flex; gap: 14px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .leg { flex: 1; min-width: 240px; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface-1); transition: background 0.3s ease, border-color 0.3s ease; }
+  .leg.on { background: var(--wash); border-color: var(--accent); }
+  .leg .ln { font-size: 15px; font-weight: 800; }
+  .leg .lp { font-size: 12.5px; color: var(--text-muted); margin-top: 1px; }
+  .leg .ld { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin: 8px 0 10px; }
+  .leg .lstate { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-top: 8px; background: rgba(46,139,87,0.16); color: var(--good); }
+  .leg.on .lstate { background: rgba(235,104,52,0.08); color: var(--warn); }
+  .toggle { font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 13px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; display: block; margin-top: 10px; }
+  .toggle:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+  .outcome { border-radius: 12px; padding: 16px 18px; margin-top: 14px; font-size: 14.5px; line-height: 1.55; }
+  .outcome.happens { background: rgba(235,104,52,0.10); border: 1px solid var(--warn); }
+  .outcome.stopped { background: rgba(46,139,87,0.10); border: 1px solid var(--good); }
+  .outcome .ohead { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 7px; }
+  .outcome.happens .ohead { color: var(--warn); }
+  .outcome.stopped .ohead { color: var(--good); }
+  .outcome p { margin-bottom: 9px; color: var(--text-secondary); }
+  .outcome p:last-child { margin-bottom: 0; }
+  .outcome strong { color: var(--text-primary); }
+
+  .funnel { margin: 14px 0 4px; }
+  .fstage { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+  .fnum { width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .fbody { flex: 1; }
+  .fname { font-size: 14.5px; font-weight: 700; }
+  .fdesc { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 2px; }
+  .ftrack { width: 190px; flex: none; }
+  .ftrack .btrack { height: 20px; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .scv .lens { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 7px; }
+  .revbtn { font: inherit; font-size: 12.5px; font-weight: 700; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--accent); cursor: pointer; margin-top: 8px; }
+  .revbtn:hover { filter: brightness(1.15); }
+  .revbtn:disabled { display: none; }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.08); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Three Things Have to Line Up <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Most crime theory asks what is wrong with the offender.</strong> Routine activity theory asks a different question. It takes the offender as given and asks what else had to be true for the event to happen at all. Lawrence Cohen and Marcus Felson argued in 1979 that a predatory crime requires three things to converge in the same place at the same time: someone willing to offend, a target worth taking or worth harming, and the absence of anyone whose presence would have stopped it. Remove any one of the three and the event does not occur, and you have not fixed a single person. This page lets you test that claim, and then spends most of its time on the third element, which is the one that turns out to be far more complicated than the phrase <em>capable guardian</em> makes it sound.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-puzzle" type="button">The 1960s puzzle</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-triangle" type="button">Break the triangle</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-guardian" type="button">What makes a guardian capable</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-party" type="button">Who defines the situation</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-works" type="button">Does any of it work</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-puzzle">
+      <div class="card">
+        <h2>A puzzle that broke the standard explanation</h2>
+        <p class="lede">Through the 1960s and into the 1970s the United States got richer. Unemployment fell, incomes rose, more people finished high school, more households owned cars and appliances. Every major criminological theory of the period expected crime to fall along with poverty. Before you look at what happened, commit to a guess.</p>
+
+        <div class="guessbox">
+          <div class="gq">The FBI reported a violent crime rate of 160.9 per 100,000 people in 1960. What do you think the rate was fifteen years later, in 1975?</div>
+          <div class="gr">
+            <input type="range" id="gPuz" min="80" max="700" step="5" value="200">
+            <div class="gval" id="gPuzV">200</div>
+            <button class="gbtn" id="gPuzBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gPuzVerdict"></div>
+        </div>
+
+        <div class="veiled" id="puzReveal">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Violent crime rate, 1960</div><div class="btrack"><div class="bfill" id="b1" style="width:0%"></div></div><div class="bval">160.9</div></div>
+            <div class="brow"><div class="blabel">Violent crime rate, 1970</div><div class="btrack"><div class="bfill" id="b2" style="width:0%"></div></div><div class="bval">363.5</div></div>
+            <div class="brow"><div class="blabel">Violent crime rate, 1975</div><div class="btrack"><div class="bfill warn" id="b3" style="width:0%"></div></div><div class="bval">487.8</div></div>
+          </div>
+          <p class="srcnote">Rates per 100,000 population. FBI Uniform Crime Reports historical series, 1960 to 1975. Property crime moved the same direction over the same years, from 1,726.3 per 100,000 in 1960 to 4,810.7 in 1975. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>The violent crime rate roughly tripled while the economy improved.</strong> That is the puzzle Cohen and Felson set out to solve, and it is why they went looking for an explanation that had nothing to do with how many people wanted to commit crime. Read these figures with the caution Chapter 2 taught you. They come from the UCR Summary series, they are police-recorded rather than survey-measured, and reporting practices changed across this period. The rise is far too large to be an artifact of counting, but the exact size of it is not something the UCR can pin down.</div>
+
+          <h3>Their answer: nobody was home</h3>
+          <p class="lede">Cohen and Felson noticed that American daily routines had been rearranged. More women had entered paid work outside the home, so houses stood empty during the day. More people ate out, traveled, and spent time away from their own property. And a wave of new consumer goods was small, valuable, and easy to carry off. In their own data, married women's labor force participation rose 31 percent between 1960 and 1970. Prosperity did not reduce crime. It redistributed people and property across space in a way that put more unguarded targets in front of whatever offenders already existed.</p>
+          <p class="note"><strong>The theoretical move here is worth naming.</strong> Cohen and Felson did not argue that offender motivation is unimportant. They argued that it can be treated as roughly constant and that the interesting variation lives elsewhere. That is a claim about what to study, not a claim that nobody chooses to offend. Chapter 8 onward will spend a great deal of time on the motivation side.</p>
+          <p class="srcnote">Cohen, L. E., and Felson, M. (1979). Social change and crime rate trends: A routine activity approach. American Sociological Review 44(4), 588 to 608.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-triangle">
+      <div class="card">
+        <h2>Break the triangle</h2>
+        <p class="lede">Pick a situation. All three elements start switched on, which means the crime happens. Switch any one of them off and read what changes. Pay attention to what you are actually doing when you switch an element off, because in every case it corresponds to something real that somebody could decide to do.</p>
+
+        <div class="scenrow" id="scenRow">
+          <button class="scen" data-s="0" aria-pressed="true" type="button">A laptop in the library</button>
+          <button class="scen" data-s="1" aria-pressed="false" type="button">A car on a side street</button>
+          <button class="scen" data-s="2" aria-pressed="false" type="button">A porch in the afternoon</button>
+        </div>
+
+        <p class="lede" id="scenSetup"></p>
+
+        <div class="tri" id="triRow">
+          <div class="leg on" id="leg-off">
+            <div class="ln">Motivated offender</div>
+            <div class="lp">Somebody willing to do it</div>
+            <div class="ld" id="ld-off"></div>
+            <div class="lstate" id="ls-off"></div>
+            <button class="toggle" data-leg="off" type="button"></button>
+          </div>
+          <div class="leg on" id="leg-tgt">
+            <div class="ln">Suitable target</div>
+            <div class="lp">Worth taking, and takeable</div>
+            <div class="ld" id="ld-tgt"></div>
+            <div class="lstate" id="ls-tgt"></div>
+            <button class="toggle" data-leg="tgt" type="button"></button>
+          </div>
+          <div class="leg on" id="leg-grd">
+            <div class="ln">Capable guardian</div>
+            <div class="lp">Somebody whose presence would stop it</div>
+            <div class="ld" id="ld-grd"></div>
+            <div class="lstate" id="ls-grd"></div>
+            <button class="toggle" data-leg="grd" type="button"></button>
+          </div>
+        </div>
+
+        <div class="outcome happens" id="outcome"></div>
+
+        <p class="note"><strong>Notice that the third element runs the other way.</strong> The offender and the target have to be <em>there</em> for a crime to happen. The guardian has to be <em>missing</em>. That asymmetry is why criminologists write the third element as the absence of a capable guardian rather than the presence of an incapable one, and it is why this element is the easiest of the three for policy to reach. Adding a person to a place is a thing you can actually do.</p>
+
+        <div class="teach"><strong>What you did not do:</strong> you never rehabilitated anyone, never raised anyone out of poverty, and never changed anyone's values. You moved an object, added a person, or changed a routine, and the event stopped happening. That is the entire policy appeal of this theory, and it is also the source of the most common objection to it, which is that preventing an event in one place is not the same as reducing the number of people who want to offend.</div>
+        <p class="srcnote">Suitability in Cohen and Felson's framing has four components: value, visibility, accessibility, and inertia, meaning how hard the thing is to move. The scenarios above vary all four.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-guardian">
+      <div class="card">
+        <h2>The word "capable" is doing a lot of work</h2>
+        <p class="lede">A guardian in this theory is almost never a police officer. It is a neighbor on a porch, a clerk who looks up, a roommate who notices, a dog, a lit window. Cohen and Felson meant guardianship by ordinary people of one another and of each other's property, as a side effect of going about ordinary life. But saying somebody is <em>there</em> is not the same as saying they are <em>capable</em>. Danielle Reynald's research broke capability into three separate stages, and a person can fail at any one of them.</p>
+
+        <div class="funnel">
+          <div class="fstage">
+            <div class="fnum">1</div>
+            <div class="fbody">
+              <div class="fname">Available</div>
+              <div class="fdesc">Physically present, or close enough that presence could register. Nobody in the building, nobody on the street, nobody in the group chat.</div>
+            </div>
+            <div class="ftrack"><div class="btrack"><div class="bfill" id="f1" style="width:0%"></div></div></div>
+          </div>
+          <div class="fstage">
+            <div class="fnum">2</div>
+            <div class="fbody">
+              <div class="fname">Monitoring</div>
+              <div class="fdesc">Actually paying attention to the surroundings. Reynald found this is the stage that separates real guardianship from mere presence, because available people who are not watching prevent nothing.</div>
+            </div>
+            <div class="ftrack"><div class="btrack"><div class="bfill" id="f2" style="width:0%"></div></div></div>
+          </div>
+          <div class="fstage">
+            <div class="fnum">3</div>
+            <div class="fbody">
+              <div class="fname">Willing to intervene</div>
+              <div class="fdesc">Doing something about what was seen. Directly, or indirectly by summoning someone else.</div>
+            </div>
+            <div class="ftrack"><div class="btrack"><div class="bfill" id="f3" style="width:0%"></div></div></div>
+          </div>
+        </div>
+
+        <p class="srcnote">The bars fill in once you lock in the guess below. Each bar shows the share of the people who made it through the <em>previous</em> stage, not the share of everyone, so the funnel narrows faster than the individual numbers look.</p>
+
+        <div class="guessbox">
+          <div class="gq">In Reynald's survey of 255 residents, 85 percent said they watched what happened on their street. Of those watchers, what percentage said they would intervene <em>directly</em> rather than call someone else or wait to see how serious it got?</div>
+          <div class="gr">
+            <input type="range" id="gGrd" min="0" max="100" step="1" value="50">
+            <div class="gval" id="gGrdV">50%</div>
+            <button class="gbtn" id="gGrdBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gGrdVerdict"></div>
+        </div>
+
+        <div class="veiled" id="grdReveal">
+          <div class="statrow">
+            <div class="stat"><div class="v">85%</div><div class="l">of residents said they monitored street activity, and 15 percent said they paid no attention</div></div>
+            <div class="stat good"><div class="v">80%</div><div class="l">of the monitoring residents were willing to intervene in some manner</div></div>
+            <div class="stat warn"><div class="v">16%</div><div class="l">said they would intervene directly</div></div>
+          </div>
+          <p class="srcnote">Among monitoring residents, 41 percent preferred indirect intervention such as calling police, 16 percent would intervene directly, and 23 percent said it would depend on how serious the incident looked. Reynald, D. M., research on guardianship in action, surveying 255 residents. Percentages as reported. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>Read the funnel, not the individual numbers.</strong> Guardianship leaks at every stage. Most people are not there. Of the people who are there, some are not looking. Of the people who are looking, most will do something, but only a small fraction will step in themselves. The theory says a capable guardian prevents crime. Reynald's contribution is showing that "capable" is an outcome that has to survive three filters, and that the last filter is the narrowest.</div>
+
+          <p class="note"><strong>Honesty note.</strong> These percentages come from surveys of residents on residential streets in a particular national setting, asking what they would do rather than observing what they did do. Treat the shape of the funnel as the finding and the exact percentages as illustrative. People reliably overestimate their own willingness to intervene when asked in the abstract, which means the real narrowing at stage three is probably sharper than these self-reports suggest.</p>
+
+          <h3>What predicts whether somebody steps in</h3>
+          <p class="lede">Reynald found a consistent set of factors: a felt sense of obligation to the place and the people in it, how the person reads the environment around them, prior training, an assessment of personal risk, whether they have anything to intervene with, and physical confidence. Neighborhood context predicted both monitoring and willingness, with residents of lower-crime, higher-income areas reporting substantially more of both. That last finding should sit uncomfortably. It means guardianship is thinnest exactly where victimization is highest.</p>
+
+          <h3>Guardians are not the only controller</h3>
+          <p class="lede">Ronald Clarke and John Eck extended the triangle by giving each of the three elements a controller. The extension matters because it names people who are standing right there and are not guardians in the original sense, but who have more leverage than anyone else in the room.</p>
+          <div class="tri">
+            <div class="leg on">
+              <div class="ln">Handler</div>
+              <div class="lp">controls the offender</div>
+              <div class="ld">Someone who knows the potential offender well and can exert influence over their behavior. Parents, siblings, teachers, friends, partners. The person most likely to stop a specific individual is usually someone who came with them.</div>
+            </div>
+            <div class="leg on">
+              <div class="ln">Manager</div>
+              <div class="lp">controls the place</div>
+              <div class="ld">Whoever has responsibility for behavior in that location. A bar owner, a landlord, a bus driver, a teacher, a flight attendant. Someone whose house it is.</div>
+            </div>
+            <div class="leg on">
+              <div class="ln">Guardian</div>
+              <div class="lp">controls the target</div>
+              <div class="ld">People protecting themselves, their belongings, or those of family, friends, and coworkers, plus public police and private security. The original Cohen and Felson element.</div>
+            </div>
+          </div>
+          <p class="srcnote">The problem analysis triangle, ASU Center for Problem-Oriented Policing. Retrieved August 2026. A criminal event requires the inner three to converge while all three controllers are weak or absent.</p>
+          <div class="teach">Hold onto the handler. In the next tab, the person with the most power to stop what is happening is not a guardian at all.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-party">
+      <div class="card">
+        <p class="cn"><strong>Content note.</strong> This section works through a scenario in which the risk being discussed is sexual assault. It is here because it is the clearest case in criminology of guardianship failing for reasons that have nothing to do with whether anyone was present. If you would rather not work through this material, tell me and you will get an alternate scenario with no loss of credit. Support is available at any hour through the National Sexual Assault Hotline at 800-656-HOPE (4673) and at online.rainn.org, and on campus through the counseling center and the Title IX office. <strong>You are never required to disclose anything about your own experience for a grade in this course.</strong></p>
+
+        <h2>The same thirty seconds, six ways</h2>
+        <p class="lede">It is a house party. A woman who has been drinking heavily has become unsteady and stopped tracking the conversation. A man she met earlier in the evening helps her up, puts an arm around her, and walks her down a hallway toward a bedroom. Roughly six other people see some part of this happen. The scene lasts about thirty seconds.</p>
+        <p class="lede">By the strict letter of routine activity theory, guardianship is abundant here. Six people are available. But availability was only stage one. What determines whether anything happens next is not how many people are in the house. It is <strong>how each of them defines what they just saw</strong>, and definitions are not evenly distributed. Reveal each person and notice which controller they are and where their definition sends them.</p>
+
+        <div id="people"></div>
+
+        <div class="teach" id="peopleWrap" style="display:none"><strong>Count what just happened.</strong> Six people were available. Every one of them was monitoring, in the sense that they saw it. Their readings differ not because some of them are bad people but because each is running the scene through a different set of prior assumptions, relationships, and interests. Only two definitions produce action. And the one person whose definition would settle the question instantly is the one person who cannot give it.</div>
+
+        <div class="card" id="thomasCard" style="display:none; margin-top:14px; padding:0; border:none; background:none;">
+          <h3>The sociology underneath this</h3>
+          <p class="lede">In 1928 W. I. Thomas and Dorothy Swaine Thomas wrote a sentence that has organized this part of sociology ever since: <strong>"If men define situations as real, they are real in their consequences."</strong> The scene in the hallway has no meaning printed on it. Six people build six meanings out of it, and each of them then acts on the meaning they built, not on the scene. The teammate is not lying when he says nothing was wrong. He is reporting his definition accurately. That is what makes this hard, and it is why "there were people right there" turns out to be such a weak protection.</p>
+          <p class="srcnote">Thomas, W. I., and Thomas, D. S. (1928). The Child in America: Behavior Problems and Programs. New York: Knopf, page 572.</p>
+
+          <h3>What people actually report doing</h3>
+          <p class="lede">The 2019 AAU Campus Climate Survey asked 181,752 students at 33 colleges and universities about sexual assault and misconduct, including what they did when they witnessed a situation they believed could lead to a sexual assault. Guess first.</p>
+
+          <div class="guessbox">
+            <div class="gq">Of students who said they witnessed such a situation, what percentage said they directly intervened or interrupted what was happening?</div>
+            <div class="gr">
+              <input type="range" id="gAau" min="0" max="100" step="1" value="50">
+              <div class="gval" id="gAauV">50%</div>
+              <button class="gbtn" id="gAauBtn" type="button">Lock in my guess</button>
+            </div>
+            <div class="verdict" id="gAauVerdict"></div>
+          </div>
+
+          <div class="veiled" id="aauReveal">
+            <div class="bars">
+              <div class="brow"><div class="blabel">Checked in with the person affected</div><div class="btrack"><div class="bfill good" id="a1" style="width:0%"></div></div><div class="bval">50.3%</div></div>
+              <div class="brow"><div class="blabel">Directly intervened or interrupted</div><div class="btrack"><div class="bfill" id="a2" style="width:0%"></div></div><div class="bval">37.0%</div></div>
+              <div class="brow"><div class="blabel">Went to a friend of one of them</div><div class="btrack"><div class="bfill" id="a3" style="width:0%"></div></div><div class="bval">27.5%</div></div>
+              <div class="brow"><div class="blabel">Did nothing, unsure what to do</div><div class="btrack"><div class="bfill warn" id="a4" style="width:0%"></div></div><div class="bval">14.0%</div></div>
+              <div class="brow"><div class="blabel">Did nothing, thought it was handled</div><div class="btrack"><div class="bfill warn" id="a5" style="width:0%"></div></div><div class="bval">10.8%</div></div>
+            </div>
+            <p class="srcnote">Categories are not mutually exclusive, so they do not sum to 100. AAU aggregate figures across participating institutions, 2019 AAU Campus Climate Survey on Sexual Assault and Misconduct. The same survey found that 13 percent of all students, and 26.4 percent of undergraduate women, had experienced nonconsensual sexual contact by physical force or inability to consent since enrolling. Retrieved August 2026.</p>
+
+            <div class="teach"><strong>Look at the two inaction categories through the lens you just built.</strong> Fourteen percent did nothing because they were unsure what to do, which is a stage-three failure of willingness. Nearly eleven percent did nothing because they concluded the person was handling it, which is not a failure of willingness at all. It is a definition. Those students were available, they were monitoring, they were willing in principle, and they decided the situation did not call for anything. That is the teammate in the hallway, and it is the single most common way guardianship fails in a room full of people.</div>
+
+            <h3>Two findings that cut against each other</h3>
+            <p class="lede">A study of 219 real arguments and assaults captured on public CCTV cameras in Amsterdam, Lancaster, and Cape Town found that in 91 percent of them at least one bystander, and usually several, did something to help. Larger groups helped more, not less, which reverses the classic bystander effect that most people were taught. Meanwhile a study of 427 women who reported a sexual assault found that a bystander had an opportunity to intervene in 23 percent of those incidents, and alcohol use by perpetrators, victims, and bystanders was widespread in exactly those settings.</p>
+            <p class="note"><strong>These two findings are not in conflict, and the difference between them is the lesson.</strong> The CCTV study captured public street conflicts, where the situation defines itself. Someone is shouting, someone is being shoved, and every bystander reads the same scene the same way. A hallway at a party is the opposite. The scene is ambiguous by construction, most of the people watching have a relationship to one of the two parties, and everyone present has been drinking. Bystanders are not generally passive. They are unreliable precisely when the definition is contested, which is precisely when the harm is most likely.</p>
+            <p class="srcnote">Philpot, R., Liebst, L. S., Levine, M., Bernasco, W., and Lindegaard, M. R. (2019). American Psychologist, 74(1). Haikalis, M., Leone, R. M., Parrott, D. J., and DiLillo, D. (2018). Sexual assault survivor reports of missed bystander opportunities. Violence Against Women 24(10), 1232 to 1254. Retrieved August 2026.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-works">
+      <div class="card">
+        <h2>Does any of it work</h2>
+        <p class="lede">The National Institute of Justice runs CrimeSolutions, which grades programs and practices against the research evidence using three labels: <strong>Effective</strong>, <strong>Promising</strong>, and <strong>Ineffective</strong>. Ratings are assigned to specific outcomes rather than to a whole program, which is why the same intervention can land in two different places depending on what you measure. Below are five real findings for interventions that work on one leg of the triangle or another. Commit to an answer before you look. Some of these will not go the way you assume, and the ones that do not are the more useful ones.</p>
+        <div id="rates"></div>
+        <div class="teach" id="ratesWrap" style="display:none"><strong>You scored <span id="ratesScore"></span>.</strong> The pattern across all five is worth stating plainly. Interventions that change a physical situation produce measurable, if modest, effects on crime. Interventions that try to change how people define situations reliably change what people believe about themselves, and have a much harder time changing what happens. That is not an argument against bystander programs. It is a measurement of how hard the thing they are attempting actually is, and routine activity theory tells you why. Redesigning a street removes an element. Redesigning a definition has to survive alcohol, friendship, embarrassment, and thirty seconds of hallway.</div>
+        <p class="srcnote">All ratings and findings from CrimeSolutions, National Institute of Justice, crimesolutions.ojp.gov, drawing on the practice profiles for hot spots policing, improved street lighting, and bystander education programs, and the program profile for Green Dot. Retrieved August 2026. Ratings are periodically re-reviewed and can change, so check the site before citing any of these in a paper.</p>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum: where guardianship broke</h2>
+        <p class="lede">Post your initial response and then reply to two classmates. Length and deadlines are in that week's module in the LMS.</p>
+        <ol class="qs">
+          <li>Work through the hallway scenario in the previous tab. Name the reading that came closest to your own first instinct, and say honestly why that one. Nobody is graded on which one they picked.</li>
+          <li>Using Reynald's three stages, identify the <em>specific</em> stage at which guardianship failed in that scene. Availability, monitoring, or willingness. Defend the choice, because the three are genuinely arguable here and your classmates will not all land in the same place.</li>
+          <li>Bystander education programs are rated Effective at raising bystander confidence, intent to help, and rejection of rape myths, but only Promising for actual helping behavior, and the Green Dot evaluation found no statistically significant effect on sexual violence victimization. Using what you worked through about definitions, offer one explanation for that gap. Do not simply say the programs need to be better.</li>
+          <li>Then take one step outside the scenario. Identify a routine setting you actually pass through in an ordinary week and name who occupies each of the three controller roles there. Handler, manager, guardian. If one of them is missing, say which.</li>
+        </ol>
+        <div class="teach"><strong>Replies:</strong> respond to two classmates who identified a different failure stage than you did. Ask what would have to be true about the room for their stage to be the right answer.</div>
+        <p class="note"><strong>A word on tone.</strong> This forum asks you to analyze a situation in which people did not act. Do that as criminologists. The point of the chapter is that these failures are structured and predictable, not that the people in that hallway were uniquely careless. Anyone can write a post that condemns the bystanders. The harder and better post explains why six reasonable people produced six different readings.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  // ---------- theme ----------
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+
+  // ---------- tabs ----------
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  // ---------- generic guess helper ----------
+  function setupGuess(cfg){
+    const sl = $(cfg.slider), out = $(cfg.val), btn = $(cfg.btn), vd = $(cfg.verdict), rv = $(cfg.reveal);
+    let locked = false;
+    const fmt = v => cfg.suffix ? v + cfg.suffix : String(v);
+    sl.addEventListener('input', () => { out.textContent = fmt(sl.value); });
+    out.textContent = fmt(sl.value);
+    function lock(){
+      if (locked) return;
+      locked = true;
+      const g = Number(sl.value);
+      sl.disabled = true; btn.disabled = true;
+      const diff = g - cfg.answer;
+      const dir = diff > 0 ? 'high' : 'low';
+      vd.textContent = diff === 0
+        ? 'You guessed ' + fmt(g) + '. That is exactly the published figure.'
+        : 'You guessed ' + fmt(g) + '. The published figure is ' + fmt(cfg.answer) + '. You were ' + Math.abs(diff) + ' ' + cfg.unit + ' ' + dir + '.';
+      rv.style.display = 'block';
+      if (cfg.after) cfg.after();
+    }
+    btn.addEventListener('click', lock);
+    return lock;
+  }
+
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+
+  // ---------- TAB 1: the puzzle ----------
+  const lockPuz = setupGuess({
+    slider: 'gPuz', val: 'gPuzV', btn: 'gPuzBtn', verdict: 'gPuzVerdict', reveal: 'puzReveal',
+    answer: 488, unit: 'points', suffix: '',
+    after: () => { fill('b1', 33); fill('b2', 75); fill('b3', 100); }
+  });
+
+  // ---------- TAB 2: the triangle ----------
+  const SCEN = [
+    {
+      name: 'A laptop in the library',
+      setup: 'It is the last week of the term. A student leaves a laptop and a backpack on a table on a quiet upper floor of the library and goes downstairs for coffee. The nearby study rooms are empty. The trip takes about eight minutes.',
+      d: {
+        off: 'Among the couple of dozen people on that floor, at least one is willing to take something that is not theirs if the cost of doing it drops low enough.',
+        tgt: 'A laptop is valuable, visible from ten feet away, unsecured, and light enough to walk out with under a jacket. Value, visibility, access, and low inertia, all four at once.',
+        grd: 'The floor is empty, the study rooms are empty, and the student who owns the laptop is two floors down. Nobody is watching the table.'
+      },
+      happens: 'The laptop is gone before the coffee is finished. No planning was required and nothing about the offender had to change for this to occur. The opportunity did all the work.',
+      stop: {
+        off: 'Nobody on that floor is willing to take it, so the laptop sits there for eight minutes and the student comes back to it. Notice how little you can do with this lever. Screening out everyone who might steal a laptop is not an available policy, which is exactly why Cohen and Felson set this element aside and worked on the other two.',
+        tgt: 'The laptop is cable-locked to the table, or it is an old machine worth almost nothing, or the student took it with them. The target stops being suitable and the same offender, standing in the same empty room, walks past it. This is target hardening, and it is the cheapest of the three levers.',
+        grd: 'A librarian is reshelving nearby, or another student is sitting at the next table, or a camera is visible and signed. Somebody would notice. The offender does not test it. Guardianship here is not enforcement, it is just the plausible prospect of being seen.'
+      },
+      fix: {
+        off: 'Real-world equivalent: nothing available at this scale.',
+        tgt: 'Real-world equivalent: laptop locks, device tracking, asset tagging.',
+        grd: 'Real-world equivalent: staffed floors, sightlines, visible cameras, study buddies.'
+      }
+    },
+    {
+      name: 'A car on a side street',
+      setup: 'A car is parked overnight on a residential side street where two of the four streetlights have been out for a month. A gym bag sits on the back seat. The houses on that side of the street face away, and the sidewalk gets no foot traffic after about ten at night.',
+      d: {
+        off: 'Someone walking the street at night is checking door handles. This costs almost nothing to try and most of the time nothing comes of it.',
+        tgt: 'A visible bag in an unlit car with an unlocked door. The bag might hold nothing, but it is visible and the car is accessible, which is enough.',
+        grd: 'The lights are out, the houses face the other way, and there is nobody on the sidewalk. Nothing here would register a person leaning into a car window.'
+      },
+      happens: 'The window is broken or the door simply opens, and the bag is gone. The whole event takes under a minute and produces a police report that will almost certainly never be cleared.',
+      stop: {
+        off: 'Nobody is walking that street checking handles tonight, so nothing happens. But the conditions that made it easy are all still in place, waiting for the next person who does.',
+        tgt: 'The bag is in the trunk or in the house, and the door is locked. The car is now a bad bet: nothing visible to justify the noise and risk of breaking in. Removing the reward is often more effective than adding difficulty.',
+        grd: 'The streetlights get repaired, or a neighbor leaves a porch light on and sits outside, or the car is parked under a light on the main road instead. The street becomes a place where a person leaning into a car window would be noticed.'
+      },
+      fix: {
+        off: 'Real-world equivalent: nothing reliable at this scale.',
+        tgt: 'Real-world equivalent: take it with you, lock it, park it somewhere else.',
+        grd: 'Real-world equivalent: street lighting, sightline design, neighbors who are outside.'
+      }
+    },
+    {
+      name: 'A porch in the afternoon',
+      setup: 'A package is left on a front porch at two in the afternoon on a weekday. The street is a mix of rentals and owned homes. Almost everyone on the block is at work or at class. The porch is fully visible from the sidewalk.',
+      d: {
+        off: 'Someone who has learned that porches on this block are unattended in the afternoon and that the odds of anything following are close to zero.',
+        tgt: 'A box of unknown contents, sitting in the open, requiring no tool and no force. Highest possible accessibility and very low inertia.',
+        grd: 'The block is empty at two in the afternoon. This is the routine activity argument in its purest form, and it is the same argument Cohen and Felson made about the 1960s.'
+      },
+      happens: 'The package is taken in about four seconds by someone who does not break stride. This is the offense most directly created by a change in daily routine, since it did not meaningfully exist before both the empty weekday street and the delivery economy.',
+      stop: {
+        off: 'Nobody on this block is willing to walk up a stranger\'s steps today. The package sits there until evening. Nothing about the street has changed.',
+        tgt: 'The package is redirected to a locker, held at a pickup point, or requires a signature. It never sits in the open, so the target never becomes suitable.',
+        grd: 'Someone is working from home two doors down with a view of the street, or a doorbell camera is visible, or a neighbor agreed to collect deliveries. The porch stops being unwatched. Notice that this is a routine changing back, not a policy.'
+      },
+      fix: {
+        off: 'Real-world equivalent: nothing reliable at this scale.',
+        tgt: 'Real-world equivalent: parcel lockers, pickup points, signature on delivery.',
+        grd: 'Real-world equivalent: doorbell cameras, neighbors home during the day, delivery timing.'
+      }
+    }
+  ];
+
+  const legs = { off: true, tgt: true, grd: false }; // grd true means guardian PRESENT
+  let scen = 0;
+
+  function renderScen(){
+    const s = SCEN[scen];
+    $('scenSetup').textContent = s.setup;
+    $('ld-off').textContent = s.d.off;
+    $('ld-tgt').textContent = s.d.tgt;
+    $('ld-grd').textContent = s.d.grd;
+    document.querySelectorAll('.scen').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.s) === scen)));
+    renderOutcome();
+  }
+
+  function renderOutcome(){
+    const s = SCEN[scen];
+    $('leg-off').classList.toggle('on', legs.off);
+    $('leg-tgt').classList.toggle('on', legs.tgt);
+    $('leg-grd').classList.toggle('on', !legs.grd);
+    $('ls-off').textContent = legs.off ? 'Offender present' : 'No offender';
+    $('ls-tgt').textContent = legs.tgt ? 'Target is suitable' : 'Target not suitable';
+    $('ls-grd').textContent = legs.grd ? 'Guardian present' : 'No guardian';
+    document.querySelector('[data-leg="off"]').textContent = legs.off ? 'Take the offender away' : 'Put the offender back';
+    document.querySelector('[data-leg="tgt"]').textContent = legs.tgt ? 'Make the target unsuitable' : 'Make it suitable again';
+    document.querySelector('[data-leg="grd"]').textContent = legs.grd ? 'Take the guardian away' : 'Put a guardian here';
+    $('ld-grd').textContent = legs.grd ? 'Someone is here, watching, and would plausibly say or do something. The offender has to assume they will be seen.' : s.d.grd;
+
+    const missing = [];
+    if (!legs.off) missing.push('off');
+    if (!legs.tgt) missing.push('tgt');
+    if (legs.grd) missing.push('grd');
+
+    const box = $('outcome');
+    if (missing.length === 0){
+      box.className = 'outcome happens';
+      box.innerHTML = '<div class="ohead">All three converge. The crime happens.</div><p>' + s.happens + '</p>';
+      return;
+    }
+    box.className = 'outcome stopped';
+    const label = { off: 'No motivated offender', tgt: 'Target is not suitable', grd: 'A capable guardian is present' };
+    let html = '<div class="ohead">' + (missing.length === 1 ? 'One element is gone. The crime does not happen.' : missing.length + ' elements are gone. The crime does not happen.') + '</div>';
+    missing.forEach(m => {
+      html += '<p><strong>' + label[m] + '.</strong> ' + s.stop[m] + ' <span style="color:var(--text-muted)">' + s.fix[m] + '</span></p>';
+    });
+    box.innerHTML = html;
+  }
+
+  document.getElementById('scenRow').addEventListener('click', e => {
+    const b = e.target.closest('.scen');
+    if (!b) return;
+    scen = Number(b.dataset.s);
+    legs.off = true; legs.tgt = true; legs.grd = false;
+    renderScen();
+  });
+  document.getElementById('triRow').addEventListener('click', e => {
+    const b = e.target.closest('[data-leg]');
+    if (!b) return;
+    const k = b.dataset.leg;
+    legs[k] = !legs[k];
+    renderOutcome();
+  });
+  renderScen();
+
+  // ---------- TAB 3: guardianship funnel ----------
+  const lockGrd = setupGuess({
+    slider: 'gGrd', val: 'gGrdV', btn: 'gGrdBtn', verdict: 'gGrdVerdict', reveal: 'grdReveal',
+    answer: 16, unit: 'points', suffix: '%',
+    after: () => { fill('f1', 100); fill('f2', 85); fill('f3', 16); }
+  });
+
+  // ---------- TAB 4: the six readings ----------
+  const PEOPLE = [
+    {
+      who: 'The roommate she came with',
+      role: 'guardian, and the only one with a prior duty to her',
+      read: '<strong>"She was fine an hour ago and now she is not, and I do not know that guy."</strong> She reads the change in her friend rather than the interaction, which is the one piece of information nobody else in the house has. She has a relationship that makes noticing her business and a baseline that makes the change visible.',
+      lens: 'Definition produces action. She goes down the hallway.'
+    },
+    {
+      who: 'His teammate, who has known him for years',
+      role: 'handler, the controller with the most leverage over the offender',
+      read: '<strong>"They have been talking all night and she was into it. He is helping her lie down."</strong> Nothing about this reading is dishonest. He has watched them together for two hours and is filling in the missing thirty seconds with what he already believes about his friend. Loyalty is not required for this to happen, only familiarity.',
+      lens: 'Definition produces inaction, from the person best placed to act. One sentence from him would end this, and his definition means he will never say it.'
+    },
+    {
+      who: 'The person whose house it is',
+      role: 'place manager, the controller with authority over the setting',
+      read: '<strong>"I do not know either of them and it is not my job to police what happens in the bedrooms."</strong> He is the only person present who could set a rule for the whole house, and he is defining his role narrowly enough that the hallway falls outside it.',
+      lens: 'Definition produces inaction. Notice that this failure is about the definition of a role, not of the scene.'
+    },
+    {
+      who: 'Someone in the kitchen who knows nobody',
+      role: 'available guardian, no relationship to either party',
+      read: '<strong>"I genuinely cannot tell what I am looking at, and nobody else seems worried."</strong> This is real ambiguity compounded by a read of the room. The absence of alarm in everyone else becomes evidence that there is nothing to be alarmed about, and every person in the kitchen is running the same inference on everyone else.',
+      lens: 'Definition produces inaction. This is the closest thing here to the classic bystander effect, and it is the only one of the six.'
+    },
+    {
+      who: 'Someone who has been through this before',
+      role: 'available guardian, reading the scene through experience',
+      read: '<strong>"I know exactly what this is."</strong> Prior experience makes the pattern legible instantly. It also makes acting on it costly in a way the others do not carry, because intervening means being asked how she knew, in a hallway, in front of people.',
+      lens: 'Definition produces action, at a personal cost nobody else in the house is paying.'
+    },
+    {
+      who: 'The woman being walked down the hallway',
+      role: 'the one definition that would settle it',
+      read: '<strong>She cannot supply one.</strong> Her capacity to define the situation, communicate the definition, and be believed is exactly what has been removed, and its removal is what makes the situation dangerous rather than ordinary.',
+      lens: 'This is why the theory puts guardianship outside the target. When a target cannot guard itself, everything depends on how other people define what they are seeing.'
+    }
+  ];
+
+  const peopleEl = $('people');
+  const revealed = PEOPLE.map(() => false);
+  PEOPLE.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + p.who + '</div>' +
+      '<div class="swho">' + p.role + '</div>' +
+      '<button class="revbtn" data-p="' + i + '" type="button">What are they seeing</button>' +
+      '<div class="scv" id="pv' + i + '"></div>';
+    peopleEl.appendChild(d);
+  });
+  function revealPerson(i){
+    if (revealed[i]) return;
+    revealed[i] = true;
+    const el = $('pv' + i);
+    el.innerHTML = PEOPLE[i].read + '<span class="lens">' + PEOPLE[i].lens + '</span>';
+    el.style.display = 'block';
+    const b = peopleEl.querySelector('[data-p="' + i + '"]');
+    if (b) b.disabled = true;
+    if (revealed.every(Boolean)) {
+      $('peopleWrap').style.display = 'block';
+      $('thomasCard').style.display = 'block';
+    }
+  }
+  peopleEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-p]');
+    if (b) revealPerson(Number(b.dataset.p));
+  });
+
+  const lockAau = setupGuess({
+    slider: 'gAau', val: 'gAauV', btn: 'gAauBtn', verdict: 'gAauVerdict', reveal: 'aauReveal',
+    answer: 37, unit: 'points', suffix: '%',
+    after: () => { fill('a1', 100); fill('a2', 74); fill('a3', 55); fill('a4', 28); fill('a5', 21); }
+  });
+
+  // ---------- TAB 5: CrimeSolutions ratings ----------
+  const RATES = [
+    {
+      q: 'Hot spots policing, concentrating patrol on the small number of places where crime clusters. Rating for overall crime.',
+      leg: 'adds guardianship to specific places',
+      a: 'Effective',
+      v: '<strong>Effective.</strong> Aggregated across 35 independent tests, hot spots policing produced a statistically significant reduction in overall crime, with a weighted mean effect size of 0.109. Violent, property, public order, and drug offenses each came out Promising. The effect is real and it is small, which is the honest way to describe most of what works in this literature.'
+    },
+    {
+      q: 'Improved street lighting. Rating for violent offenses specifically.',
+      leg: 'adds guardianship to a place',
+      a: 'Ineffective',
+      v: '<strong>Ineffective for violent crime,</strong> across nine studies, even though the same practice is rated Promising for property offenses and for crime overall, where Welsh and Farrington found crimes decreased 21 percent in treated areas relative to comparison areas. This split is the most useful thing on this page. Lighting works on offenses that depend on not being seen. It does very little for offenses driven by conflict between people who already know they are being seen.'
+    },
+    {
+      q: 'Bystander education programs on high school and college campuses. Rating for bystander efficacy, meaning confidence in one\'s own ability to intervene.',
+      leg: 'tries to create capable guardians',
+      a: 'Effective',
+      v: '<strong>Effective,</strong> with effect sizes around 0.49. These programs reliably make participants more confident that they could intervene, more willing to say they intend to help, and less likely to endorse rape myths, which is rated Effective at an effect size of 0.38. On attitudes and beliefs, the evidence is good.'
+    },
+    {
+      q: 'The same bystander education programs. Rating for actual helping behavior.',
+      leg: 'tries to create capable guardians',
+      a: 'Promising',
+      v: '<strong>Promising, and mixed.</strong> One meta-analysis found a significant effect on actual helping behavior at an effect size of 0.227. Another found no significant difference between groups at six to twelve months after the program. Compare this to the previous item and the gap is the whole problem: the confidence moves a great deal more than the behavior does.'
+    },
+    {
+      q: 'Green Dot, a well-known campus bystander program, is rated Promising overall, and its evaluation found that participants showed significantly more active bystander behavior than non-participants. What did the same evaluation find for sexual violence victimization and sexual harassment?',
+      leg: 'tries to create capable guardians',
+      opts: ['A significant reduction', 'No statistically significant impact', 'A significant increase'],
+      a: 'No statistically significant impact',
+      v: '<strong>No statistically significant impact on sexual violence victimization or sexual harassment.</strong> Read that sequence carefully, because it is the most important thing on this page. The program is rated Effective on bystander efficacy, intent to help, and rape myth acceptance. Participants really did report and display more active bystander behavior. And the victimization rate did not move detectably. CrimeSolutions does not assign a rating to that outcome, so this is a finding stated in the evaluation rather than a rated result. It is a harder and more interesting outcome than a simple failure would be.'
+    }
+  ];
+  const ratesEl = $('rates');
+  const rstate = RATES.map(() => null);
+  const OPTS = ['Effective', 'Promising', 'Ineffective'];
+  RATES.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    (item.opts || OPTS).forEach(o => { btns += '<button class="pick" data-r="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.q + '</div>' +
+      '<div class="swho">' + item.leg + '</div>' +
+      '<div class="pickrow">' + btns + '</div>' +
+      '<div class="scv" id="rv' + i + '"></div>';
+    ratesEl.appendChild(d);
+  });
+  function answerRate(i, a){
+    const btns = ratesEl.querySelectorAll('[data-r="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === RATES[i].a) b.classList.add('answer');
+    });
+    rstate[i] = (a === RATES[i].a);
+    const el = $('rv' + i);
+    const g = rstate[i] ? 'right' : 'mixed';
+    el.innerHTML = '<div class="grade ' + g + '">' + (rstate[i] ? 'you had it' : 'not quite') + '</div>' + RATES[i].v;
+    el.style.display = 'block';
+    if (rstate.every(v => v !== null)) {
+      $('ratesScore').textContent = rstate.filter(Boolean).length + ' of 5';
+      $('ratesWrap').style.display = 'block';
+    }
+  }
+  ratesEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]');
+    if (b) answerRate(Number(b.dataset.r), b.dataset.a);
+  });
+
+  // ---------- test hooks ----------
+  window.__S = {
+    activate,
+    lockPuz, lockGrd, lockAau,
+    setScen: (i) => { const b = document.querySelector('.scen[data-s="' + i + '"]'); if (b) b.click(); },
+    toggleLeg: (k) => { const b = document.querySelector('[data-leg="' + k + '"]'); if (b) b.click(); },
+    revealPerson,
+    answerRate,
+    state: () => ({ scen, legs: Object.assign({}, legs), revealed: revealed.slice(), rstate: rstate.slice() })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<style>:root:not([data-theme="dark"]) .leg.on .lstate { color: #9c4522 !important; } :root[data-theme="dark"] .leg.on .lstate { color: #f68a52 !important; }</style><script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

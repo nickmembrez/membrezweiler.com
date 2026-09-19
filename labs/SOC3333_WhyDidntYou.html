@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why Didn't You? · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 215px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .gradrow { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--border); }
+  .gradrow:first-of-type { border-top: none; }
+  .gname { font-size: 13.5px; min-width: 235px; color: var(--text-secondary); line-height: 1.35; }
+  .gname strong { color: var(--text-primary); }
+  .gstack { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .gline { display: flex; align-items: center; gap: 10px; }
+  .gline .btrack { height: 13px; }
+  .legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--text-secondary); margin: 10px 0 2px; flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+  .pick.logged { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.logged::after { content: " · you said this"; font-weight: 500; font-size: 11.5px; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Why Didn't You? <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every theory you have met so far asks why some people commit crime.</strong> Control theory refuses the question. It says the roots of crime are uncomplicated, that most offenses are easy and immediately rewarding, and that wanting to is not the rare ingredient. What is rare is the restraint. So the question worth asking is not why they did it. It is why the rest of us did not, and why any given person did not on any given day. This page starts with that inversion, then spends the rest of its time on the single strongest piece of evidence anyone has produced for the version of control theory that puts the restraint inside your own head.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-invert" type="button">The inverted question</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-bonds" type="button">Four strands</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-dunedin" type="button">The Dunedin gradient</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-survive" type="button">Does it survive testing</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-programs" type="button">Which strand programs reach</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-invert">
+      <div class="card">
+        <h2>Four moments, one question</h2>
+        <p class="lede">Below are four ordinary situations. In each one, something could have gone differently and did not. For each, pick what you think actually held. This is an exercise in noticing, not a measurement of anything about you, and nothing here is recorded or scored.</p>
+        <div id="moments"></div>
+      </div>
+
+      <div class="card veiled" id="momWrap">
+        <h2>What you just did</h2>
+        <p class="lede">Look back at your four answers. Whatever mix you picked, notice what almost certainly did not appear in your reasoning: <strong>a claim that you wanted to do it less than someone else would have.</strong> The temptation was available in all four. Something else decided the outcome. That is the entire premise of this chapter, and Travis Hirschi built a theory on it in 1969.</p>
+
+        <h3>The vocabulary of restraint</h3>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Formal</div><div class="bd">Official rules and the people who enforce them. Police, courts, deans, HR departments.</div></div>
+          <div class="bond"><div class="bn">Informal</div><div class="bd">Disapproval from people who matter to you. The raised eyebrow, the disappointed parent, the group chat.</div></div>
+          <div class="bond"><div class="bn">Direct</div><div class="bd">Somebody is actually watching right now. Supervision, a camera, a manager on the floor.</div></div>
+          <div class="bond"><div class="bn">Indirect</div><div class="bd">Nobody is watching, but you would hate to let them down. The internalized audience you carry around.</div></div>
+        </div>
+        <p class="lede">Cross those two axes and you get the map. Control theory's bet is that <strong>the informal and indirect boxes do most of the work</strong>, and that the formal ones do far less than the criminal justice system likes to believe. Chapter 6 already showed you the empirical version of that claim: certainty of punishment barely registers because punishment so rarely arrives. Here it is again from the other direction.</p>
+        <p class="note"><strong>One honest caution about this exercise.</strong> Asking people to explain their own restraint after the fact is not a research method. People are unreliable narrators of their own motives, and they tend to name reasons that make them look thoughtful. Treat what you just did as a way of getting the vocabulary into your hands, not as evidence for anything. The evidence starts two tabs from here.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-bonds">
+      <div class="card">
+        <h2>Hirschi's four strands</h2>
+        <p class="lede">Hirschi argued in 1969 that what holds people to conventional behavior is a bond with four separable strands. The strands are not causes that push you toward conformity. Their <em>absence</em> is what releases behavior that was available all along.</p>
+        <div class="bonds">
+          <div class="bond"><div class="bn">Attachment</div><div class="bd">Caring what specific people think and feel about you. The emotional strand.</div></div>
+          <div class="bond"><div class="bn">Commitment</div><div class="bd">What you would lose. The degree, the job, the record, the standing. The rational strand.</div></div>
+          <div class="bond"><div class="bn">Involvement</div><div class="bd">Time absorbed by conventional activity. Busy hands. The simplest strand, and the weakest.</div></div>
+          <div class="bond"><div class="bn">Belief</div><div class="bd">Whether the rules feel legitimate to you in the first place. The strand about what you think the law is for.</div></div>
+        </div>
+        <p class="lede" style="margin-top:14px">Eight statements are below. Sort each one into the strand it belongs to. Some of them are genuinely arguable and the explanations say so.</p>
+        <div id="sorter"></div>
+        <div class="teach" id="sortWrap" style="display:none"><strong>You got <span id="sortScore"></span>.</strong> Attachment and commitment together are what Hirschi called your stakes in conformity, and they are the two that carry most of the theory's weight. Hold onto involvement in particular. It is the strand with the most obvious policy implication, which is that you should keep young people busy, and it is the strand that has held up worst in fifty years of evaluation research. The last tab on this page shows you exactly how badly.</div>
+        <p class="srcnote">Hirschi, T. (1969). Causes of Delinquency. University of California Press.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-dunedin">
+      <div class="card">
+        <h2>The general theory, and its biggest problem</h2>
+        <p class="lede">In 1990 Hirschi did something unusual for a theorist. Working with Michael Gottfredson, he abandoned his own bond theory for a simpler one. Their general theory says there is a single trait, low self-control, that is set by roughly age ten through ineffective parenting and then stays put. It predicts not only crime but everything analogous to crime, since impulsive, short-sighted, risk-seeking people also smoke more, gamble more, and have more accidents.</p>
+        <p class="lede">The theory drew an obvious objection immediately, and it is the objection you should have too. <strong>If we identify low self-control by looking at who breaks rules, then saying low self-control causes rule-breaking says nothing at all.</strong> That is the tautology critique, and it is the reason the study on this page matters.</p>
+
+        <p class="note"><strong>The design that answers it.</strong> Measure the trait in early childhood, using observers and parents and teachers, long before most of the outcomes exist. Then wait thirty years. If the childhood measure predicts the adult outcomes, the concept is doing real work rather than relabeling the thing it was supposed to explain. That is the Dunedin study.</p>
+
+        <div class="statrow">
+          <div class="stat"><div class="v">1,037</div><div class="l">children born in Dunedin, New Zealand, in 1972 and 1973</div></div>
+          <div class="stat"><div class="v">96%</div><div class="l">still in the study at the age 32 follow-up</div></div>
+          <div class="stat"><div class="v">ages 3 to 11</div><div class="l">when self-control was measured, using nine separate measures from observers, parents, teachers, and the children</div></div>
+        </div>
+
+        <div class="guessbox">
+          <div class="gq">Researchers split the cohort into fifths by childhood self-control. Among the fifth with the LOWEST childhood self-control, what percentage had a criminal conviction by age 32? For reference, the figure for the highest fifth was 13 percent.</div>
+          <div class="gr">
+            <input type="range" id="gDun" min="0" max="100" step="1" value="25">
+            <div class="gval" id="gDunV">25%</div>
+            <button class="gbtn" id="gDunBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gDunVerdict"></div>
+        </div>
+
+        <div class="veiled" id="dunReveal">
+          <h3>The gradient, across five different outcomes at age 32</h3>
+          <div class="legend">
+            <span><i class="swatch" style="background:var(--warn)"></i> lowest fifth in childhood self-control</span>
+            <span><i class="swatch" style="background:var(--good)"></i> highest fifth</span>
+          </div>
+          <div id="grad"></div>
+          <p class="srcnote">Moffitt, T. E., et al. (2011). A gradient of childhood self-control predicts health, wealth, and public safety. Proceedings of the National Academy of Sciences 108(7), 2693 to 2698. Income figure is annual household income under NZ $20,000. Retrieved August 2026.</p>
+
+          <div class="teach"><strong>The word doing the work in that title is gradient.</strong> This is not a finding about a troubled minority. Each step down the self-control distribution came with worse outcomes, all the way along, including among children who were entirely ordinary. That shape is much harder to explain away than a comparison of extremes would be.</div>
+
+          <h3>Two further checks worth knowing</h3>
+          <p class="lede"><strong>The confound check.</strong> The obvious objection is that childhood self-control is just a proxy for being poor or being smart. The authors reported that self-control predicted these outcomes independent of social class origins and IQ.</p>
+          <p class="lede"><strong>The sibling check.</strong> In a separate British cohort, researchers compared 509 pairs of same-sex fraternal twins raised in the same household. Within pairs, the sibling with lower self-control was more likely by age 12 to have started smoking, to be doing worse at school, and to be behaving antisocially, and those differences held after accounting for differences in IQ between the siblings. Same home, same parents, same neighborhood, different outcomes.</p>
+          <p class="note"><strong>What the sibling check does and does not do.</strong> Comparing siblings removes everything the two children share, which is a great deal. It does not remove whatever made them differ in the first place, and it cannot tell you whether that was genetic, prenatal, or a difference in how the same parents treated two different children. It rules out a family of alternative explanations. It does not establish the mechanism Gottfredson and Hirschi proposed, which was specifically ineffective parenting.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-survive">
+      <div class="card">
+        <h2>Does the general theory survive testing</h2>
+        <p class="lede">The Dunedin findings are real and they are strong. They are also not the whole scorecard. A theory this ambitious makes several distinct claims, and they have not fared equally. Predict each verdict before you reveal it.</p>
+        <div id="claims"></div>
+        <div class="teach" id="claimWrap" style="display:none"><strong>You had <span id="claimScore"></span>.</strong> Notice the shape of the result. The core empirical claim is in good standing and the ambitious claims around it are not. That is an ordinary outcome for a big theory and it is not a scandal. What would be a scandal is treating a theory that predicts well as if it therefore explained everything, which is exactly the move Gottfredson and Hirschi made and exactly the move the evidence declines to support.</div>
+        <p class="srcnote">Pratt, T. C., and Cullen, F. T. (2000). The empirical status of Gottfredson and Hirschi's general theory of crime: A meta-analysis. Criminology 38(3), 931 to 964. Twenty-one studies, 126 effect size estimates, 49,727 cases. Richmond-Rakerd, L. S., et al. (2021). Childhood self-control forecasts the pace of midlife aging and preparedness for old age. PNAS 118(3). Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-programs">
+      <div class="card">
+        <h2>Which strand do programs actually reach</h2>
+        <p class="lede">Here is a use for theory that goes beyond the exam. Hirschi's four strands each imply a different intervention. Attachment says give a young person an adult who cares about them. Involvement says fill their time. Self-control theory says go further upstream and work on parenting. All three of those exist as real program types, all three have been evaluated many times over, and the National Institute of Justice grades them at CrimeSolutions using three labels: <strong>Effective</strong>, <strong>Promising</strong>, and <strong>Ineffective</strong>.</p>
+        <p class="lede">Predict each rating before you look. The interesting part is not whether you get them right. It is whether the pattern matches what Hirschi said about which strand was strongest.</p>
+        <div id="progs"></div>
+        <div class="teach" id="progWrap" style="display:none"><strong>You had <span id="progScore"></span>.</strong> Put the three together. Programs that give a young person a committed adult reduce delinquency. Programs that work on the parenting relationship reduce delinquency. Programs whose theory of change is that busy hands stay out of trouble improve a range of things and do not reduce offending. Hirschi ranked involvement last among his four strands in 1969, on the reasoning that there is always time for delinquency because most offenses take almost no time at all. Fifty years of evaluation later, the strand he ranked last is the one whose programs cannot show an effect on crime. Theory and evidence do not often line up this cleanly, and it is worth noticing when they do.</div>
+        <p class="srcnote">All ratings from CrimeSolutions, National Institute of Justice, crimesolutions.ojp.gov, practice profiles for After-School Programs and Mentoring for Youth Development and the program profile for GenerationPMTO. SMD is a standardized mean difference. Retrieved August 2026. Ratings are periodically re-reviewed and can change, so check the site before citing any of these in a paper.</p>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum: does Dunedin rescue the general theory</h2>
+        <p class="lede">Post your initial response and then reply to two classmates. Length and deadlines are in that week's module in the LMS.</p>
+        <ol class="qs">
+          <li>Say what you guessed for the conviction rate in the lowest self-control fifth, and what your reaction was to the real figure. Guesses are not graded and being far off is common.</li>
+          <li>Explain, in your own words, how the Dunedin design is supposed to answer the tautology critique. Then say whether you think it fully answers it, and if not, what is left over.</li>
+          <li>Pick ONE of these two findings and explain what it costs the claim that self-control is the general cause of crime: that the self-control effect was much weaker in longitudinal studies than in cross-sectional ones, or that social learning variables kept their predictive power even with self-control in the model. Do not pick both, because your replies depend on having picked one.</li>
+          <li>Gottfredson and Hirschi say self-control is essentially fixed by about age ten. The age 45 follow-up found that adult self-control predicted midlife outcomes even after accounting for childhood self-control. Which do you find more convincing, and what would change your mind?</li>
+        </ol>
+        <div class="teach"><strong>Replies:</strong> respond to two classmates who chose the other finding in step 3. Your job is not to agree or disagree. It is to say what their finding costs the theory that yours does not, and vice versa.</div>
+        <p class="note"><strong>On writing this one well.</strong> The weak version of this post says the theory is right because the numbers are big, or says the theory is wrong because people can change. Both are available and neither is interesting. The strong version separates the claim that self-control predicts crime, which is very well supported, from the claim that self-control is the single general cause of crime, which is not. Almost everything worth saying in this forum lives in that gap.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function setupGuess(cfg){
+    const sl = $(cfg.slider), out = $(cfg.val), btn = $(cfg.btn), vd = $(cfg.verdict), rv = $(cfg.reveal);
+    let locked = false;
+    const fmt = v => cfg.suffix ? v + cfg.suffix : String(v);
+    sl.addEventListener('input', () => { out.textContent = fmt(sl.value); });
+    out.textContent = fmt(sl.value);
+    function lock(){
+      if (locked) return;
+      locked = true;
+      const g = Number(sl.value);
+      sl.disabled = true; btn.disabled = true;
+      const diff = g - cfg.answer;
+      vd.textContent = diff === 0
+        ? 'You guessed ' + fmt(g) + '. That is exactly the published figure.'
+        : 'You guessed ' + fmt(g) + '. The published figure is ' + fmt(cfg.answer) + '. You were ' + Math.abs(diff) + ' points ' + (diff > 0 ? 'high' : 'low') + '.';
+      rv.style.display = 'block';
+      if (cfg.after) cfg.after();
+    }
+    btn.addEventListener('click', lock);
+    return lock;
+  }
+
+  // ---------- TAB 1: the four moments ----------
+  const MOMENTS = [
+    { t: 'A self-checkout scanner does not register one item in your cart. You notice at the door. Nobody else did.',
+      opts: ['A camera or an employee was right there', 'Someone I know would have found out', 'I would have felt bad about it whether or not anyone knew', 'The thought of taking it did not really land'] },
+    { t: 'You are running very late and the road ahead is empty for half a mile. The limit is 30.',
+      opts: ['I thought about a ticket or a camera', 'Someone in the car, or someone who would hear about it', 'It is a residential street and that is not a thing I do there', 'I sped anyway, which is also an answer'] },
+    { t: 'A group project. One member has done nothing for three weeks and the deadline is tomorrow.',
+      opts: ['The syllabus and the grade consequences', 'What the rest of the group would think of me', 'I would not have been able to hand in something I did not stand behind', 'Honestly, I let it go and did the work'] },
+    { t: 'You find a wallet on a bench with cash in it and no one around.',
+      opts: ['Someone could be watching, or there could be a camera', 'I would have to be a person who did that, around people who know me', 'I would not have been able to stop thinking about whoever lost it', 'I am not sure what I would do and I would rather say so'] },
+  ];
+  const momEl = $('moments');
+  const mstate = MOMENTS.map(() => null);
+  MOMENTS.forEach((m, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    m.opts.forEach((o, j) => { btns += '<button class="pick" data-m="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + m.t + '</div><div class="pickrow">' + btns + '</div>';
+    momEl.appendChild(d);
+  });
+  function answerMoment(i, j){
+    const btns = momEl.querySelectorAll('[data-m="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => { b.disabled = true; if (Number(b.dataset.j) === j) b.classList.add('logged'); });
+    mstate[i] = j;
+    if (mstate.every(v => v !== null)) $('momWrap').style.display = 'block';
+  }
+  momEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-m]');
+    if (b) answerMoment(Number(b.dataset.m), Number(b.dataset.j));
+  });
+
+  // ---------- TAB 2: the sorter ----------
+  const STRANDS = ['Attachment', 'Commitment', 'Involvement', 'Belief'];
+  const SORT = [
+    { t: 'I would not be able to look my grandmother in the eye.', a: 'Attachment',
+      v: 'Attachment. The restraint runs through a specific person you care about, and it works whether or not she would ever find out.' },
+    { t: 'I have two semesters left and I am not throwing that away.', a: 'Commitment',
+      v: 'Commitment. This is the accumulated-stakes strand. You have built something that a conviction would take from you, so the calculation is different than it was four years ago.' },
+    { t: 'I work thirty hours a week and I am asleep by ten.', a: 'Involvement',
+      v: 'Involvement. Time absorbed by conventional activity. Hirschi ranked this strand last, partly because most offenses take minutes, so a full schedule leaves plenty of room.' },
+    { t: 'Laws about this exist for a reason and I think the reason is a good one.', a: 'Belief',
+      v: 'Belief. Not fear of consequences and not concern for anyone else. This strand is about whether the rule strikes you as legitimate in the first place.' },
+    { t: 'Everyone I know would hear about it within a day.', a: 'Attachment',
+      v: 'Attachment, though commitment is a defensible answer. The line is whether what stops you is losing the regard of people you care about, which is attachment, or losing a concrete position or asset, which is commitment. Reputation sits awkwardly between them and reasonable people sort it differently.' },
+    { t: 'I am on a scholarship with a conduct clause.', a: 'Commitment',
+      v: 'Commitment. A named, losable stake. Commitment is the strand that grows as your life accumulates things worth protecting, which is part of why offending falls with age.' },
+    { t: 'The team practices six days a week and travels on the seventh.', a: 'Involvement',
+      v: 'Involvement. Notice that a sports team plausibly supplies attachment and commitment too, through coaches and eligibility. Real institutions rarely deliver one strand at a time, which is one reason the strands are hard to test separately.' },
+    { t: 'I do not actually think this particular rule is fair, but I follow it.', a: 'Belief',
+      v: 'Belief, and this one is the diagnostic case. Weak belief is present, and yet the behavior is conforming, which means something else is holding. Hirschi would say the other three strands are carrying the load here, and that is exactly how the theory is supposed to work.' },
+  ];
+  const sortEl = $('sorter');
+  const sstate = SORT.map(() => null);
+  SORT.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    STRANDS.forEach(o => { btns += '<button class="pick" data-s="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. "' + item.t + '"</div><div class="pickrow">' + btns + '</div><div class="scv" id="sv' + i + '"></div>';
+    sortEl.appendChild(d);
+  });
+  function answerSort(i, a){
+    const btns = sortEl.querySelectorAll('[data-s="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === SORT[i].a) b.classList.add('answer');
+    });
+    sstate[i] = (a === SORT[i].a);
+    const el = $('sv' + i);
+    el.innerHTML = '<div class="grade ' + (sstate[i] ? 'right' : 'mixed') + '">' + (sstate[i] ? 'that is it' : 'not quite') + '</div>' + SORT[i].v;
+    el.style.display = 'block';
+    if (sstate.every(v => v !== null)) {
+      $('sortScore').textContent = sstate.filter(Boolean).length + ' of 8';
+      $('sortWrap').style.display = 'block';
+    }
+  }
+  sortEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-s]');
+    if (b) answerSort(Number(b.dataset.s), b.dataset.a);
+  });
+
+  // ---------- TAB 3: the Dunedin gradient ----------
+  const GRAD = [
+    { n: '<strong>Criminal conviction</strong> by age 32', lo: 43, hi: 13 },
+    { n: '<strong>Single-parent child-rearing</strong>', lo: 58, hi: 26 },
+    { n: '<strong>Multiple health problems</strong> at age 32', lo: 27, hi: 11 },
+    { n: '<strong>Annual income</strong> under NZ $20,000', lo: 32, hi: 10 },
+    { n: '<strong>Polysubstance dependence</strong>', lo: 10, hi: 3 },
+  ];
+  const gradEl = $('grad');
+  GRAD.forEach((g, i) => {
+    const d = document.createElement('div');
+    d.className = 'gradrow';
+    d.innerHTML = '<div class="gname">' + g.n + '</div><div class="gstack">' +
+      '<div class="gline"><div class="btrack"><div class="bfill warn" id="gl' + i + '" style="width:0%"></div></div><div class="bval">' + g.lo + '%</div></div>' +
+      '<div class="gline"><div class="btrack"><div class="bfill good" id="gh' + i + '" style="width:0%"></div></div><div class="bval">' + g.hi + '%</div></div>' +
+      '</div>';
+    gradEl.appendChild(d);
+  });
+  function fillGrad(){
+    GRAD.forEach((g, i) => {
+      setTimeout(() => {
+        $('gl' + i).style.width = (g.lo * 1.6) + '%';
+        $('gh' + i).style.width = (g.hi * 1.6) + '%';
+      }, 60 + i * 90);
+    });
+  }
+  const lockDun = setupGuess({
+    slider: 'gDun', val: 'gDunV', btn: 'gDunBtn', verdict: 'gDunVerdict', reveal: 'dunReveal',
+    answer: 43, suffix: '%', after: fillGrad
+  });
+
+  // ---------- TAB 4: claims scorecard ----------
+  const CLAIMS = [
+    { c: 'Low self-control predicts crime and behaviors analogous to crime.',
+      opts: ['Strongly supported', 'Mixed', 'Not supported'], a: 'Strongly supported', g: 'right', label: 'strongly supported',
+      v: '<strong>This is the theory\'s win, and it is a large one.</strong> Pratt and Cullen pooled 21 studies and 126 effect size estimates covering 49,727 people and found low self-control was a consistent predictor across sample types, with mean correlations of about .26 for attitudinal measures and about .28 for behavioral ones. By the standards of this field those are big and unusually stable effects. Whatever else is wrong with the general theory, it identified something real.' },
+    { c: 'The effect is the same size no matter how you study it.',
+      opts: ['Supported', 'Contradicted'], a: 'Contradicted', g: 'wrong', label: 'contradicted',
+      v: '<strong>Contradicted, and this one matters.</strong> The same meta-analysis found the effect was substantially weaker in longitudinal studies than in cross-sectional ones, about .14 against about .26. Cross-sectional designs measure the trait and the offending at the same moment, which is precisely where a tautology would inflate the number. When you separate them in time, the effect shrinks by roughly half. It does not vanish, and the Dunedin design shows it survives a thirty-year gap, but the shrinkage is real and Gottfredson and Hirschi predicted it would not happen.' },
+    { c: 'Once you know someone\'s self-control, other theories add nothing.',
+      opts: ['Supported', 'Contradicted'], a: 'Contradicted', g: 'wrong', label: 'contradicted',
+      v: '<strong>Contradicted directly.</strong> Pratt and Cullen found that social learning variables, meaning delinquent peers and definitions favorable to law-breaking, retained significant effects in the very studies that also measured self-control. Their conclusion was that self-control is a strong and consistent predictor but that the claim it is the sole cause of crime is overstated. This is the finding that keeps Chapter 9 in the syllabus.' },
+    { c: 'Self-control is essentially fixed by about age ten.',
+      opts: ['Supported', 'Mostly, with an important exception'], a: 'Mostly, with an important exception', g: 'mixed', label: 'mostly, with a real exception',
+      v: '<strong>Mostly stable, and yet not fixed.</strong> The Dunedin cohort was followed to age 45, and the researchers reported that individuals\' self-control in adulthood was associated with their midlife aging outcomes even after accounting for their self-control in childhood. That is not a small caveat. If adult self-control carries independent information, then the door the theory closed at age ten is not fully closed, and the policy conclusion changes from write people off to intervene later.' },
+    { c: 'The general theory explains all crime, everywhere, including crimes of the powerful.',
+      opts: ['Supported', 'The overreach'], a: 'The overreach', g: 'wrong', label: 'the overreach',
+      v: '<strong>This is where the theory breaks, and Chapter 4 already showed you why.</strong> A long-running securities fraud requires patience, planning, deferred gratification, and years of maintained relationships. Those are the opposite of the six characteristics the theory attributes to offenders. Defenders reply that the fraudster is still taking the easy path available to someone in that position, which is a real argument but a much weaker one, because a theory that can absorb its own opposite has stopped making a prediction.' },
+  ];
+  const claimsEl = $('claims');
+  const cstate = CLAIMS.map(() => null);
+  CLAIMS.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    item.opts.forEach(o => { btns += '<button class="pick" data-c="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.c + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="cv' + i + '"></div>';
+    claimsEl.appendChild(d);
+  });
+  function answerClaim(i, a){
+    const btns = claimsEl.querySelectorAll('[data-c="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === CLAIMS[i].a) b.classList.add('answer');
+    });
+    cstate[i] = (a === CLAIMS[i].a);
+    const el = $('cv' + i);
+    el.innerHTML = '<div class="grade ' + CLAIMS[i].g + '">' + CLAIMS[i].label + '</div>' + CLAIMS[i].v;
+    el.style.display = 'block';
+    if (cstate.every(v => v !== null)) {
+      $('claimScore').textContent = cstate.filter(Boolean).length + ' of 5';
+      $('claimWrap').style.display = 'block';
+    }
+  }
+  claimsEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]');
+    if (b) answerClaim(Number(b.dataset.c), b.dataset.a);
+  });
+
+  // ---------- TAB 5: programs ----------
+  const PROGS = [
+    { q: 'Mentoring for youth development. Pair a young person with a committed adult who shows up consistently. Rating for crime and delinquency outcomes.',
+      strand: 'the ATTACHMENT strand', a: 'Effective', g: 'right',
+      v: '<strong>Effective.</strong> Pooling 20 studies, mentoring produced a small but statistically significant reduction in delinquency, with a standardized mean difference of 0.23. The same practice is rated Effective for education outcomes, Promising for psychological, cognitive, and social functioning, and Ineffective for substance use. Small effects, consistently in the right direction, on the outcome the theory cares about most.' },
+    { q: 'GenerationPMTO, a parent management training program that teaches monitoring, recognizing behavior, and consistent correction. Rating overall.',
+      strand: 'the SELF-CONTROL mechanism', a: 'Promising', g: 'right',
+      v: '<strong>Promising.</strong> Evaluations found statistically significant reductions in youths\' delinquency, arrests, and problem behaviors, along with measurable improvements in parenting skills, though no effect was found on parents\' use of appropriate discipline specifically. This is the closest thing to a direct test of the mechanism Gottfredson and Hirschi named, and it points the right way. Note that this profile is flagged on the site as no longer being updated.' },
+    { q: 'After-school programs. Supervised, structured activity in the hours right after the school day. Rating for crime and offense outcomes.',
+      strand: 'the INVOLVEMENT strand', a: 'Ineffective', g: 'wrong',
+      v: '<strong>Ineffective for crime.</strong> Across 12 studies the standardized mean difference on multiple crime and offense types was 0.062 and it was not statistically significant. The same practice is rated Ineffective for drug use and for truancy. It is worth being precise here rather than dismissive: after-school programs are rated Promising for externalizing behavior, positive social behaviors, school bonding, self-perceptions, and academic achievement. They do real good. What they do not do, on the evidence, is reduce offending, which is the one thing the involvement strand predicts they should.' },
+  ];
+  const progEl = $('progs');
+  const pstate = PROGS.map(() => null);
+  const POPTS = ['Effective', 'Promising', 'Ineffective'];
+  PROGS.forEach((item, i) => {
+    const d = document.createElement('div');
+    d.className = 'scoreline';
+    let btns = '';
+    POPTS.forEach(o => { btns += '<button class="pick" data-p="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+    d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.q + '</div><div class="swho">works on ' + item.strand + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="pv' + i + '"></div>';
+    progEl.appendChild(d);
+  });
+  function answerProg(i, a){
+    const btns = progEl.querySelectorAll('[data-p="' + i + '"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.a === a) b.classList.add('chosen');
+      if (b.dataset.a === PROGS[i].a) b.classList.add('answer');
+    });
+    pstate[i] = (a === PROGS[i].a);
+    const el = $('pv' + i);
+    el.innerHTML = '<div class="grade ' + (pstate[i] ? 'right' : 'mixed') + '">' + (pstate[i] ? 'you had it' : 'not quite') + '</div>' + PROGS[i].v;
+    el.style.display = 'block';
+    if (pstate.every(v => v !== null)) {
+      $('progScore').textContent = pstate.filter(Boolean).length + ' of 3';
+      $('progWrap').style.display = 'block';
+    }
+  }
+  progEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-p]');
+    if (b) answerProg(Number(b.dataset.p), b.dataset.a);
+  });
+
+  window.__S = {
+    activate, lockDun,
+    answerMoment, answerSort, answerClaim, answerProg,
+    state: () => ({ mstate, sstate, cstate, pstate })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

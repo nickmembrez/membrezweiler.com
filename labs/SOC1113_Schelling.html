@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schelling Segregation Model · SOC 1113</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --plane: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #6e6c67;
+    --grid-line: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;   /* Group A */
+    --series-2: #ae4d26;   /* Group B */
+    --empty: #eceae4;
+    --accent-ink: #0b0b0b;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted: #6e6c67;
+    --grid-line: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --empty: #262624;
+    --accent-ink: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--text-secondary); margin: 0; max-width: 68ch; }
+  h2 { font-size: 15px; margin: 0 0 12px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text-secondary); font-weight: 600; }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .layout { display: grid; grid-template-columns: 300px 1fr; gap: 18px; margin-top: 20px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  /* controls */
+  .ctrl { margin-bottom: 16px; }
+  .ctrl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+  .ctrl .val { font-variant-numeric: tabular-nums; color: var(--text-primary); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--series-1); }
+  .hint { font-size: 12px; color: var(--muted); margin: 2px 0 0; }
+  .btnrow { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  button {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 8px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--plane); color: var(--text-primary);
+  }
+  button:hover { border-color: var(--baseline); }
+  button.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  button.primary:hover { filter: brightness(1.08); }
+  button.small { font-size: 13px; padding: 6px 10px; font-weight: 500; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
+  .check input { accent-color: var(--series-1); width: 15px; height: 15px; }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  /* stat tiles */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .tile { background: var(--plane); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .tile .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .tile .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.15; }
+  .tile .n { font-size: 11px; color: var(--muted); }
+
+  /* grid */
+  #gridWrap { position: relative; width: 100%; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 6px; background: var(--surface-1); }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin: 12px 0 0; font-size: 13px; color: var(--text-secondary); }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+  .status { font-size: 13px; color: var(--text-secondary); margin: 10px 0 0; min-height: 20px; }
+  .status strong { color: var(--text-primary); }
+
+  /* chart */
+  #chartWrap { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    transition: opacity .1s; white-space: nowrap; z-index: 5;
+  }
+  .tip .r { font-weight: 650; margin-bottom: 4px; }
+  .tip .row { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .tip .row b { color: var(--text-primary); font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 12px; }
+
+  /* tables */
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .scroll { max-height: 260px; overflow: auto; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+  .prose { max-width: 74ch; }
+  .prose p { color: var(--text-secondary); }
+  .prose li { color: var(--text-secondary); margin-bottom: 6px; }
+  .qbox { background: var(--plane); border-left: 3px solid var(--series-1); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; }
+  .qbox p { margin: 0; color: var(--text-primary); }
+  textarea { width: 100%; font: inherit; font-size: 14px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); resize: vertical; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="wrap" role="main">
+
+<header role="presentation">
+  <div>
+    <h1>The Schelling Segregation Model</h1>
+    <p class="sub">Nobody in this simulation wants segregation. Every square just wants to not be too outnumbered on its own block. Watch what the neighborhood does anyway.</p>
+  </div>
+  <button class="small" id="themeBtn" aria-label="Toggle light and dark mode">Dark mode</button>
+</header>
+
+<div class="layout">
+
+  <!-- ───────── CONTROLS ───────── -->
+  <div class="card">
+    <h2>Controls</h2>
+
+    <div class="btnrow">
+      <button class="primary" id="runBtn">Run</button>
+      <button id="stepBtn">Step</button>
+      <button id="resetBtn">New grid</button>
+    </div>
+
+    <div class="ctrl">
+      <label for="thrA">
+        <span>Tolerance: how many neighbors must be like me</span>
+        <span class="val" id="thrAv">30%</span>
+      </label>
+      <input type="range" id="thrA" min="0" max="100" step="5" value="30">
+      <p class="hint">A square moves if fewer than this share of its occupied neighbors share its color.</p>
+    </div>
+
+    <div class="check">
+      <input type="checkbox" id="splitThr">
+      <label for="splitThr" style="display:inline;margin:0;color:inherit">Give the two groups different tolerances</label>
+    </div>
+
+    <div class="ctrl" id="thrBwrap" hidden>
+      <label for="thrB">
+        <span>Group B tolerance</span>
+        <span class="val" id="thrBv">30%</span>
+      </label>
+      <input type="range" id="thrB" min="0" max="100" step="5" value="30">
+    </div>
+
+    <hr>
+
+    <div class="ctrl">
+      <label for="mix"><span>Group B share of residents</span><span class="val" id="mixv">50%</span></label>
+      <input type="range" id="mix" min="10" max="90" step="5" value="50">
+    </div>
+
+    <div class="ctrl">
+      <label for="empty"><span>Vacant lots</span><span class="val" id="emptyv">12%</span></label>
+      <input type="range" id="empty" min="2" max="40" step="1" value="12">
+    </div>
+
+    <div class="ctrl">
+      <label for="size"><span>Grid size</span><span class="val" id="sizev">50 × 50</span></label>
+      <input type="range" id="size" min="20" max="80" step="5" value="50">
+    </div>
+
+    <div class="ctrl">
+      <label for="speed"><span>Speed</span><span class="val" id="speedv">Normal</span></label>
+      <input type="range" id="speed" min="0" max="4" step="1" value="2">
+    </div>
+
+    <div class="check">
+      <input type="checkbox" id="shapes">
+      <label for="shapes" style="display:inline;margin:0;color:inherit">Use shapes as well as color</label>
+    </div>
+
+    <hr>
+    <h2>The rules of the market</h2>
+
+    <div class="check">
+      <input type="checkbox" id="turnover">
+      <label for="turnover" style="display:inline;margin:0;color:inherit">Everyday turnover: a few settled residents move each round</label>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="steer">
+      <label for="steer" style="display:inline;margin:0;color:inherit">Steering: movers are shown listings where their group is common</label>
+    </div>
+    <div class="check">
+      <input type="checkbox" id="unequal">
+      <label for="unequal" style="display:inline;margin:0;color:inherit">Unequal shopping: Group A picks from six listings, Group B takes what it gets</label>
+    </div>
+    <p class="hint">The clean experiment: tolerance 0%, turnover on, steering on. Nobody cares who lives next door. Watch the index anyway.</p>
+
+    <h3 style="margin-top:14px">Red lines</h3>
+    <div class="btnrow">
+      <button class="small" id="redModeBtn">Draw red lines</button>
+      <button class="small" id="redPresetBtn">Preset district</button>
+      <button class="small" id="redLiftBtn">Lift the red lines</button>
+    </div>
+    <p class="hint">Red districts are closed to Group B: no purchase, no rental, no exceptions. Residents already inside stay until they move, and then cannot come back. The lines bite hardest with everyday turnover on. Draw them or use the preset, run the market, then lift them and count the rounds until the map forgets. Decide whether it ever does.</p>
+
+    <hr>
+    <div class="btnrow">
+      <button class="small" id="recordBtn">Record this run</button>
+      <button class="small" id="csvBtn">Download results</button>
+    </div>
+    <p class="hint">"Record this run" saves the current settings and results to the table below, so you can compare experiments.</p>
+  </div>
+
+  <!-- ───────── SIMULATION ───────── -->
+  <div>
+    <div class="card">
+      <div class="stats">
+        <div class="tile"><div class="k">Round</div><div class="v" id="sRound">0</div><div class="n">moves so far: <span id="sMoves">0</span></div></div>
+        <div class="tile"><div class="k">Same-color neighbors</div><div class="v" id="sSame">…</div><div class="n">average per resident</div></div>
+        <div class="tile"><div class="k">Wanting to move</div><div class="v" id="sUnhappy">…</div><div class="n">of all residents</div></div>
+        <div class="tile"><div class="k">Segregation index</div><div class="v" id="sD">…</div><div class="n">random start was <span id="sD0">…</span></div></div>
+      </div>
+
+      <div id="gridWrap"><canvas id="grid" role="img" aria-label="Grid of colored squares representing two groups of residents"></canvas></div>
+
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--series-1)"></span>Group A</span>
+        <span><span class="swatch" style="background:var(--series-2)"></span>Group B</span>
+        <span><span class="swatch" style="background:var(--empty)"></span>Vacant</span>
+        <span><span class="swatch" style="background:transparent;border:2px solid #c0392b"></span>Closed to Group B</span>
+        <span style="margin-left:auto" id="convergeNote"></span>
+      </div>
+      <p class="status" id="status">Press <strong>Run</strong>. Predict first: where will this end up?</p>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>What happens as the rounds go by</h2>
+      <div id="chartWrap">
+        <svg id="chart" viewBox="0 0 720 260" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Line chart of segregation and dissatisfaction by round"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+      <div class="legend" style="margin-top:14px">
+        <span><span class="swatch" style="background:var(--series-1)"></span>Average share of same-color neighbors</span>
+        <span><span class="swatch" style="background:var(--series-2)"></span>Share of residents wanting to move</span>
+      </div>
+      <details>
+        <summary>Show the numbers as a table</summary>
+        <div class="scroll" style="margin-top:10px">
+          <table id="roundTable"><thead><tr><th>Round</th><th>Same-color neighbors</th><th>Wanting to move</th><th>Segregation index</th></tr></thead><tbody></tbody></table>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ───────── LAB ───────── -->
+<div class="card" style="margin-top:18px">
+  <h2>Your experiments</h2>
+  <div class="scroll">
+    <table id="runTable">
+      <thead><tr><th>#</th><th>Tolerance</th><th>Group B share</th><th>Vacant</th><th>Rules</th><th>Rounds</th><th>Same-color neighbors</th><th>Segregation index</th></tr></thead>
+      <tbody><tr><td colspan="8" style="color:var(--muted);text-align:left">No runs recorded yet. Set the sliders, run it, then press "Record this run".</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card prose" style="margin-top:18px">
+  <h2>Before you touch the sliders</h2>
+  <div class="qbox">
+    <p><strong>Predict:</strong> set tolerance to 30%, meaning every resident is happy to be a minority on their own block, two-to-one against. Write down what you think the map looks like after 50 rounds. Then run it.</p>
+  </div>
+  <textarea id="pred" rows="3" placeholder="My prediction…"></textarea>
+
+  <h3>Things worth trying</h3>
+  <ul>
+    <li>Drop tolerance to <strong>0%</strong>. Nobody cares who lives next door. What is the segregation index?</li>
+    <li>Walk tolerance up 5 points at a time from 0. Is the change gradual, or is there a point where the map suddenly flips?</li>
+    <li>Set tolerance to <strong>70%</strong>. Does the model reach a stable arrangement at all? What does it mean when it can't?</li>
+    <li>Set vacant lots very low (2%) and very high (40%) at the same tolerance. Why does the housing supply change how fast segregation happens?</li>
+    <li>Make Group B 20% of residents. Compare each group's experience: does the smaller group end up more or less clustered?</li>
+    <li>Give the groups different tolerances. Does one group's pickiness segregate everyone?</li>
+    <li>Set tolerance to <strong>0%</strong>, then turn on everyday turnover and steering. Nobody has any preference about neighbors at all. What does the index do, and what does that tell you about where segregation can come from?</li>
+    <li>Turn on unequal shopping at equal tolerances. Whose same-color average rises, and why, when neither group got pickier?</li>
+    <li>Press <strong>Preset district</strong> (or draw your own red lines), run the market, and read the map against the lines.</li>
+    <li>Segregate the map under red lines. Lift them. Count the rounds until the segregation index comes back down, and decide whether it ever does. That answer is the most important number on this page.</li>
+  </ul>
+
+  <h3>What the base model does not contain</h3>
+  <p>The point of the model is what it leaves out. No resident here is a bigot: nobody refuses to live near the other group, nobody is willing to be the only one on the block. There are no landlords, no realtors, no banks, no zoning boards, no price differences, no income differences, no history. Segregation shows up anyway.</p>
+  <p>That result cuts two ways, and both belong in your write-up:</p>
+  <ul>
+    <li><strong>It explains something real.</strong> Segregation does not require anyone to intend it. Aggregate patterns are not just individual attitudes added up, so "people aren't as prejudiced as they used to be" does not predict that neighborhoods will mix.</li>
+    <li><strong>It is not a description of American segregation.</strong> Real segregation was built with tools this model has none of: restrictive covenants, redlined mortgage maps, urban renewal, exclusionary zoning, steering by real estate agents, and enormous wealth gaps that determine who can buy where. A model showing that segregation <em>can</em> emerge without those things is not evidence that it <em>did</em>.</li>
+  </ul>
+  <p><strong>The switches under "The rules of the market" add stripped-down versions of exactly those missing tools, one at a time.</strong> Red lines are a one-rule stand-in for restrictive covenants, FHA underwriting maps, and the agents who enforced both: one group simply cannot buy in the marked districts. Steering is the documented practice of showing families listings near "their own kind." Unequal shopping stands in for wealth and information gaps. None of it is calibrated to any real city, and this is a mechanism demonstration, not a measurement. The point is to isolate what each rule contributes, alone and in combination, using the run recorder. One rule at a time, like a lab.</p>
+  <div class="qbox">
+    <p><strong>Write:</strong> pick one mechanism the model leaves out. In a paragraph, say how you would add it to the grid, what rule would change, and what you would expect to see. Then say what you would need to measure in the real world to tell whether your version or Schelling's is doing the work.</p>
+  </div>
+</div>
+
+<p class="hint" style="margin-top:20px">Schelling, T. C. (1971). "Dynamic Models of Segregation." <em>Journal of Mathematical Sociology</em>, 1(2), 143–186. · The segregation index is the demographers' <strong>index of dissimilarity</strong>: the share of one group that would have to move for every neighborhood to match the city's overall mix. Real U.S. metro areas run from about 0.3 to above 0.7. Two cautions worth teaching: scattering people at random does <em>not</em> give 0 (chance clustering puts the floor near 0.15, which is why the tile reports the random starting value), and the number depends on how big you draw the neighborhoods, a real problem in segregation research known as the modifiable areal unit problem. · SOC 1113 · Midwestern State University</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ── state ────────────────────────────────────────────────────────────
+  var EMPTY=0, A=1, B=2;
+  var st = { n:50, grid:null, round:0, moves:0, hist:[], running:false, timer:null, converged:false,
+             red:null, redGhost:null, redMode:false, liftedRound:null };
+  var runs = [];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var css = function(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); };
+
+  // ── params from controls ─────────────────────────────────────────────
+  function params(){
+    var tA = +$("thrA").value/100;
+    var split = $("splitThr").checked;
+    return {
+      n: +$("size").value,
+      thrA: tA,
+      thrB: split ? +$("thrB").value/100 : tA,
+      mix: +$("mix").value/100,
+      empty: +$("empty").value/100
+    };
+  }
+
+  // ── tract geometry (shared by the D index and the red lines) ─────────
+  function tp(){
+    var bs = Math.max(4, 2*Math.round(st.n/16));
+    return { bs: bs, nb: Math.ceil(st.n/bs) };
+  }
+  function tractOf(i){
+    var t=tp(), x=i%st.n, y=(i/st.n)|0;
+    return ((y/t.bs)|0)*t.nb + ((x/t.bs)|0);
+  }
+  function isRed(i){ return st.red !== null && st.red[tractOf(i)] === 1; }
+  function anyRed(){ if(st.red===null) return false; for(var k=0;k<st.red.length;k++) if(st.red[k]) return true; return false; }
+
+  // ── build a random grid ──────────────────────────────────────────────
+  function build(){
+    var p = params();
+    st.n = p.n;
+    var N = p.n*p.n;
+    var g = new Uint8Array(N);
+    var nOcc = Math.round(N*(1-p.empty));
+    var nB = Math.round(nOcc*p.mix);
+    var i;
+    for(i=0;i<nOcc;i++) g[i] = (i<nB) ? B : A;
+    // Fisher–Yates
+    for(i=N-1;i>0;i--){ var j=(Math.random()*(i+1))|0; var t=g[i]; g[i]=g[j]; g[j]=t; }
+    st.grid=g; st.round=0; st.moves=0; st.hist=[]; st.converged=false;
+    var tPar = tp();
+    st.red = new Uint8Array(tPar.nb*tPar.nb);
+    st.redGhost = null; st.liftedRound = null;
+    record();
+    draw(); drawChart(); updateStats();
+    $("convergeNote").textContent = "";
+    $("status").innerHTML = "Press <strong>Run</strong>. Predict first: where will this end up?";
+  }
+
+  // ── neighbor counts (Moore, 8 cells) ─────────────────────────────────
+  function nbrs(g,n,x,y,out){
+    var same=0, occ=0, me=g[y*n+x];
+    for(var dy=-1;dy<=1;dy++){
+      var yy=y+dy; if(yy<0||yy>=n) continue;
+      for(var dx=-1;dx<=1;dx++){
+        if(dx===0&&dy===0) continue;
+        var xx=x+dx; if(xx<0||xx>=n) continue;
+        var v=g[yy*n+xx];
+        if(v!==EMPTY){ occ++; if(v===me) same++; }
+      }
+    }
+    out[0]=same; out[1]=occ; return out;
+  }
+
+  // ── how a mover finds a listing, under the rules of the market ───────
+  // Returns an index INTO the vacant array, or -1 if no legal listing found.
+  // Base rule: one random legal vacancy. Steering: best of six, judged by the
+  // mover's own-group share around the listing. Unequal shopping: Group A
+  // shops six listings, Group B takes the first legal one it is shown.
+  function chooseVac(group, vacant){
+    var steer = $("steer").checked, uneq = $("unequal").checked;
+    var K = 1;
+    if(steer) K = 6;
+    if(uneq) K = (group===A) ? 6 : 1;
+    var best=-1, bestShare=-1, seen=0, tries=0, o=[0,0];
+    var n=st.n, g=st.grid;
+    for(tries=0; tries<50 && seen<K; tries++){
+      var vi = (Math.random()*vacant.length)|0;
+      var idx = vacant[vi];
+      if(g[idx]!==EMPTY) continue;               // stale entry, skip
+      if(group===B && isRed(idx)) continue;      // red line: closed to B
+      seen++;
+      if(K===1){ return vi; }
+      // judge the listing by the mover's own-group share around it
+      var x=idx%n, y=(idx/n)|0, same=0, occ=0;
+      for(var dy=-1;dy<=1;dy++){
+        var yy=y+dy; if(yy<0||yy>=n) continue;
+        for(var dx=-1;dx<=1;dx++){
+          if(dx===0&&dy===0) continue;
+          var xx=x+dx; if(xx<0||xx>=n) continue;
+          var v=g[yy*n+xx];
+          if(v!==EMPTY){ occ++; if(v===group) same++; }
+        }
+      }
+      var share = occ ? same/occ : 0.5;
+      if(share > bestShare){ bestShare=share; best=vi; }
+    }
+    return best;
+  }
+
+  // ── one round: unhappy agents relocate, plus optional turnover ───────
+  function step(){
+    if(st.converged) return 0;
+    var p=params(), g=st.grid, n=st.n, N=n*n;
+    var thr=[0,p.thrA,p.thrB];
+    var turnover = $("turnover").checked;
+    var movers=[], vacant=[], o=[0,0], i, x, y;
+    for(i=0;i<N;i++){
+      if(g[i]===EMPTY){ vacant.push(i); continue; }
+      x=i%n; y=(i/n)|0;
+      nbrs(g,n,x,y,o);
+      if(o[1]>0 && (o[0]/o[1]) < thr[g[i]]) movers.push(i);
+      else if(turnover && Math.random()<0.03) movers.push(i);  // ordinary churn
+    }
+    if(movers.length===0){
+      if(!turnover){
+        st.converged=true;
+        remeasure();
+        $("convergeNote").textContent = "Settled: nobody wants to move.";
+        return 0;
+      }
+      st.round++;
+      record();
+      return 0;
+    }
+    // shuffle so move order is not spatially biased
+    function shuf(a){ for(var k=a.length-1;k>0;k--){ var j=(Math.random()*(k+1))|0; var t=a[k]; a[k]=a[j]; a[j]=t; } }
+    shuf(movers); shuf(vacant);
+    var moved=0;
+    for(i=0;i<movers.length;i++){
+      var from=movers[i], group=g[from];
+      if(group===EMPTY) continue;                // may have been vacated already
+      var pick=chooseVac(group, vacant);
+      if(pick<0) continue;                       // no legal listing: they stay put
+      var to=vacant[pick];
+      g[to]=group; g[from]=EMPTY;
+      vacant[pick]=from;                         // the lot they left is now open
+      moved++;
+    }
+    st.round++; st.moves+=moved;
+    record();
+    return moved;
+  }
+
+  // ── measures ─────────────────────────────────────────────────────────
+  function measure(){
+    var p=params(), g=st.grid, n=st.n, o=[0,0];
+    var thr=[0,p.thrA,p.thrB];
+    var sumSame=0, withNbrs=0, occ=0, unhappy=0;
+    for(var y=0;y<n;y++) for(var x=0;x<n;x++){
+      var v=g[y*n+x]; if(v===EMPTY) continue;
+      occ++;
+      nbrs(g,n,x,y,o);
+      if(o[1]>0){
+        sumSame += o[0]/o[1];
+        withNbrs++;
+        if(o[0]/o[1] < thr[v]) unhappy++;
+      }
+    }
+    // index of dissimilarity over square "tracts", about 8 across, forced even
+    // (odd block widths add a rounding bias to D)
+    var bs=Math.max(4, 2*Math.round(n/16));
+    var nb=Math.ceil(n/bs), ba=new Float64Array(nb*nb), bb=new Float64Array(nb*nb), tA=0, tB=0;
+    for(var yy=0;yy<n;yy++) for(var xx=0;xx<n;xx++){
+      var vv=g[yy*n+xx]; if(vv===EMPTY) continue;
+      var bi=((yy/bs)|0)*nb + ((xx/bs)|0);
+      if(vv===A){ ba[bi]++; tA++; } else { bb[bi]++; tB++; }
+    }
+    var D=0;
+    if(tA>0&&tB>0){ for(var k=0;k<ba.length;k++) D += Math.abs(ba[k]/tA - bb[k]/tB); D*=0.5; }
+    return {
+      same: withNbrs? sumSame/withNbrs : 0,
+      unhappy: occ? unhappy/occ : 0,
+      D: D
+    };
+  }
+
+  function record(){
+    var m = measure();
+    m.round = st.round;
+    st.hist.push(m);
+    if(st.hist.length>400) st.hist.shift();
+  }
+  // recompute the current round in place, used when the tolerance rule changes
+  // without the grid moving, so "wanting to move" reflects the new rule at once
+  function remeasure(){
+    if(!st.hist.length) return record();
+    var m = measure(); m.round = st.round;
+    st.hist[st.hist.length-1] = m;
+  }
+
+  // ── rendering: grid ──────────────────────────────────────────────────
+  var cv=$("grid"), ctx=cv.getContext("2d");
+  function draw(){
+    var n=st.n, g=st.grid;
+    var wCSS = cv.parentNode.clientWidth;
+    var dpr = window.devicePixelRatio||1;
+    var cell = Math.max(4, Math.floor(wCSS/n));
+    var side = cell*n;
+    cv.width = side*dpr; cv.height = side*dpr;
+    cv.style.height = "auto";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle = css("--empty");
+    ctx.fillRect(0,0,side,side);
+    var cA=css("--series-1"), cB=css("--series-2"), shapes=$("shapes").checked;
+    var gap = cell>=8 ? 1 : 0;   // 1px surface gap between fills
+    for(var y=0;y<n;y++) for(var x=0;x<n;x++){
+      var v=g[y*n+x]; if(v===EMPTY) continue;
+      ctx.fillStyle = (v===A)? cA : cB;
+      var px=x*cell, py=y*cell, s=cell-gap;
+      if(shapes && v===B && cell>=6){
+        ctx.beginPath();
+        ctx.arc(px+cell/2, py+cell/2, s/2, 0, Math.PI*2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(px, py, s, s);
+      }
+    }
+    // red-line overlay: solid red for live restrictions, dashed gray ghost
+    // where lifted lines used to run, so the map can be read against the law
+    var t=tp(), bpx=t.bs*cell;
+    function outlineTract(bi, live){
+      var ty=(bi/t.nb)|0, txx=bi%t.nb;
+      var rx=txx*bpx, ry=ty*bpx;
+      var rw=Math.min(bpx, side-rx), rh=Math.min(bpx, side-ry);
+      if(live){
+        ctx.fillStyle="rgba(192,57,43,0.12)";
+        ctx.fillRect(rx,ry,rw,rh);
+        ctx.strokeStyle="#c0392b"; ctx.lineWidth=2; ctx.setLineDash([]);
+      } else {
+        ctx.strokeStyle="rgba(137,135,129,0.9)"; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+      }
+      ctx.strokeRect(rx+1,ry+1,rw-2,rh-2);
+    }
+    var k;
+    if(st.redGhost) for(k=0;k<st.redGhost.length;k++) if(st.redGhost[k]) outlineTract(k,false);
+    if(st.red) for(k=0;k<st.red.length;k++) if(st.red[k]) outlineTract(k,true);
+    ctx.setLineDash([]);
+  }
+
+  // ── rendering: line chart ────────────────────────────────────────────
+  var SVG="http://www.w3.org/2000/svg";
+  var PAD={l:44,r:56,t:16,b:34}, CW=720, CH=260;
+  function xScale(i,maxI){ return PAD.l + (maxI<=0?0:(i/maxI))*(CW-PAD.l-PAD.r); }
+  function yScale(v){ return CH-PAD.b - v*(CH-PAD.t-PAD.b); }
+
+  function drawChart(){
+    var svg=$("chart");
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var h=st.hist, maxI=Math.max(1,h.length-1);
+    function el(t,a){ var e=document.createElementNS(SVG,t); for(var k in a) e.setAttribute(k,a[k]); return e; }
+
+    // gridlines + y ticks
+    [0,0.25,0.5,0.75,1].forEach(function(v){
+      svg.appendChild(el("line",{x1:PAD.l,x2:CW-PAD.r,y1:yScale(v),y2:yScale(v),stroke:css("--grid-line"),"stroke-width":1}));
+      var t=el("text",{x:PAD.l-8,y:yScale(v)+4,"text-anchor":"end",fill:css("--muted"),"font-size":11});
+      t.textContent=Math.round(v*100)+"%"; svg.appendChild(t);
+    });
+    // baseline
+    svg.appendChild(el("line",{x1:PAD.l,x2:CW-PAD.r,y1:yScale(0),y2:yScale(0),stroke:css("--baseline"),"stroke-width":1}));
+    // x ticks
+    var ticks=Math.min(6,maxI);
+    for(var k=0;k<=ticks;k++){
+      var idx=Math.round(k*maxI/Math.max(1,ticks));
+      var tx=el("text",{x:xScale(idx,maxI),y:CH-PAD.b+18,"text-anchor":"middle",fill:css("--muted"),"font-size":11});
+      tx.textContent=idx; svg.appendChild(tx);
+    }
+    var xl=el("text",{x:(PAD.l+CW-PAD.r)/2,y:CH-2,"text-anchor":"middle",fill:css("--muted"),"font-size":11});
+    xl.textContent="round"; svg.appendChild(xl);
+
+    function path(key,color){
+      var d="";
+      for(var i=0;i<h.length;i++) d += (i?"L":"M")+xScale(i,maxI).toFixed(1)+" "+yScale(h[i][key]).toFixed(1);
+      svg.appendChild(el("path",{d:d,fill:"none",stroke:color,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      if(h.length){
+        var last=h[h.length-1];
+        svg.appendChild(el("circle",{cx:xScale(h.length-1,maxI),cy:yScale(last[key]),r:3.5,fill:color,stroke:css("--surface-1"),"stroke-width":2}));
+        var lab=el("text",{x:xScale(h.length-1,maxI)+8,y:yScale(last[key])+4,fill:css("--text-primary"),"font-size":12,"font-weight":600});
+        lab.textContent=Math.round(last[key]*100)+"%"; svg.appendChild(lab);
+      }
+    }
+    path("same",css("--series-1"));
+    path("unhappy",css("--series-2"));
+
+    // hover layer
+    var hoverLine=el("line",{x1:0,x2:0,y1:PAD.t,y2:CH-PAD.b,stroke:css("--baseline"),"stroke-width":1,opacity:0});
+    svg.appendChild(hoverLine);
+    var hit=el("rect",{x:PAD.l,y:PAD.t,width:CW-PAD.l-PAD.r,height:CH-PAD.t-PAD.b,fill:"transparent"});
+    svg.appendChild(hit);
+    var tip=$("tip");
+    hit.addEventListener("mousemove",function(e){
+      if(!h.length) return;
+      var r=svg.getBoundingClientRect();
+      var sx=(e.clientX-r.left)/r.width*CW;
+      var frac=(sx-PAD.l)/(CW-PAD.l-PAD.r);
+      var i=Math.max(0,Math.min(h.length-1,Math.round(frac*maxI)));
+      var px=xScale(i,maxI);
+      hoverLine.setAttribute("x1",px); hoverLine.setAttribute("x2",px); hoverLine.setAttribute("opacity",1);
+      tip.innerHTML = '<div class="r">Round '+h[i].round+'</div>'+
+        '<div class="row"><span class="swatch" style="background:var(--series-1)"></span>Same-color neighbors<b>'+Math.round(h[i].same*100)+'%</b></div>'+
+        '<div class="row"><span class="swatch" style="background:var(--series-2)"></span>Wanting to move<b>'+Math.round(h[i].unhappy*100)+'%</b></div>'+
+        '<div class="row" style="margin-top:2px">Segregation index<b>'+h[i].D.toFixed(2)+'</b></div>';
+      tip.style.opacity=1;
+      var wrap=$("chartWrap").getBoundingClientRect();
+      var lx=(px/CW)*r.width + (r.left-wrap.left);
+      tip.style.left=Math.min(Math.max(0,lx+12), wrap.width-tip.offsetWidth-4)+"px";
+      tip.style.top="8px";
+    });
+    hit.addEventListener("mouseleave",function(){ tip.style.opacity=0; hoverLine.setAttribute("opacity",0); });
+  }
+
+  function updateStats(){
+    var m = st.hist.length? st.hist[st.hist.length-1] : measure();
+    $("sRound").textContent = st.round;
+    $("sMoves").textContent = st.moves.toLocaleString();
+    $("sSame").textContent = Math.round(m.same*100)+"%";
+    $("sUnhappy").textContent = Math.round(m.unhappy*100)+"%";
+    $("sD").textContent = m.D.toFixed(2);
+    $("sD0").textContent = st.hist.length? st.hist[0].D.toFixed(2) : "…";
+    // round table
+    var tb=$("roundTable").querySelector("tbody");
+    tb.innerHTML = st.hist.map(function(r){
+      return "<tr><td>"+r.round+"</td><td>"+Math.round(r.same*100)+"%</td><td>"+Math.round(r.unhappy*100)+"%</td><td>"+r.D.toFixed(2)+"</td></tr>";
+    }).join("");
+  }
+
+  // ── run loop ─────────────────────────────────────────────────────────
+  var DELAYS=[600,300,120,50,0];
+  function tick(){
+    var moved=step();
+    draw(); drawChart(); updateStats();
+    if(st.converged || st.round>=300){ stop();
+      $("status").innerHTML = st.converged
+        ? "<strong>Settled after "+st.round+" rounds.</strong> Nobody wants to move. Compare the map to your prediction."
+        : "<strong>Stopped at 300 rounds without settling.</strong> At this tolerance there may be no arrangement that satisfies everyone.";
+      return;
+    }
+    $("status").innerHTML = "Round <strong>"+st.round+"</strong>: "+moved.toLocaleString()+" residents moved.";
+    st.timer=setTimeout(tick, DELAYS[+$("speed").value]);
+  }
+  function start(){ if(st.running||st.converged) return; st.running=true; $("runBtn").textContent="Pause"; tick(); }
+  function stop(){ st.running=false; clearTimeout(st.timer); $("runBtn").textContent="Run"; }
+
+  // ── wiring ───────────────────────────────────────────────────────────
+  $("runBtn").onclick=function(){ st.running?stop():start(); };
+  $("stepBtn").onclick=function(){ stop(); step(); draw(); drawChart(); updateStats();
+    $("status").innerHTML = st.converged? "<strong>Settled.</strong> Nobody wants to move." : "Round <strong>"+st.round+"</strong>."; };
+  $("resetBtn").onclick=function(){ stop(); build(); };
+
+  function bindLabel(id,labId,fmt){
+    var s=$(id); var f=function(){ $(labId).textContent=fmt(s.value); };
+    s.addEventListener("input",f); f();
+  }
+  bindLabel("thrA","thrAv",function(v){return v+"%";});
+  bindLabel("thrB","thrBv",function(v){return v+"%";});
+  bindLabel("mix","mixv",function(v){return v+"%";});
+  bindLabel("empty","emptyv",function(v){return v+"%";});
+  bindLabel("size","sizev",function(v){return v+" × "+v;});
+  bindLabel("speed","speedv",function(v){return ["Very slow","Slow","Normal","Fast","Instant"][+v];});
+
+  // structural sliders rebuild the grid; tolerance does not (so you can
+  // change the rule mid-run and watch a settled map come apart)
+  ["mix","empty","size"].forEach(function(id){ $(id).addEventListener("change",function(){ stop(); build(); }); });
+  ["thrA","thrB"].forEach(function(id){ $(id).addEventListener("change",function(){
+    st.converged=false; $("convergeNote").textContent=""; remeasure(); drawChart(); updateStats(); }); });
+  $("splitThr").onchange=function(){ $("thrBwrap").hidden=!this.checked; st.converged=false; remeasure(); drawChart(); updateStats(); };
+  $("shapes").onchange=draw;
+
+  // market-rule switches change behavior without rebuilding the grid
+  ["turnover","steer","unequal"].forEach(function(id){ $(id).addEventListener("change",function(){
+    st.converged=false; $("convergeNote").textContent="";
+  }); });
+
+  // ── red lines: paint, preset, lift ───────────────────────────────────
+  function setRedMode(on){
+    st.redMode = on;
+    $("redModeBtn").textContent = on ? "Done drawing" : "Draw red lines";
+    cv.style.cursor = on ? "crosshair" : "default";
+    if(on){ stop(); $("status").innerHTML = "Redline mode: click districts on the map to draw or erase the lines. Press <strong>Done drawing</strong> when the map is marked."; }
+  }
+  $("redModeBtn").onclick=function(){ setRedMode(!st.redMode); };
+  cv.addEventListener("click",function(e){
+    if(!st.redMode || !st.red) return;
+    var r=cv.getBoundingClientRect(), n=st.n, t=tp();
+    var x=Math.floor((e.clientX-r.left)/r.width*n);
+    var y=Math.floor((e.clientY-r.top)/r.height*n);
+    if(x<0||y<0||x>=n||y>=n) return;
+    var bi=((y/t.bs)|0)*t.nb+((x/t.bs)|0);
+    st.red[bi]^=1;
+    st.converged=false; $("convergeNote").textContent="";
+    draw();
+  });
+  $("redPresetBtn").onclick=function(){
+    var t=tp(), cut=Math.ceil(t.nb/3);
+    for(var ty=0;ty<t.nb;ty++) for(var tx=0;tx<t.nb;tx++) st.red[ty*t.nb+tx] = (tx<cut)?1:0;
+    st.redGhost=null; st.liftedRound=null;
+    st.converged=false; $("convergeNote").textContent="";
+    setRedMode(false); draw();
+    $("status").innerHTML = "A district is redlined: closed to Group B. Run the market and read the map against the lines.";
+  };
+  $("redLiftBtn").onclick=function(){
+    if(!anyRed()){ $("status").innerHTML = "No red lines to lift. Draw some, or use the preset."; return; }
+    st.redGhost = new Uint8Array(st.red);
+    st.red = new Uint8Array(st.red.length);
+    st.liftedRound = st.round;
+    st.converged=false; $("convergeNote").textContent="";
+    setRedMode(false); draw();
+    $("status").innerHTML = "<strong>Red lines lifted after round "+st.liftedRound+".</strong> The dashed lines mark where the law used to run. Keep the market running and count the rounds until the map forgets.";
+  };
+
+  $("themeBtn").onclick=function(){
+    var d=document.documentElement.getAttribute("data-theme")==="dark";
+    document.documentElement.setAttribute("data-theme", d?"light":"dark");
+    this.textContent = d? "Dark mode":"Light mode";
+    draw(); drawChart();
+  };
+  if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+    document.documentElement.setAttribute("data-theme","dark");
+    $("themeBtn").textContent="Light mode";
+  }
+
+  function rulesLabel(){
+    var r=[];
+    if($("turnover").checked) r.push("turnover");
+    if($("steer").checked) r.push("steering");
+    if($("unequal").checked) r.push("unequal");
+    if(anyRed()) r.push("red lines");
+    else if(st.redGhost) r.push("lifted r"+st.liftedRound);
+    return r.length ? r.join(" + ") : "none";
+  }
+  $("recordBtn").onclick=function(){
+    var p=params(), m=st.hist[st.hist.length-1];
+    runs.push({thr:(p.thrA*100)+(p.thrB!==p.thrA?"/"+(p.thrB*100):"")+"%", mix:Math.round(p.mix*100)+"%",
+               empty:Math.round(p.empty*100)+"%", rules:rulesLabel(), rounds:st.round, same:Math.round(m.same*100)+"%", D:m.D.toFixed(2)});
+    var tb=$("runTable").querySelector("tbody");
+    tb.innerHTML = runs.map(function(r,i){
+      return "<tr><td>"+(i+1)+"</td><td>"+r.thr+"</td><td>"+r.mix+"</td><td>"+r.empty+"</td><td>"+r.rules+"</td><td>"+r.rounds+"</td><td>"+r.same+"</td><td>"+r.D+"</td></tr>";
+    }).join("");
+  };
+  $("csvBtn").onclick=function(){
+    var rows=[["run","tolerance","group_b_share","vacant","rules","rounds","same_color_neighbors","segregation_index"]];
+    runs.forEach(function(r,i){ rows.push([i+1,r.thr,r.mix,r.empty,'"'+r.rules+'"',r.rounds,r.same,r.D]); });
+    var csv=rows.map(function(r){return r.join(",");}).join("\n");
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download="schelling-experiments.csv"; a.click();
+  };
+
+  window.addEventListener("resize",function(){ draw(); });
+  build();
+
+  // test hook
+  window.__S = {
+    st: st,
+    step: function(){ stop(); step(); draw(); drawChart(); updateStats(); },
+    steps: function(k){ stop(); for(var i=0;i<k;i++) step(); draw(); drawChart(); updateStats(); },
+    build: build, start: start, stop: stop,
+    preset: function(){ $("redPresetBtn").click(); },
+    lift: function(){ $("redLiftBtn").click(); },
+    redMode: setRedMode,
+    D: function(){ return st.hist.length ? st.hist[st.hist.length-1].D : null; }
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

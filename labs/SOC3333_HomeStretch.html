@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Home Stretch · SOC 3333 Criminology</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h4 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+  .checklist { margin: 14px 0 4px; }
+  .cki { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cki:last-child { border-bottom: 0; }
+  .ckbox { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--surface-1); font-weight: 700; }
+  .cki.on .ckbox { background: var(--good); border-color: var(--good); color: #fff; }
+  .cki.on .ckt { color: var(--text-muted); }
+  .ckt { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
+  .ckt strong { color: var(--text-primary); }
+  .ckcount { font-size: 13px; font-weight: 700; color: var(--accent); margin-top: 10px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Home Stretch <span class="sub">SOC 3333 · Criminology · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Two things are left in this course, and they are the same thing twice.</strong> Part 5 asks you to turn four short papers into one narrative account of what criminology knows about your offense type. The final asks you to do that for the whole course rather than for one offense. This page is built for both. The first three tabs are for the paper, the last three are for the exam, and none of it is recorded or graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-weave" type="button">From four papers to one</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-gaps" type="button">Writing the gaps</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-check" type="button">Part 5 checklist</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-map" type="button">The whole course, one page</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-quiz" type="button">Final self-check</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-plan" type="button">How to study this</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-weave">
+      <div class="card">
+        <h2>The difference between stapling and weaving</h2>
+        <p class="lede">The most common way Part 5 goes wrong is not bad writing. It is four good papers placed end to end with new headings on top. A reader can tell within a page, because the seams show: the same study gets introduced twice, the tone shifts, and nothing in section three depends on anything in section two. A literature review is not a container for four papers. It is one argument about a body of research, and the four papers are its raw material.</p>
+
+        <div class="teach"><strong>The test for whether you have woven it.</strong> Pick any paragraph in the middle of your draft. Could you delete it and have the next paragraph still make sense? If yes, you have a list. In a review, paragraphs depend on the ones before them, because the point being built is cumulative rather than sequential.</div>
+
+        <h3>A structure that works</h3>
+        <p><strong>Open with the puzzle, not the offense.</strong> Do not begin by defining your offense type. Begin with what is genuinely unresolved or surprising about it, and let the definition arrive while you are explaining why the puzzle matters. Your Part 1 has the material for this, but it is almost never the first paragraph of Part 1.</p>
+        <p><strong>Establish the shape of the phenomenon before explaining it.</strong> How much of it happens, to whom, measured how, and what the measurement misses. This is Parts 1 and 2 doing the work Chapters 2 through 5 taught, and it has to come before theory, because a theory has to explain a pattern and the reader needs to see the pattern first.</p>
+        <p><strong>Organize the theory section by argument, not by theory.</strong> This is the single biggest upgrade available to most drafts. Rather than a paragraph on strain, then one on control, then one on learning, organize around the questions the theories disagree about. Where they agree, say so and move on quickly. Where they conflict, that is a section, and the evidence that adjudicates it is the point of the section.</p>
+        <p><strong>Bring the response in as a test, not an appendix.</strong> What has been tried against your offense, and what happened? Chapters 13 and 14 gave you the vocabulary and the evidence standards. An intervention that failed is evidence about the theory behind it, so this section belongs to your argument rather than sitting after it.</p>
+        <p><strong>Close on what is not known.</strong> The next tab is about this, because it is the part most drafts fumble and the part that most distinguishes a review from a summary.</p>
+
+        <div class="note"><strong>About incorporating the feedback.</strong> Revised means changed. If a comment on Part 2 said your sample description was thin and the sentence appears in Part 5 unchanged, that is visible, and it costs more than the original error did. Work through the four sets of comments before you start assembling rather than after, because some of them will change the structure and not just the sentences.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-gaps">
+      <div class="card">
+        <h2>Writing the part about what nobody knows</h2>
+        <p class="lede">Most drafts handle gaps in one sentence: more research is needed. That sentence is true of every topic ever studied, which is what makes it worthless. A real gaps section names something specific that is missing, says why its absence matters for what we can currently claim, and suggests what would fill it. Here are six places gaps reliably hide. Read them against your own topic and at least two will apply.</p>
+
+        <div class="teach"><strong>One. The measurement gap.</strong> Which instrument produced most of what we know, and what is that instrument structurally unable to see? Chapter 2 gave you this. If your offense is mostly known through police records, everything unreported is invisible, and any claim about trends is a claim about reporting as much as about behavior.</div>
+        <div class="teach"><strong>Two. The population gap.</strong> Who was studied and who was not? A literature built on convicted samples cannot tell you about people who offend and are never caught, which for most offense types is the majority of them.</div>
+        <div class="teach"><strong>Three. The correlation gap.</strong> Which of the relationships you have described are established as causal and which are associations that have been repeated so often they feel causal? Naming even one of these correctly will put your review ahead of most.</div>
+        <div class="teach"><strong>Four. The mechanism gap.</strong> Sometimes we know an intervention works and not why. Chapter 13 gave you the clean example, where restorative programs reduce reoffending while the remorse mechanism they claim to work through does not show up in measurements. If your literature has one of these, it is worth a paragraph.</div>
+        <div class="teach"><strong>Five. The context gap.</strong> Where was the research done, and would it hold elsewhere? A finding established in three large cities is not yet a finding about rural counties, and the theory usually does not tell you which way it should go.</div>
+        <div class="teach"><strong>Six. The time gap.</strong> How old is the core evidence, and what has changed since? For anything touching technology, drug markets, or policing practice, a literature centered on studies from twenty years ago is describing a different world.</div>
+
+        <div class="note"><strong>Say it in the register of a scholar, not a critic.</strong> A gaps section is not a complaint about researchers. Every one of these gaps exists because of a real constraint: money, access, ethics, or the calendar. Naming the constraint alongside the gap is what makes the paragraph sound like it was written by somebody who understands how research gets made.</div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-check">
+      <div class="card">
+        <h2>Before you submit</h2>
+        <p class="lede">Work down this list with your draft open. Click each one when it is true of your draft rather than when you intend it to be. Nothing here is recorded.</p>
+        <div class="checklist" id="ck"></div>
+        <div class="ckcount" id="ckCount">0 of 14 checked</div>
+        <div class="veiled" id="ckDone">
+          <div class="teach"><strong>That is the whole list.</strong> If every line is honestly checked, the paper is done and further rereading will mostly make it worse rather than better. Submit it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-map">
+      <div class="card">
+        <h2>Fourteen chapters, one page</h2>
+        <p class="lede">The final is cumulative with emphasis on the last two chapters. This is every unit of the course reduced to the thing you would need to reconstruct it. Read a row, look away, and say the rest of it out loud. What you cannot say is tonight's work.</p>
+        <div id="map"></div>
+        <div class="teach"><strong>The fastest way to sort a scenario question.</strong> Ask what kind of claim you are being handed. A claim about how much crime there is belongs to Chapters 2 through 5. A claim about why someone offends belongs to Chapters 6 through 10. A claim about what happens after they are caught belongs to Chapters 11 through 13. A claim about a place belongs to Chapter 14. That one question eliminates most of the answer options before you have thought about the content at all.</div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-quiz">
+      <div class="card">
+        <h2>Cumulative self-check</h2>
+        <p class="lede">Twenty questions in the format of the exam, drawn from across the whole course and weighted toward the last two chapters. Each is tagged with its chapter so that a wrong answer tells you exactly what to reread. Nothing here is recorded, and the wording is not taken from the exam itself.</p>
+        <div class="scorebar" id="qScore">0 answered</div>
+        <div id="quiz"></div>
+        <div class="veiled" id="quizDone">
+          <div class="teach"><strong>Look at which chapters your misses cluster in.</strong> Two wrong in the same chapter is a reading problem and you should go back to the chapter. Two wrong scattered across six chapters is usually a vocabulary problem instead, and the cheat sheet slides will fix it faster than rereading will.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-plan">
+      <div class="card">
+        <h2>How to study for a cumulative final</h2>
+        <p class="lede">Fourteen chapters is too much to reread and you do not have to. A cumulative exam with an emphasis section is testing whether the course cohered, which is a different thing from whether you remember all of it.</p>
+
+        <div class="teach"><strong>Start with the emphasis, not the beginning.</strong> Chapters 13 and 14 carry the extra weight and they are the freshest, which means they are the cheapest points available. Do those first while they are still cheap, then spend what is left on the rest.</div>
+        <div class="teach"><strong>Use the cheat sheet slides as the spine.</strong> Every theory unit ended with a table. Those tables are the course compressed by the person writing the exam, which makes them the highest-value pages you have. Read across a row and say the missing cells out loud before you look.</div>
+        <div class="teach"><strong>Study the conflicts, not the definitions.</strong> Definitions are worth a point each. The places where two theories predict opposite things are worth far more, because that is what a scenario question is built out of. Selection against socialization. Certainty against severity. Retribution capping a sentence against incapacitation extending it. Explaining a pattern against blaming the person in it.</div>
+        <div class="teach"><strong>Practice retrieving, not rereading.</strong> Rereading a chapter feels productive and mostly is not. Close the book and write down everything you can about one theory, then open it and find what you missed. The gap between those two lists is your actual study list, and nothing else on the page will find it for you.</div>
+        <div class="teach"><strong>Learn the numbers that carry an argument.</strong> You do not need every statistic in the course. You need the handful where the number is the point: how much crime the top few percent of street segments carry, what happened to callbacks when a record was added, what share of the corrections budget goes to programs, what a randomized trial did to gun violence by mowing a lot. Those are the ones a short answer question can be built around.</div>
+
+        <div class="note"><strong>And one thing worth saying at the end of a semester.</strong> If you can read a crime statistic and ask which instrument produced it and what that instrument cannot see, you have the thing this course was actually for. That skill does not expire when the exam window closes, and it will be useful to you in arguments that have nothing to do with crime.</div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Nothing on this page is recorded and nobody sees your answers but you. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  // ---------- TAB 3: checklist ----------
+  const CK = [
+    'It reads as <strong>one paper</strong>. No section begins by reintroducing a study or a term the reader already met.',
+    'The opening paragraph poses a <strong>puzzle</strong> rather than a definition.',
+    'The shape of the offense, meaning how much and to whom and measured how, comes <strong>before</strong> any theory.',
+    'The theory section is organized by <strong>argument</strong>, not one paragraph per theory.',
+    'At least one place where two theories genuinely <strong>conflict</strong> is named, and the evidence for each side is given.',
+    'Every empirical claim has a <strong>source</strong>, and every source in the text is in the works cited.',
+    'Feedback from all four earlier parts has been <strong>acted on</strong>, not just read.',
+    'The gaps section names <strong>specific</strong> gaps and never says only that more research is needed.',
+    'Nothing is stated as caused when the study behind it established an <strong>association</strong>.',
+    'Claims about a group are stated as claims about <strong>rates</strong>, with the mechanism named.',
+    'Any intervention discussed is reported with what the <strong>evaluation</strong> actually found, including when it found nothing.',
+    'The length is in range and the formatting matches what the assignment asked for.',
+    'It has been read <strong>out loud</strong> at least once, which catches the seams nothing else catches.',
+    'The file is the right format, named sensibly, and uploaded before you close the tab.',
+  ];
+  (function buildCk(){
+    const el = $('ck');
+    let n = 0;
+    CK.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'cki';
+      d.innerHTML = '<div class="ckbox">&#10003;</div><div class="ckt">' + t + '</div>';
+      d.addEventListener('click', () => {
+        d.classList.toggle('on');
+        n = document.querySelectorAll('.cki.on').length;
+        $('ckCount').textContent = n + ' of ' + CK.length + ' checked';
+        $('ckDone').style.display = n === CK.length ? 'block' : 'none';
+      });
+      el.appendChild(d);
+    });
+    $('ckCount').textContent = '0 of ' + CK.length + ' checked';
+  })();
+
+  // ---------- TAB 4: course map ----------
+  const MAP = [
+    ['Ch 1', 'What criminology is', 'Consensus against conflict views of law. Crime is defined by a process, and who runs the process matters.'],
+    ['Ch 2', 'Measuring crime', 'UCR and NIBRS against the NCVS against self-report. The dark figure. Every instrument has a structural blind spot.'],
+    ['Ch 3', 'Typologies', 'Offense categories, and why a legal category and a behavioral category are not the same thing.'],
+    ['Ch 4', 'Beyond street crime', 'White-collar and corporate harm dwarfs street crime in dollars and is counted least well.'],
+    ['Ch 5', 'Patterns', 'Age, sex, race, class, and place. The age-crime curve. Disparity is not the same as disproportionality. Crime concentrates.'],
+    ['Ch 6', 'Origins', 'Classical and positivist schools. Beccaria and deterrence. Certainty deters and severity mostly does not.'],
+    ['Ch 7', 'Contemporary schools', 'Routine activity theory. Offender, target, guardian. Break any leg and the event does not happen.'],
+    ['Ch 8', 'Control', 'Social bond and self-control. The question inverted: not why people offend but why most people do not.'],
+    ['Ch 9', 'Learning', 'Differential association and social learning. Neutralization techniques. Selection against socialization.'],
+    ['Ch 10', 'Strain', 'Merton and the five adaptations. Agnew and the three strain types. Which strains actually predict crime.'],
+    ['Ch 11', 'Labeling', 'Primary and secondary deviance. Stigma and master status. The audit study of the criminal record.'],
+    ['Ch 12', 'Victimology', 'The NCVS from the victim side. The fear paradoxes. The victim-offender overlap, stated as rates.'],
+    ['Ch 13', 'Punishment', 'Retribution, deterrence, incapacitation, rehabilitation, restoration. Only one makes no empirical claim.'],
+    ['Ch 14', 'Prevention', 'Crime concentrates at addresses. Disorder repaired beats disorder policed. Displacement is partial.'],
+  ];
+  (function buildMap(){
+    const el = $('map');
+    MAP.forEach(([ch, h, b]) => {
+      const d = document.createElement('div');
+      d.className = 'maprow';
+      d.innerHTML = '<div class="mapch">' + ch + '</div><div class="mapbody"><strong>' + h + '</strong> ' + b + '</div>';
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 5: quiz ----------
+  const QUIZ = [
+    { c: 'Ch 14', q: 'Research on the law of crime concentration finds that roughly what share of a city’s street segments produce half of its crime?', o: ['About a quarter', 'Between two and six percent', 'About forty percent', 'It varies so widely that no pattern holds'], a: 1,
+      v: 'Between about 2 and 6 percent across the cities studied, and the same segments stay hot for years while citywide crime rises and falls.' },
+    { c: 'Ch 14', q: 'A 2024 systematic review of disorder policing found that:', o: ['Both community problem-solving and aggressive order maintenance reduced crime', 'Only aggressive order maintenance reduced crime', 'Only community and problem-solving approaches reduced crime', 'Neither reduced crime'], a: 2,
+      v: 'Community and problem-solving approaches produced about a 33 percent reduction. Aggressive order maintenance was not statistically significant. The theory survives, the enforcement style does not.' },
+    { c: 'Ch 14', q: 'The Philadelphia vacant lot study is treated as unusually strong evidence because:', o: ['It had a very large sample of people', 'It was conducted over twenty years', 'Lots were randomly assigned to treatment conditions', 'It used official police data rather than surveys'], a: 2,
+      v: 'Random assignment, at the level of clusters of lots. That is what lets you attribute the difference to the intervention rather than to what was already different about the places.' },
+    { c: 'Ch 14', q: 'Diffusion of benefits means that:', o: ['Crime moves to a nearby area after an intervention', 'Crime falls in areas surrounding the treated area too', 'The intervention gets adopted by other cities', 'Benefits are spread evenly across social classes'], a: 1,
+      v: 'Crime falls nearby as well, because offenders cannot see exactly where the intervention stops. It occurs about as often as displacement does.' },
+    { c: 'Ch 14', q: 'A crime generator differs from a crime attractor in that:', o: ['A generator draws offenders seeking opportunities', 'A generator gathers people for ordinary reasons and crime comes with the traffic', 'A generator is always a residential area', 'There is no meaningful difference'], a: 1,
+      v: 'Generators gather crowds for ordinary reasons. Attractors are sought out for their opportunities. The distinction matters because the fix is different.' },
+    { c: 'Ch 13', q: 'Which theory of punishment makes no promise about reducing crime?', o: ['Deterrence', 'Incapacitation', 'Retribution', 'Rehabilitation'], a: 2,
+      v: 'Retribution. It is a claim about what is deserved, so no recidivism statistic can refute it. The other four all promise a result and can be tested.' },
+    { c: 'Ch 13', q: 'The strongest and most consistent finding in the deterrence literature is that:', o: ['Longer sentences reduce offending substantially', 'Certainty of punishment matters more than severity', 'Capital punishment deters homicide', 'Deterrence works only on first-time offenders'], a: 1,
+      v: 'Certainty over severity, established since Beccaria and repeatedly confirmed. Most American punishment policy has raised severity instead.' },
+    { c: 'Ch 13', q: 'Martinson’s 1974 nothing works conclusion is best described as:', o: ['A finding that has been repeatedly confirmed since', 'A conclusion he publicly withdrew five years later', 'A study of prison conditions rather than programs', 'A meta-analysis of randomized trials'], a: 1,
+      v: 'He withdrew it in 1979 on the basis of a larger review, in print. The retraction never caught up with the slogan.' },
+    { c: 'Ch 13', q: 'The structural problem with selective incapacitation is that:', o: ['It is unconstitutional in most states', 'Prediction happens at sentencing while the risk it predicts decays with age', 'It costs less than other approaches', 'It applies only to violent offenses'], a: 1,
+      v: 'The sentence runs for decades while offending declines with age regardless, so the most expensive years confine a risk that has already faded.' },
+    { c: 'Ch 12', q: 'The victim-offender overlap is a claim about:', o: ['The character of people who are victimized', 'Rates in populations, driven by shared exposure and routines', 'Whether victims provoke their own victimization', 'Police classification errors'], a: 1,
+      v: 'Rates in populations. It licenses no inference about any particular person, and the mechanism is exposure and routine rather than desert.' },
+    { c: 'Ch 12', q: 'Between 1993 and 2024, violent victimization measured by the NCVS:', o: ['Rose sharply', 'Stayed roughly flat', 'Fell by about seventy percent', 'Cannot be compared across those years'], a: 2,
+      v: 'It fell by roughly 71 percent, from 79.8 to 23.3 per 1,000. Fear over the same period barely moved, which is the chapter’s central puzzle.' },
+    { c: 'Ch 11', q: 'The audit study of the criminal record found that a record reduced callbacks:', o: ['Only for applicants with violent convictions', 'By roughly half, and by more for Black applicants', 'Only in professional occupations', 'By a small and statistically insignificant amount'], a: 1,
+      v: 'Callbacks fell by about half overall, and the penalty was roughly 40 percent larger for the Black testers. It is the study that made labeling theory testable.' },
+    { c: 'Ch 11', q: 'Secondary deviance refers to:', o: ['A second offense of the same type', 'Offending that follows from the social reaction to being labeled', 'Deviance that is less serious than the original act', 'Deviance committed in groups'], a: 1,
+      v: 'Offending that follows from the reaction rather than from whatever caused the original act. The label becomes part of the cause.' },
+    { c: 'Ch 10', q: 'Agnew’s work on strain found that the strain type most associated with the classic Mertonian story:', o: ['Was the strongest predictor of offending', 'Was unrelated or only weakly related to offending', 'Applied only to juveniles', 'Could not be measured'], a: 1,
+      v: 'Failure to achieve educational or occupational success came out unrelated or weakly related. Parental rejection, harsh discipline, abuse, and discrimination did far more work.' },
+    { c: 'Ch 9', q: 'Techniques of neutralization are best described as:', o: ['Excuses invented after the fact by defense attorneys', 'Justifications that let a person break a rule they still believe in', 'Ways of avoiding detection', 'Methods for teaching criminal skills'], a: 1,
+      v: 'They allow a person who accepts the rule to set it aside for this act. Denial of responsibility, denial of injury, denial of the victim, condemning the condemners, appeal to higher loyalties.' },
+    { c: 'Ch 8', q: 'Control theories are distinguished by asking:', o: ['Why some people offend', 'Why most people do not offend', 'How offending is learned', 'How society reacts to offending'], a: 1,
+      v: 'They invert the question. Motivation is assumed to be common, so what needs explaining is restraint.' },
+    { c: 'Ch 7', q: 'Routine activity theory says a crime event requires:', o: ['A motivated offender, a suitable target, and the absence of a capable guardian', 'Poverty, opportunity, and weak social bonds', 'A learned technique and a favorable definition', 'A label and a reaction'], a: 0,
+      v: 'All three legs at once, converging in space and time. Remove any one and the event does not happen, which is what makes it a prevention theory.' },
+    { c: 'Ch 5', q: 'The age-crime curve describes:', o: ['A steady rise in offending across the life course', 'A sharp rise in adolescence and steep decline through the twenties', 'Higher offending among the elderly than the young', 'A pattern found only in the United States'], a: 1,
+      v: 'It peaks in the late teens and falls steeply after, and it is among the most stable findings in criminology across time and place.' },
+    { c: 'Ch 2', q: 'The dark figure of crime refers to:', o: ['Crime committed at night', 'Offenses that never appear in official records', 'Organized crime', 'The error rate in victimization surveys'], a: 1,
+      v: 'Everything that happens and never reaches official data. It is why a change in police-recorded crime can reflect reporting rather than behavior.' },
+    { c: 'Ch 1', q: 'The conflict view of law differs from the consensus view mainly in holding that:', o: ['Laws reflect broad agreement about harm', 'Laws primarily protect the interests of powerful groups', 'Laws are enforced uniformly across groups', 'Laws are unnecessary in modern societies'], a: 1,
+      v: 'Conflict views treat law as reflecting the interests of those with the power to define crime. The question returns in every chapter, including the ethics of place-based prevention.' },
+  ];
+  (function buildQuiz(){
+    const el = $('quiz');
+    let answered = 0, right = 0;
+    QUIZ.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let opts = '';
+      item.o.forEach((o, j) => { opts += '<button class="qopt" data-i="' + i + '" data-j="' + j + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim"><span class="qtag">' + item.c + '</span> ' + (i+1) + '. ' + item.q + '</div><div class="pickrow">' + opts + '</div><div class="scv" id="qv' + i + '"></div>';
+      el.appendChild(d);
+    });
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-j]');
+      if (!b || b.disabled) return;
+      const i = Number(b.dataset.i), j = Number(b.dataset.j), item = QUIZ[i];
+      el.querySelectorAll('[data-i="' + i + '"]').forEach(x => {
+        x.disabled = true;
+        if (Number(x.dataset.j) === j) x.classList.add('chosen');
+        if (Number(x.dataset.j) === item.a) x.classList.add('answer');
+      });
+      const ok = j === item.a;
+      answered++; if (ok) right++;
+      const box = $('qv' + i);
+      box.innerHTML = '<div class="grade ' + (ok ? 'right' : 'mixed') + '">' + (ok ? 'correct' : 'review ' + item.c) + '</div>' + item.v;
+      box.style.display = 'block';
+      $('qScore').innerHTML = right + ' correct of ' + answered + ' answered';
+      if (answered === QUIZ.length) $('quizDone').style.display = 'block';
+    });
+  })();
+
+  window.__S = { activate, QUIZ, MAP, CK };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorting Crime · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 195px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 8ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .caseblk { border-top: 1px solid var(--border); padding: 14px 0; }
+  .caseblk:first-of-type { border-top: none; padding-top: 2px; }
+  .casetext { font-size: 15px; line-height: 1.55; }
+  .casev { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 8px; }
+  .casev strong { color: var(--text-primary); }
+
+  .ladder { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 4px; }
+  .rung { display: flex; align-items: baseline; gap: 12px; padding: 9px 13px; border-radius: 9px; background: var(--wash); }
+  .rung .rn { font-size: 13.5px; font-weight: 800; min-width: 190px; color: var(--text-primary); }
+  .rung .rd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Sorting Crime <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>A typology is a filing system, and filing systems have consequences.</strong> Chapter 3 sorts crime into families: violent, property, and public order. This page puts you inside the sorting. You will find out what American crime is actually made of, decide what a killing should be charged as, settle the most common vocabulary mistake in the field, and watch one offense category spike and collapse for a reason that has nothing to do with offenders. Guess before each reveal. Nothing is recorded, so write your numbers down for the forum.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-shape" type="button">What crime is made of</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-ladder" type="button">One death, six charges</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-rob" type="button">Robbery or burglary?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-kia" type="button">The Kia case</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-order" type="button">Who decides?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-shape">
+      <div class="card">
+        <h2>What American crime is actually made of</h2>
+        <p class="lede">Say the word crime and most people picture violence. The filing system says otherwise. Here are the two big families, counted by police agencies in a recent year. Start with the split.</p>
+        <div class="guessbox">
+          <p class="gq">Out of every 100 offenses known to police in these two families, how many are violent crimes rather than property crimes?</p>
+          <div class="gr">
+            <input type="range" id="mixSlider" min="0" max="100" step="1" value="50">
+            <span class="gval" id="mixVal">50</span>
+            <button class="gbtn" id="mixLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="mixVerdict"></p>
+        </div>
+        <div class="veiled" id="mixReveal">
+          <div class="statrow">
+            <div class="stat"><div class="v">6,241,060</div><div class="l">Property crime offenses known to police</div></div>
+            <div class="stat warn"><div class="v">1,261,210</div><div class="l">Violent crime offenses known to police</div></div>
+            <div class="stat ok"><div class="v">17</div><div class="l">Violent offenses per 100 in these two families</div></div>
+          </div>
+          <p class="teach"><strong>Property crime outnumbers violent crime by roughly five to one.</strong> About 17 of every 100 offenses in these two families are violent. That ratio is close to the reverse of what the news, politics, and your own sense of the word crime suggest. Hold that mismatch. Chapter 5 takes it apart, and it is the same perception gap you measured in Week 1 wearing a different outfit.</p>
+          <h3>Inside violent crime, one category dominates</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Aggravated assault</span><div class="btrack"><div class="bfill" style="width:0%" data-w="100%"></div></div><span class="bval">896,820</span></div>
+            <div class="brow"><span class="blabel">Robbery</span><div class="btrack"><div class="bfill" style="width:0%" data-w="23.7%"></div></div><span class="bval">212,670</span></div>
+            <div class="brow"><span class="blabel">Rape</span><div class="btrack"><div class="bfill" style="width:0%" data-w="15.0%"></div></div><span class="bval">134,300</span></div>
+            <div class="brow"><span class="blabel">Homicide</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="1.9%"></div></div><span class="bval">17,420</span></div>
+          </div>
+          <p class="teach"><strong>Homicide is about 1 in 72 violent offenses, and roughly 1 in 430 offenses across both families.</strong> It is the crime that organizes news coverage, fiction, and public fear, and it is statistically the rarest thing on this page. Aggravated assault outnumbers it about 51 to 1. This is not an argument that homicide does not matter. It is a warning that the crime you think about most is the crime you will understand worst, because your mental sample is drawn from stories rather than from counts.</p>
+        </div>
+        <p class="srcnote">Source: Bureau of Justice Statistics, Crime Known to Law Enforcement, 2024 (offenses reported by law enforcement agencies). Violent crime here is homicide, rape, robbery, and aggravated assault. Property crime is burglary, larceny-theft, and motor vehicle theft. The 17-per-100 figure and the ratios in the second paragraph are arithmetic from those published counts. Remember Chapter 2: these are offenses known to police, so the dark figure sits underneath every bar.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-ladder">
+      <div class="card">
+        <h2>One death, six possible charges</h2>
+        <p class="lede">Homicide means a human being killed another human being. That is all it means. Everything after that is sorting, and the variable doing the sorting is <strong>intent</strong>. Here is the ladder, from most culpable to least.</p>
+        <div class="ladder">
+          <div class="rung"><span class="rn">First-degree murder</span><span class="rd">Intentional and premeditated. The killing was planned, however briefly.</span></div>
+          <div class="rung"><span class="rn">Second-degree murder</span><span class="rd">Intentional but not premeditated. The intent formed in the moment.</span></div>
+          <div class="rung"><span class="rn">Felony murder</span><span class="rd">A death during the commission of another felony. Intent to kill is not required.</span></div>
+          <div class="rung"><span class="rn">Voluntary manslaughter</span><span class="rd">Intentional, but in the heat of passion after adequate provocation.</span></div>
+          <div class="rung"><span class="rn">Involuntary manslaughter</span><span class="rd">Unintentional, caused by recklessness or criminal negligence.</span></div>
+          <div class="rung"><span class="rn">Justifiable homicide</span><span class="rd">Legally sanctioned. Not a crime at all, and excluded from crime counts.</span></div>
+        </div>
+        <p class="lede" style="margin-top:12px">Five deaths follow. Pick the rung you think fits, then reveal. These are teaching cases rather than real prosecutions, and the fine print matters: statutes differ by state, and in practice a prosecutor charges and a jury decides.</p>
+        <div id="cases"></div>
+        <div class="veiled" id="ladderWrap">
+          <p class="teach"><strong>Notice what did the work.</strong> In every case the physical act was similar, a person died at another person's hands, and the legal category moved anyway. What moved it was a mental state you cannot observe directly and have to infer from circumstances: planning, provocation, recklessness, the presence of another felony. That is why homicide law is really a typology of minds rather than a typology of acts.</p>
+          <p class="teach"><strong>And notice the felony murder rung.</strong> It is the one rule on this ladder that convicts people of murder without any intent to kill, and in many states it reaches accomplices who were never in the room. Supporters argue it deters people from committing dangerous felonies at all. Critics argue it punishes an outcome rather than a choice, and several states have narrowed it in recent years. You do not have to resolve that. You do have to notice that a category, not a fact, is doing the deciding.</p>
+        </div>
+        <p class="srcnote">Categories follow the standard homicide typology used in criminology textbooks, including Zito, Engaged Criminology, Chapter 3. Definitions vary by jurisdiction, and these vignettes are written to illustrate the categories rather than to predict how any particular state would charge them.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-rob">
+      <div class="card">
+        <h2>Robbery or burglary? The most common mistake in the field</h2>
+        <p class="lede">Almost everyone uses these two words interchangeably. They are not close. <strong>Robbery takes property from a person by force or threat of force, so a victim is present and it is a violent crime.</strong> <strong>Burglary is the unlawful entry of a structure with the intent to commit a crime inside, so it is a property crime and nobody has to be home.</strong> Six situations. Sort each one.</p>
+        <div id="robcases"></div>
+        <div class="veiled" id="robWrap">
+          <p class="teach"><strong>The rule underneath all six.</strong> Ask one question first: was a person confronted with force or the threat of it? If yes, you are in robbery, and it is filed with violent crime no matter what got taken. If no, and someone entered a structure unlawfully, you are in burglary, and it is filed with property crime no matter how frightening it was. If neither, you are usually in larceny-theft, the largest crime category in the country and the one nobody talks about.</p>
+          <p class="teach"><strong>Why a vocabulary drill is not a vocabulary drill.</strong> These words decide which national number an event lands in. Two nearly identical nights, one where the residents were away and one where they were home and confronted, split into two different families of crime and two different public conversations. When you read that violent crime rose in a city, some of that movement is a change in what happened, and some of it is a change in which box events fell into.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-kia">
+      <div class="card">
+        <h2>The Kia case: when one category breaks the pattern</h2>
+        <p class="lede">Between 2019 and 2023, while most crime was flat or falling, the national rate of motor vehicle theft incidents rose from 199.4 per 100,000 people to 283.5, an increase of 42.1 percent. Then it collapsed. This tab is about why, and the answer is not that a new kind of person appeared.</p>
+        <div class="guessbox">
+          <p class="gq">Before the explanation: what happened to motor vehicle theft the year after that peak? Pick the published outcome.</p>
+          <div class="pickrow">
+            <button class="pick" data-kia="up" type="button">Kept rising</button>
+            <button class="pick" data-kia="flat" type="button">Roughly flat</button>
+            <button class="pick" data-kia="down" type="button">Fell by around a fifth</button>
+            <button class="pick" data-kia="half" type="button">Fell by more than half</button>
+          </div>
+          <p class="verdict" id="kiaVerdict"></p>
+        </div>
+        <div class="veiled" id="kiaReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">+42.1%</div><div class="l">Rise in the motor vehicle theft rate, 2019 to 2023</div></div>
+            <div class="stat ok"><div class="v">−18.6%</div><div class="l">Estimated fall in motor vehicle theft in 2024</div></div>
+            <div class="stat ok"><div class="v">−17%</div><div class="l">Fall in vehicle thefts in 2024 per insurance industry data, the largest annual drop in 40 years</div></div>
+          </div>
+          <h3>What actually happened</h3>
+          <p class="teach"><strong>A design decision met a social network.</strong> Certain Kia models built from 2011 to 2021 and Hyundai models from 2016 to 2021 were sold in the United States without engine immobilizers, an anti-theft device standard on most other vehicles. That vulnerability sat there quietly for years. In July 2022 a video demonstrating how to start those cars with a USB connector spread on social media, and by that autumn the method had spread nationwide. Los Angeles recorded an 85 percent increase in thefts of Kia and Hyundai vehicles in 2022 compared with 2021. Chicago thefts of those makes rose more than ninefold. The National Highway Traffic Safety Administration attributes eight deaths to the trend.</p>
+          <p class="teach"><strong>Then the vulnerability was patched.</strong> Hyundai began releasing a free anti-theft software update in February 2023 and finished rolling it out to eligible vehicles that June. Motor vehicle theft fell an estimated 18.6 percent in 2024, and the insurance industry counted the largest annual drop in stolen vehicles in forty years. Thefts of the affected Hyundai and Kia models fell by roughly a third in a single year.</p>
+          <p class="note"><strong>Read this carefully before you use it.</strong> The timing lines up and the mechanism is plausible, but the software patch was not the only thing happening. Pandemic-era disruptions were unwinding, parts supply was recovering, and nearly every crime category was falling at the same time. The honest claim is that a specific, cheap change in the physical world coincided with a sharp reversal in one specific offense while other offenses fell for their own reasons. Chapter 2 taught you that coincidence in time is association, not proof of cause.</p>
+          <p class="teach"><strong>Why this belongs in a chapter about typologies.</strong> Motor vehicle theft is filed under property crime, and property crime is supposed to be boring background. For four years it was the most interesting number in American criminology, and the explanation had nothing to do with a new kind of offender, a new kind of poverty, or a new moral climate. It had to do with which cars could be started with a USB cable. Chapter 14 will call this opportunity, and this is your first serious encounter with the idea that crime can be designed out of a situation rather than argued out of a person.</p>
+        </div>
+        <p class="srcnote">Sources: FBI, Motor Vehicle Theft 2019 to 2023 special report (rate rose from 199.4 to 283.5 per 100,000, a 42.1% increase). FBI, UCR Summary of Reported Crimes in the Nation, 2024 (motor vehicle theft down an estimated 18.6%). National Insurance Crime Bureau, March 2025 release (1,020,729 vehicles stolen in 2023, 850,708 in 2024, a 17% decline described as the largest in 40 years). Vehicle model years, the July 2022 video, the February to June 2023 software rollout, the Los Angeles and Chicago figures, and the NHTSA fatality count are as reported in press coverage compiled on the Kia Challenge record. Note that the FBI and the insurance bureau count vehicle theft from different records and report different totals, which is exactly the Chapter 2 lesson.</p>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-order">
+      <div class="card">
+        <h2>Public-order crime: who decides?</h2>
+        <p class="lede">The third family is the strange one. Public-order offenses have no complaining victim, so nobody calls the police to report one. They enter the data only when officers go looking. That single fact changes what the numbers mean.</p>
+        <div class="guessbox">
+          <p class="gq">Marijuana possession alone accounted for what share of all drug arrests reported to the FBI in a recent year?</p>
+          <div class="gr">
+            <input type="range" id="mjSlider" min="0" max="60" step="1" value="20">
+            <span class="gval" id="mjVal">20%</span>
+            <button class="gbtn" id="mjLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="mjVerdict"></p>
+        </div>
+        <div class="veiled" id="mjReveal">
+          <div class="statrow">
+            <div class="stat"><div class="v">831,446</div><div class="l">Arrests for drug offenses reported to the FBI in 2024</div></div>
+            <div class="stat"><div class="v">204,036</div><div class="l">Of those, arrests for marijuana violations</div></div>
+            <div class="stat warn"><div class="v">187,792</div><div class="l">Marijuana arrests that were for possession, not sale or manufacture</div></div>
+          </div>
+          <p class="teach"><strong>More than one in five drug arrests was for possessing marijuana</strong>, in a country where most states have legalized it in some form and roughly two thirds of the public supports legalizing it, which you saw in the Week 1 tool. The same act is a licensed retail purchase in one state and an arrest in another. Nothing about the substance changes at the state line. What changes is the filing system.</p>
+          <p class="teach"><strong>Now the measurement trap, and it is the important part.</strong> Because no victim reports these offenses, an arrest count for drugs measures police activity as much as it measures behavior. If a department assigns more officers to drug enforcement, drug crime rises in the data. If it reassigns them, drug crime falls. Neither number tells you whether more people used drugs. Compare that with homicide, where the offense is nearly impossible to hide. Two rows in the same federal table, two completely different relationships to reality.</p>
+          <h3>A century of manufactured and unmanufactured crime</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1875</span><div class="btrack"><div class="bfill" style="width:0%" data-w="12%"></div></div><span class="bval">Opium</span></div>
+            <div class="brow"><span class="blabel">1914</span><div class="btrack"><div class="bfill" style="width:0%" data-w="30%"></div></div><span class="bval">Narcotics</span></div>
+            <div class="brow"><span class="blabel">1920</span><div class="btrack"><div class="bfill" style="width:0%" data-w="42%"></div></div><span class="bval">Alcohol</span></div>
+            <div class="brow"><span class="blabel">1937</span><div class="btrack"><div class="bfill" style="width:0%" data-w="55%"></div></div><span class="bval">Marijuana</span></div>
+            <div class="brow"><span class="blabel">1970</span><div class="btrack"><div class="bfill" style="width:0%" data-w="72%"></div></div><span class="bval">Scheduling</span></div>
+            <div class="brow"><span class="blabel">Today</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="90%"></div></div><span class="bval">Legalizing</span></div>
+          </div>
+          <p class="teach"><strong>The San Francisco opium ordinance of 1875, the Harrison Narcotics Act of 1914, national alcohol prohibition in 1920, the Marihuana Tax Act of 1937, and the Controlled Substances Act of 1970 each created crime by statute.</strong> Alcohol prohibition was then repealed, and marijuana is being unmade as a crime state by state right now. Chapter 3 has a name for the people who drive these campaigns in either direction: <strong>moral entrepreneurs</strong>. Take the Chapter 1 question with you. Does this history look more like a society converging on shared values, which is the consensus view, or like particular groups writing their interests into law, which is the conflict view? The strongest answer names specific evidence for one and admits what the other explains better.</p>
+        </div>
+        <p class="srcnote">Sources: FBI arrest data for 2024 as reported by NORML, October 2025 (831,446 drug arrests, 204,036 marijuana arrests, of which 187,792 were possession, more than 22 percent of all drug arrests). Bar lengths in the timeline are decorative and mark position in time, not magnitude. Statute dates are standard legislative history. Caution: arrest totals depend on which agencies report to the FBI in a given year, so treat them as a floor and compare across years carefully.</p>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum 3: your post</h2>
+        <p class="lede">Write roughly 250 to 300 words for your initial post, then reply to two classmates. Check that week’s module in the LMS for the posting and reply deadlines.</p>
+        <ol class="qs" style="margin-top:12px">
+          <li>Pick any three offenses. Do not use my examples, and consider using the offense you are circling for your term paper as one of them.</li>
+          <li>Classify each one three ways: by severity (felony, misdemeanor, or infraction), by victim type (against persons, property, public order, or the state), and by purpose (instrumental, meaning crime as a means to an end, or expressive, meaning crime as an end in itself).</li>
+          <li>Defend your trickiest call. One of your nine judgments should have been genuinely hard. Name it, explain both readings, and say which you chose and why. "Both" is an acceptable answer only if you explain what the ambiguity reveals about the typology.</li>
+          <li>Close with the payoff question: what does your hardest case show about the limits of sorting crime into boxes? Point at something concrete from this week rather than saying categories are complicated.</li>
+        </ol>
+        <p class="teach"><strong>For your replies:</strong> take a run at a classmate's hardest call and argue the other side, using the definitions rather than intuition. If someone classified an offense as instrumental and you think it is expressive, say what evidence would settle it. Disagreement handled with definitions is exactly what this week is teaching.</p>
+        <p class="teach"><strong>While you are here.</strong> This chapter is also the menu for your term paper. The offense type you choose should be narrow enough to research and broad enough to sustain five separate papers, and it should have a real research literature behind it. If you are stuck between two, that is a good thing to bring to your office hours meeting.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for SOC 3333 Criminology, Midwestern State University. All figures are from the published sources cited on each tab, retrieved August 2026. Your guesses and clicks stay on this page and are never recorded or transmitted.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  function animateBars(c){
+    c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); });
+  }
+
+  function setupGuess(cfg){
+    const slider = $(cfg.slider), val = $(cfg.val), lock = $(cfg.lock);
+    const unit = cfg.unit === undefined ? '%' : cfg.unit;
+    slider.addEventListener('input', () => { val.textContent = slider.value + unit; });
+    function doLock(){
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = cfg.answer, d = g - a;
+      let t = 'You guessed ' + g + unit + '. The published figure is ' + a + unit + '. ';
+      if (Math.abs(d) <= cfg.close) t += 'You were within ' + cfg.close + ' points. Close.';
+      else if (d > 0) t += 'You were ' + Math.abs(d) + ' points high.';
+      else t += 'You were ' + Math.abs(d) + ' points low.';
+      $(cfg.verdict).textContent = t;
+      $(cfg.reveal).style.display = 'block';
+      animateBars($(cfg.reveal));
+    }
+    lock.addEventListener('click', doLock);
+    return doLock;
+  }
+  const lockMix = setupGuess({ slider:'mixSlider', val:'mixVal', lock:'mixLock', verdict:'mixVerdict', reveal:'mixReveal', answer:17, close:5, unit:'' });
+  const lockMj = setupGuess({ slider:'mjSlider', val:'mjVal', lock:'mjLock', verdict:'mjVerdict', reveal:'mjReveal', answer:22, close:5 });
+
+  // ---------- homicide ladder ----------
+  const RUNGS = {
+    m1: 'First-degree murder', m2: 'Second-degree murder', fm: 'Felony murder',
+    vm: 'Voluntary manslaughter', im: 'Involuntary manslaughter', jh: 'Justifiable homicide'
+  };
+  const CASES = [
+    { t: 'A woman spends three weeks researching poisons, buys one online under a false name, and puts it in her husband’s coffee.',
+      a: 'm1',
+      v: '<strong>First-degree murder.</strong> Intent plus premeditation, and the premeditation is documented in three weeks of preparation. Note that the law does not require weeks. In many states a few seconds of deliberate reflection satisfies premeditation, which is one reason the line between first and second degree is argued so often at trial.' },
+    { t: 'Two men who have never met argue in a parking lot. One pulls a gun he was already carrying and shoots the other, who dies.',
+      a: 'm2',
+      v: '<strong>Second-degree murder.</strong> He meant to shoot, so the intent is there, but it formed during the argument rather than beforehand. Carrying the gun is not the same as planning the killing. Prosecutors sometimes argue that a defendant’s decision to arm himself shows premeditation, and defense attorneys argue it shows only habit, which is exactly where this rung is contested.' },
+    { t: 'Three people rob a convenience store. During the robbery a clerk has a heart attack and dies. Nobody touched him, and the driver never left the car.',
+      a: 'fm',
+      v: '<strong>Felony murder.</strong> A death occurred during the commission of a felony, so under felony murder rules the participants can be charged with murder even though nobody intended or expected a death, and in many states that includes the driver who stayed outside. This is the rung that most surprises students, and the one several states have narrowed in recent years precisely because it detaches the charge from intent.' },
+    { t: 'A man comes home, finds his spouse in bed with someone else, and in the next moment beats that person to death.',
+      a: 'vm',
+      v: '<strong>Voluntary manslaughter.</strong> The killing is intentional, so it is not manslaughter because he did not mean it. It is reduced because the law has historically recognized adequate provocation and heat of passion as reducing culpability. This is the most criticized rung on the ladder. Critics point out that the classic textbook example excuses a specific and gendered kind of rage, and a number of jurisdictions have narrowed what counts as adequate provocation.' },
+    { t: 'A driver runs a red light while texting and kills a pedestrian in the crosswalk.',
+      a: 'im',
+      v: '<strong>Involuntary manslaughter.</strong> There is no intent to kill at all. What supplies the criminal liability is recklessness or criminal negligence: he chose to do something dangerous and a person died because of it. Notice how far this is from the first case, and that a person is just as dead. That distance is the entire argument for having a ladder instead of one crime called killing.' },
+  ];
+  const casesEl = $('cases');
+  let caseDone = 0;
+  CASES.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'caseblk';
+    d.innerHTML = '<p class="casetext">' + c.t + '</p>' +
+      '<div class="pickrow">' + Object.keys(RUNGS).map(k =>
+        '<button class="pick" data-c="'+i+'" data-k="'+k+'" type="button">' + RUNGS[k] + '</button>').join('') + '</div>' +
+      '<div class="casev" id="cv'+i+'"></div>';
+    casesEl.appendChild(d);
+  });
+  function answerCase(i, k){
+    const btns = casesEl.querySelectorAll('[data-c="'+i+'"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.k === k) b.classList.add('chosen');
+      if (b.dataset.k === CASES[i].a) b.classList.add('answer');
+    });
+    const el = $('cv'+i);
+    el.innerHTML = (k === CASES[i].a ? '<p class="verdict">Right.</p>' : '<p class="verdict">The standard answer is ' + RUNGS[CASES[i].a].toLowerCase() + '.</p>') + '<p>' + CASES[i].v + '</p>';
+    el.style.display = 'block';
+    caseDone++;
+    if (caseDone === CASES.length) $('ladderWrap').style.display = 'block';
+  }
+  casesEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]');
+    if (b) answerCase(Number(b.dataset.c), b.dataset.k);
+  });
+
+  // ---------- robbery vs burglary ----------
+  const RB = { rob: 'Robbery', burg: 'Burglary', theft: 'Larceny-theft' };
+  const RBCASES = [
+    { t: 'A man pries open a back window at 2 a.m. and takes a laptop while the residents sleep upstairs.',
+      a: 'burg',
+      v: '<strong>Burglary.</strong> Unlawful entry of a structure with intent to commit a crime inside. The residents being home does not change it, because they were never confronted. Frightening in hindsight, and still a property crime in the data.' },
+    { t: 'A woman walks up to a stranger on a sidewalk, shows a knife, and demands his phone. He hands it over.',
+      a: 'rob',
+      v: '<strong>Robbery.</strong> Property taken from a person by threat of force. No entry, no structure, and it files under violent crime. Notice that the knife never touched him. The threat is sufficient.' },
+    { t: 'Someone smashes a car window in a parking garage and takes a bag off the back seat.',
+      a: 'theft',
+      v: '<strong>Larceny-theft.</strong> This one trips almost everyone. A vehicle is not a structure for burglary purposes in the federal counting rules, and no person was confronted, so it is neither burglary nor robbery. It is theft from a motor vehicle, filed with the largest and least discussed crime category in the country.' },
+    { t: 'A shoplifter is stopped at the exit by a store employee, shoves him hard into a display, and runs out with the merchandise.',
+      a: 'rob',
+      v: '<strong>Robbery.</strong> It began as a theft and became a robbery the moment force was used to keep the property. In most jurisdictions force used during the escape converts the offense. One shove moved this event from property crime to violent crime in the national statistics.' },
+    { t: 'Two people force open an apartment door, tie up the family inside at gunpoint, and take jewelry and cash.',
+      a: 'rob',
+      v: '<strong>Robbery.</strong> Both offenses occurred, and under the counting hierarchy you met in Chapter 2 robbery outranks burglary, so the summary system scored robbery and dropped the burglary. Incident-based reporting records both. Everyday language calls this a home invasion, which is a useful description and not a counting category.' },
+    { t: 'A delivery driver takes a package off a porch and drives away. Nobody is home and nobody sees him.',
+      a: 'theft',
+      v: '<strong>Larceny-theft.</strong> No entry into a structure, no person confronted. Package theft is ordinary larceny, which is worth knowing because it is enormously common, poorly reported, and almost never part of the crime conversation.' },
+  ];
+  const robEl = $('robcases');
+  let robDone = 0;
+  RBCASES.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'caseblk';
+    d.innerHTML = '<p class="casetext">' + c.t + '</p>' +
+      '<div class="pickrow">' + Object.keys(RB).map(k =>
+        '<button class="pick" data-r="'+i+'" data-k="'+k+'" type="button">' + RB[k] + '</button>').join('') + '</div>' +
+      '<div class="casev" id="rv'+i+'"></div>';
+    robEl.appendChild(d);
+  });
+  function answerRob(i, k){
+    const btns = robEl.querySelectorAll('[data-r="'+i+'"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => {
+      b.disabled = true;
+      if (b.dataset.k === k) b.classList.add('chosen');
+      if (b.dataset.k === RBCASES[i].a) b.classList.add('answer');
+    });
+    const el = $('rv'+i);
+    el.innerHTML = (k === RBCASES[i].a ? '<p class="verdict">Right.</p>' : '<p class="verdict">The answer is ' + RB[RBCASES[i].a].toLowerCase() + '.</p>') + '<p>' + RBCASES[i].v + '</p>';
+    el.style.display = 'block';
+    robDone++;
+    if (robDone === RBCASES.length) $('robWrap').style.display = 'block';
+  }
+  robEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]');
+    if (b) answerRob(Number(b.dataset.r), b.dataset.k);
+  });
+
+  // ---------- kia pick ----------
+  let kiaPicked = null;
+  document.querySelectorAll('#sec-kia .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (kiaPicked) return;
+      kiaPicked = btn.dataset.kia;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-kia .pick').forEach(b => {
+        b.disabled = true;
+        if (b.dataset.kia === 'down') b.classList.add('answer');
+      });
+      $('kiaVerdict').textContent = kiaPicked === 'down'
+        ? 'Right. Motor vehicle theft fell an estimated 18.6 percent the following year.'
+        : 'It fell by around a fifth, an estimated 18.6 percent, after four years of increases.';
+      $('kiaReveal').style.display = 'block';
+      animateBars($('kiaReveal'));
+    });
+  });
+
+  window.__S = {
+    activate, lockMix, lockMj, answerCase, answerRob,
+    pickKia: (k) => { const b = document.querySelector('#sec-kia .pick[data-kia="'+k+'"]'); if (b) b.click(); },
+    state: () => ({ caseDone, robDone, kiaPicked })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

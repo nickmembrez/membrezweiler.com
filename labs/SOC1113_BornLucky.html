@@ -1,0 +1,1579 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Born Lucky</title>
+<style>
+:root{
+  --bg:#f4f4f2; --surface:#fcfcfb; --surface2:#f0efec; --ink:#1a1a19; --ink2:#5d5c58;
+  --line:#dedcd6; --accent:#266cc1; --accent2:#ae4d26; --good:#137a55; --bad:#c94f42;
+  --warn:#b58a1f; --chip:#e8e6e1;
+}
+[data-theme="dark"]{
+  --bg:#131312; --surface:#1a1a19; --surface2:#232322; --ink:#ececea; --ink2:#a3a29d;
+  --line:#33322f; --accent:#3c8ff3; --accent2:#ef622a; --good:#199e70; --bad:#d4675b;
+  --warn:#cfa233; --chip:#2a2a28;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+h1{font-size:26px;margin:0}
+.sub{color:var(--ink2);font-size:14px}
+#themeBtn{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:13px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
+.big{font-size:22px;font-weight:700;margin:0 0 6px}
+.muted{color:var(--ink2)}
+.small{font-size:13px}
+button{font:inherit}
+.btn{background:var(--accent);border:none;color:#fff;border-radius:9px;padding:10px 18px;cursor:pointer;font-size:15px;font-weight:600}
+.btn:hover{filter:brightness(1.06)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.secondary{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+input[type=text]{font:inherit;background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 12px;width:100%;max-width:340px}
+.opt{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:15px}
+.opt:hover:not(:disabled){border-color:var(--accent)}
+.opt:disabled{cursor:default;opacity:.9}
+.opt .ot{font-weight:650}
+.opt .od{display:block;color:var(--ink2);font-size:13px;margin-top:2px}
+.opt.gray{opacity:.62}
+.opt.gray .od{color:var(--bad)}
+.opt.picked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%, var(--surface2))}
+.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%, var(--surface2))}
+.meters{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.meter{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.meter .lab{font-size:12px;color:var(--ink2);display:flex;justify-content:space-between}
+.bar{height:7px;background:var(--chip);border-radius:4px;margin-top:5px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;background:var(--accent);transition:width .4s}
+.meter.m-health .bar i{background:var(--good)}
+.meter.m-people .bar i{background:var(--accent2)}
+.meter.m-steady .bar i{background:var(--warn)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chip{background:var(--chip);border-radius:20px;padding:4px 12px;font-size:13px}
+.chip b{font-weight:700}
+.vign{font-size:16px;margin:0 0 10px;white-space:pre-line}
+.view{font-size:13.5px;color:var(--ink2);font-style:italic;border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:0 0 14px}
+.view b{font-style:normal;font-weight:650;color:var(--ink2);text-transform:uppercase;font-size:11px;letter-spacing:.07em;display:block;margin-bottom:1px}
+.age{font-size:13px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px}
+.outcome{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px}
+.delta{font-size:14px;margin-top:8px}
+.delta .up{color:var(--good);font-weight:650}
+.delta .dn{color:var(--bad);font-weight:650}
+.scoreline{font-size:15px;margin-top:6px}
+.scoreline b{font-size:17px}
+.hr{border:none;border-top:1px solid var(--line);margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--ink2);font-weight:600;font-size:13px}
+td.num,th.num{text-align:right;white-space:nowrap}
+.pos{color:var(--good);font-weight:650}
+.neg{color:var(--bad);font-weight:650}
+.startbar{height:12px;background:var(--chip);border-radius:6px;overflow:hidden;margin:6px 0 2px;position:relative}
+.startbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.twoScore{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0}
+.scorebox{flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
+.scorebox .val{font-size:34px;font-weight:800}
+.scorebox .cap{font-size:13px;color:var(--ink2)}
+.qs li{margin-bottom:10px}
+footer{margin-top:24px;color:var(--ink2);font-size:12px;line-height:1.6}
+.lifetag{display:inline-block;background:var(--chip);border-radius:6px;padding:2px 10px;font-size:13px;margin-bottom:8px}
+.handline{margin:3px 0}
+.payhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px;font-size:14px}
+/* dashboard */
+.levers{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:12px 0}
+.lever .lab{font-size:13px;color:var(--ink2);margin-bottom:4px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:13px;cursor:pointer}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.tiles{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+.tile{flex:1;min-width:130px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.tile .val{font-size:26px;font-weight:800}
+.tile .val small{font-size:14px;font-weight:600;color:var(--ink2)}
+.tile .cap{font-size:12px;color:var(--ink2)}
+.tile .held{font-size:12px;color:var(--accent2);font-weight:650}
+.hist{display:flex;align-items:flex-end;gap:2px;height:150px;margin:8px 0 2px;position:relative}
+.hist .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
+.hist .b{border-radius:4px 4px 0 0;background:var(--accent);min-height:2px}
+.hist .bh{border-radius:4px 4px 0 0;background:var(--accent2);opacity:.55;min-height:0;margin-bottom:1px}
+.hist .col:hover .b{filter:brightness(1.12)}
+.histx{display:flex;gap:2px;font-size:10.5px;color:var(--ink2)}
+.histx span{flex:1;text-align:center}
+.legendrow{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin:6px 0}
+.legendrow i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:baseline}
+.rate{margin:8px 0}
+.rate .lab{font-size:13px;display:flex;justify-content:space-between;color:var(--ink)}
+.rate .track{height:9px;background:var(--chip);border-radius:5px;margin-top:3px;overflow:hidden}
+.rate .track i{display:block;height:100%;border-radius:5px 4px 4px 5px;background:var(--accent)}
+.rate .track.h i{background:var(--accent2);opacity:.65}
+.rw{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.realgrid{display:flex;gap:24px;flex-wrap:wrap;margin-top:10px}
+.realcol{flex:1;min-width:230px}
+.realcol h2{margin:0 0 8px;font-size:14px}
+.rbar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+.rbar .rl{width:92px;color:var(--ink2)}
+.rbar .rt{flex:1;height:12px;background:var(--chip);border-radius:4px;overflow:hidden}
+.rbar .rt i{display:block;height:100%;border-radius:0 4px 4px 0}
+.rbar .rv{width:44px;text-align:right;font-weight:650}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;padding:5px 9px;border-radius:7px;z-index:50;display:none;max-width:220px}
+.hb{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:14px}
+.hb .l{width:200px}
+.hb .t{flex:1;height:13px;background:var(--chip);border-radius:5px;overflow:hidden}
+.hb .t i{display:block;height:100%;border-radius:0 5px 5px 0;background:var(--accent);transition:width .35s}
+.hb .n{width:60px;font-weight:700;text-align:right;white-space:nowrap}
+.secbox{background:var(--surface2);border:1px dashed var(--line);border-radius:10px;padding:11px 14px;margin:14px 0 4px;font-size:14px}
+.secbar{position:relative;height:12px;background:var(--chip);border-radius:6px;margin:9px 0 7px}
+.secbar .rangebar{position:absolute;top:0;height:100%;background:var(--accent);opacity:.32;border-radius:6px}
+.secbar .medmark{position:absolute;top:-2px;width:3px;height:16px;background:var(--accent);border-radius:2px}
+.cmprow{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px}
+.cmprow .cl{width:100px}
+.cmprow .cbars{flex:1;display:flex;flex-direction:column;gap:2px}
+.cmprow .cbars .t{height:10px;background:var(--chip);border-radius:4px;overflow:hidden}
+.cmprow .cbars .t i{display:block;height:100%;border-radius:0 4px 4px 0;background:var(--accent)}
+.cmprow .cn{width:130px;text-align:right;font-size:13px;white-space:nowrap}
+.cmprow .cg{width:46px;text-align:right;font-weight:700;font-size:13px;color:var(--ink2)}
+.cmprow .cg.off{color:var(--bad)}
+.pairrow{margin:12px 0}
+.pairrow .prl{font-size:14px;font-weight:650;margin-bottom:2px}
+.pairrow .hb{margin:3px 0}
+.pairrow .hb .l{width:110px}
+.factbox{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:12px 0;font-size:14px}
+.warnbox{background:var(--surface2);border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:10px;padding:12px 15px;margin:14px 0;font-size:14px}
+.kept{border-left:3px solid var(--accent2);padding-left:12px;margin-top:16px}
+.kept .tag{font-size:12px;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.hist .b.orange{background:var(--accent2)}
+@media (max-width:560px){ .hb .l{width:130px} }
+@media (max-width:560px){ .meters{gap:6px} .meter{min-width:100px} .levers{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="wrap" role="main">
+<header role="presentation">
+  <div>
+    <h1>Born Lucky</h1>
+    <div class="sub">Nobody chooses where they start.</div>
+  </div>
+  <button id="themeBtn">Dark</button>
+</header>
+
+<div id="app"></div>
+
+<footer role="presentation">
+Built for SOC 1113. <b>The simulation on this page is an illustration, not evidence.</b> Its rules were written by hand to reflect patterns described in the research below, and none of its numbers were estimated from data. Do not cite it. The measured figures come from Chetty, Hendren, Kline, and Saez 2014 (income mobility and the quintile transition matrix, tax records of about 40 million families) and the Pell Institute, <i>Indicators of Higher Education Equity in the United States</i>, 2024 (bachelor’s attainment by family income quarter). The model's design draws on Annette Lareau, <i>Unequal Childhoods</i> (parenting and class), Pierre Bourdieu (cultural and social capital), and Oliver and Shapiro, <i>Black Wealth/White Wealth</i> (income vs wealth). All people and places in the simulation are fictional.
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+"use strict";
+const R = () => (window.__testRandom ? window.__testRandom() : Math.random());
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const jit = () => [-1,0,0,1][Math.floor(R()*4)];
+const $ = s => document.querySelector(s);
+
+let S = null;
+window.__S = null;
+
+/* ---------------- the deal ---------------- */
+function deal(){
+  const inc = 1 + Math.floor(R()*5);
+  const wealth = clamp(inc - 1 + jit(), 0, 4);
+  const pedu = clamp(Math.round((inc-1)*0.7) + jit(), 0, 3);
+  const hood = clamp(Math.round((inc + wealth)/2) + jit(), 1, 5);
+  const fam = R() < 0.55 ? 2 : (R() < 0.75 ? 1 : 0);
+  const sibs = Math.floor(R()*4);
+  const raw = inc*2.6 + wealth*2.2 + pedu*1.7 + hood*1.7 + (fam===2?1.6:fam===1?0.6:0) - sibs*0.35;
+  const start = clamp(Math.round((raw - 1) / (25.8 - 1) * 100), 2, 98);
+  return { inc, wealth, pedu, hood, fam, sibs, start };
+}
+const tier = h => h.start >= 62 ? 'high' : h.start >= 34 ? 'mid' : 'low';
+const T = (h, lo, mi, hi) => tier(h)==='low' ? lo : tier(h)==='mid' ? mi : hi;
+const famWord = h => h.fam===2 ? 'your parents' : h.fam===1 ? 'your mom' : 'your grandma';
+const famCap = h => { const w = famWord(h); return w[0].toUpperCase() + w.slice(1); };
+const hoodName = h => h.hood>=4 ? 'Oak Hills' : h.hood===3 ? 'Maple Street' : 'the east side';
+
+/* ---------------- life state ---------------- */
+function newLife(h){
+  return {
+    h, roundIdx: 0, adult: false,
+    money: 0, steady: 50, health: 62, people: 40,
+    score: 0, wise: 0, wiseMax: 0,
+    debt: 0, path: null,
+    degree: false, cert: false, ownHome: false, ownBiz: false, gritJob: false,
+    kidHelp: false,
+    ledger: [], handNotes: []
+  };
+}
+function debtWord(d){ return d===0 ? 'none' : d===1 ? 'some' : 'heavy'; }
+function computeDrift(L){
+  let drift;
+  if (!L.adult) drift = Math.round(L.h.start/14 + R()*2);
+  else {
+    drift = Math.round(clamp((L.money*0.9 + (L.steady-40)*0.7 + (L.people-30)*0.5)/9, -4, 14));
+    if (L.debt===2) drift -= 6; else if (L.debt===1) drift -= 2;
+    drift = clamp(drift, -8, 16);
+  }
+  return drift;
+}
+function applyResult(L, r, w, label, rd){
+  (r.fx||[]).forEach(([m,d])=>{
+    if (!L.adult && (m==='money'||m==='steady')) return;
+    L[m] = clamp((L[m]||0) + d, 0, 100);
+  });
+  const drift = computeDrift(L);
+  const sc = r.score||0;
+  L.score += sc + drift;
+  L.wise += w; L.wiseMax += 2;
+  if (r.note) L.handNotes.push(r.note);
+  L.ledger.push({ age: rd.age, title: rd.title, choice: label, pts: sc, drift });
+  return { sc, drift };
+}
+function computeBonuses(L){
+  const bonus = [];
+  const add = (label, pts, pos) => bonus.push({label, pts, pos: !!pos});
+  if (L.degree) add('Finished a degree', 110);
+  else if (L.cert) add('Earned a trade credential', 70);
+  if (L.ownHome) add('Owns the home', 90);
+  if (L.ownBiz) add('The business made it', 60);
+  if (L.money>=55) add('Real savings', 70); else if (L.money>=30) add('Some savings', 35);
+  if (L.debt===2) add('Heavy debt still riding', -70); else if (L.debt===1) add('Some debt left', -25);
+  if (L.health>=62) add('Health held up', 55); else if (L.health<40) add('Health is a worry', -35);
+  if (L.people>=60) add('Rich in people', 55);
+  if (L.steady>=62) add('Steady footing', 65); else if (L.steady<40) add('Still one bad month from trouble', -35);
+  if (L.h.wealth>=3) add('The family net, whether or not it was ever used', 50, true);
+  return bonus;
+}
+
+/* ---------------- rounds ----------------
+   Each choice: t, d, w (0-2 wisdom weight), gray (reason string), only (bool), out(h,L)->{text,fx,score,note}
+   Money month round: type 'allocate', items(h,L) -> 5 items {t,d,w,keep(h,L)->{...},drop(h,L)->{...}} */
+
+const ROUNDS = [
+
+{ age:'Age 6', title:'Where you start',
+  vign(h){
+    let a = T(h,
+      `You grow up in a two bedroom apartment on the east side. ${famCap(h)} ${h.fam===2?'work':'works'} long hours, and dinner is whatever is fast.`,
+      `You grow up in a rented house on Maple Street. Money is tight some months and fine in others. Nobody talks about it much.`,
+      `You grow up in a house with a yard in Oak Hills. There is a piano in the living room and a calendar on the fridge full of practices and lessons.`);
+    if (h.sibs>=2) a += ` You share a room with ${h.sibs===2?'a sibling':'your siblings'}.`;
+    if (h.fam===0) a += ` Your grandma raised her own kids already. Now she is raising you.`;
+    return a + `\n\nIt is September. What do you do after school?`;
+  },
+  view(h){ return T(h,
+    `Everyone you know lives close and works hard. Everything costs, and everyone keeps track.`,
+    `Everyone you know owns some things and owes on the rest. One good year and one bad transmission apart.`,
+    `Everyone you know seems to know how things work, and who to call when they do not.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Watch your cousins while the grown ups work', d:'Somebody has to, and you are good at it.', w:2,
+        out(){ return { text:'You learn to make noodles and keep the little ones off the counter. You are six, and the family already counts on you.', fx:[['people',4]], score: 9+Math.round(R()*5), note:'Age 6: care work started early. Activities were for other schedules.' }; } },
+      { t:'The free program at the rec center', d:'It runs till six, across Fenton Avenue.', w:1,
+        out(){ return { text:'You get good at two sports and at crossing four lanes of traffic. Nobody can pick you up, so winter nights you walk home in the dark.', fx:[['people',4],['health',4]], score: 10+Math.round(R()*5) }; } },
+      { t:'Stay in where it is quiet', d:'The apartment, the TV, the couch.', w:1,
+        out(){ return { text:'You let yourself in with the key on the shoelace and keep the door locked like you were told.', fx:[], score: 5+Math.round(R()*4) }; } }
+    ],
+    [ // mid
+      { t:'Sign up for the fall soccer league', d:'The fee fits, if nothing breaks this fall.', w:1,
+        out(){ return { text:'Practices, orange slices, a whole sideline of parents. In November the water heater goes, and your mom does the math out loud at the kitchen table.', fx:[['people',5],['health',4]], score: 13+Math.round(R()*6) }; } },
+      { t:'Scouts with the church troop', d:'Cheap, steady, every Tuesday.', w:2,
+        out(){ return { text:'Knots, badges, a camping trip in the spring. It costs almost nothing and it is always there.', fx:[['people',4]], score: 12+Math.round(R()*5) }; } },
+      { t:'The neighborhood kids and the TV', d:'The block raises you together.', w:1,
+        out(){ return { text:'Bikes until the streetlights, then cartoons. An ordinary childhood, which is its own kind of luck.', fx:[['people',3],['health',2]], score: 8+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The full calendar', d:'Soccer, piano, Mandarin on Saturdays.', w:1,
+        out(){ return { text:'Every hour has a purpose and a carpool. By Sunday dinner you are six years old and tired in a way that has a schedule.', fx:[['people',5],['health',-2]], score: 20+Math.round(R()*7), note:'Age 6: the full calendar was the default setting, not a choice anyone debated.' }; } },
+      { t:'Just soccer, keep the afternoons', d:'One thing, done well, and time to be a kid.', w:2,
+        out(){ return { text:'You play, and then you climb the tree in the backyard because nothing else is scheduled. Your parents call it unstructured time, approvingly, to their friends.', fx:[['people',3],['health',4]], score: 16+Math.round(R()*6) }; } },
+      { t:'Whatever the neighborhood kids are doing', d:'There must be neighborhood kids somewhere.', w:1,
+        out(){ return { text:'You find them three cul de sacs over. Your parents exchange a look and allow it, and check the county map of registered offenders first.', fx:[['people',4]], score: 12+Math.round(R()*5) }; } }
+    ]);
+  }
+},
+
+{ age:'Age 10', title:'Fourth grade',
+  vign(h){
+    return T(h,
+      `Fourth grade at Eastgate. Thirty two kids, one teacher, and reading books older than you. Your teacher is kind and tired.`,
+      `Fourth grade at Fairview Elementary. It is fine. Big classes, decent teachers, a book fair every fall.`,
+      `Fourth grade at Oak Hills. Nineteen kids, a classroom aide, and a science fair with real judges.`)
+      + `\n\nThen fractions arrive, and for the first time school stops making sense. What do you do?`;
+  },
+  view(h){ return T(h,
+    `Help exists here. There is just one of everything, and a line.`,
+    `The school is fine. Fine gets you through, and through is not the same as ahead.`,
+    `Trouble here gets noticed early and handled quietly.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Ask for help at home', d:'Somebody there might remember fractions.', w:1,
+        out(){ return h.pedu>=2
+          ? { text:`${famCap(h)} remember${h.fam===2?'':'s'} enough. You get through it at the kitchen table between shifts.`, fx:[], score: 9+Math.round(R()*5) }
+          : { text:`Your ${h.fam===1?'mom':'family'} looks at the worksheet a long time. Fractions were a long time ago, and the shift starts at six. You work out some of it together anyway.`, fx:[['people',2]], score: 6+Math.round(R()*4), note:'Age 10: nobody at home could explain fractions, and it was nobody’s fault.' }; } },
+      { t:'Stay after and ask the teacher', d:'It costs nothing but nerve.', w:2,
+        out(){ return { text:'She wants to help. She also has thirty one other kids and bus duty. You get five good minutes, twice a week, and you make them count.', fx:[['people',2]], score: 8+Math.round(R()*5), note:'Age 10: the free help was real. There was just less of it to go around.' }; } },
+      { t:'The high schooler two doors down', d:'She did this four years ago.', w:2,
+        out(){ return { text:'She shows you the trick with the pizza slices on her building’s front steps. The block looks out for its own.', fx:[['people',3]], score: 9+Math.round(R()*5) }; } },
+      { t:'Let math become not your thing', d:'Plenty of people say it out loud.', w:0,
+        out(){ return { text:'You pass, barely. The label goes on quietly, and next year they seat you in the group that gets the easier worksheets.', fx:[], score: 0, note:'Age 10: one hard unit turned into a track, and the track had a direction.' }; } }
+    ],
+    [ // mid
+      { t:'Ask for help at home', d:'Somebody there might remember fractions.', w: h.pedu>=2?2:1,
+        out(){ return h.pedu>=2
+          ? { text:`${famCap(h)} pull${h.fam===2?'':'s'} a chair up to the table and it clicks in twenty minutes. There is usually somebody home who can do this.`, fx:[], score: 13+Math.round(R()*5) }
+          : { text:`It is not really anyone’s subject at home. You and your ${h.fam===1?'mom':'family'} muddle through half of it.`, fx:[['people',2]], score: 8+Math.round(R()*4) }; } },
+      { t:'The tutor, twelve dollars an hour', d:'The math teacher knows a college kid.', w:1,
+        out(){ return { text:'Four Tuesdays and it clicks. Twelve dollars an hour is also exactly what the brake job was going to cost, and the brakes wait a month.', fx:[], score: 14+Math.round(R()*5), note:'Age 10: the tutor cost what the brake job cost. Something always waited.' }; } },
+      { t:'Stay after and ask the teacher', d:'It costs nothing but nerve.', w:2,
+        out(){ return { text:'She has fifteen minutes on Thursdays and she gives them to you. It mostly clicks.', fx:[['people',2]], score: 11+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The tutor your mom already found', d:'She noticed the quiz before you mentioned it.', w:1,
+        out(){ return { text:'A cheerful education major appears on Tuesdays. By December you are ahead of the class and mildly bored.', fx:[], score: 18+Math.round(R()*6), note:'Age 10: the tutor was booked before you even asked. Falling behind was never on the menu.' }; } },
+      { t:'The tutor, plus the Saturday enrichment class', d:'As long as we are fixing math, your dad says.', w:1,
+        out(){ return { text:'Now math has two extra hours and a workbook with a mascot. Your scores climb. Saturday mornings stop belonging to you.', fx:[['health',-2]], score: 20+Math.round(R()*6) }; } },
+      { t:'Just the tutor is plenty', d:'Push back on the Saturday class.', w:2,
+        out(){ return { text:'You make the case for your own Saturday and win. A small rehearsal for every negotiation after it.', fx:[['health',2],['people',2]], score: 16+Math.round(R()*5) }; } }
+    ]);
+  }
+},
+
+{ age:'Age 13', title:'The middle years',
+  vign(h){
+    return T(h,
+      `Eighth grade. The district cuts the after school program to save money. The rec center picks up some of the slack.`,
+      `Eighth grade. The school is talking about cutting the arts budget again, but the teams and clubs are still running.`,
+      `Eighth grade. A letter comes home inviting you to the accelerated track. Most of your friends got one too.`)
+      + `\n\nWhere do your afternoons go?`;
+  },
+  view(h){ return T(h,
+    `When budgets tighten somewhere downtown, it lands here first.`,
+    `There is one of most things here. You pick, and picking closes doors.`,
+    `The track has tracks. Everyone here is already on one.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Play for the school team', d:'Free, and the bus takes you.', w:2,
+        out(){ return { text:'You make it. Practice ends at five, and the cousins need watching at four. Your aunt rearranges her shift, mostly, and you owe her.', fx:[['people',4],['health',4]], score: 11+Math.round(R()*5) }; } },
+      { t:'Start hustling small jobs', d:'Lawns, snow, watching kids.', w:1,
+        out(){ L.gritJob = true; return { text:'You learn what work is and what it pays. Some of it goes to ' + famWord(h) + ', and at thirteen your money already matters.', fx:[['people',3]], score: 11+Math.round(R()*5), note:'Age 13: a kid’s earnings were part of the household math.' }; } },
+      { t:'Run with the older kids on the block', d:'They know everybody. They go everywhere.', w:1,
+        out(){ const bad = R()<0.3;
+          return bad
+          ? { text:'Most nights it is jokes and corner stores. One night goes wrong around you, nothing you did, exactly, but you were there, and the school hears about it.', fx:[['people',3],['health',-3]], score: 2, note:'Age 13: being nearby was enough to get a reputation. Some places file kids early.' }
+          : { text:'They look out for you, teach you the bus system and who to avoid. Belonging is worth something everywhere, and here it is the whole economy.', fx:[['people',6]], score: 10+Math.round(R()*5) }; } }
+    ],
+    [ // mid
+      { t:'The travel team', d:'Four hundred dollars before uniforms.', w:1,
+        out(){ return { text:'Weekends in minivans and hotel pools. You get good and you get known, and the vacation fund quietly becomes the tournament fund.', fx:[['people',5],['health',4]], score: 15+Math.round(R()*6), note:'Age 13: four hundred dollars bought a skill, a network of parents, and a summer that never happened.' }; } },
+      { t:'The school team', d:'Free, close, fine.', w:2,
+        out(){ return { text:'Practice, road games, an away jersey you have to give back in June. It is enough.', fx:[['people',4],['health',4]], score: 13+Math.round(R()*5) }; } },
+      { t:'A paper route and your bike', d:'Money of your own, dark mornings.', w:1,
+        out(){ L.gritJob = true; return { text:'You learn every porch in a half mile radius. The money is yours, which at thirteen is a kind of magic.', fx:[['health',3]], score: 12+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The elite travel program', d:'Five days a week, a coach with a system.', w:1,
+        out(){ return { text:'You train like it is a job. College coaches learn your name at fourteen. Your childhood narrows to a lane, a fast one.', fx:[['people',5],['health',-3]], score: 22+Math.round(R()*7), note:'Age 13: the elite program cost thousands a season, and nobody at the table blinked.' }; } },
+      { t:'The school team, and your dad’s opinion', d:'He uses the word coasting at dinner.', w:2,
+        out(){ return { text:'You play because you like playing. Your dad audits your effort from the bleachers. You hold the line, and it costs something at home.', fx:[['health',4],['people',2]], score: 15+Math.round(R()*5) }; } },
+      { t:'The coding camp your parents picked', d:'It was their idea. It usually is.', w:1,
+        out(){ return { text:'You build a game where a taco dodges rain. It goes on a resume you did not know you had.', fx:[['people',2]], score: 18+Math.round(R()*6), note:'Age 13: the resume was already under construction, with staff.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 16', title:'Sixteen',
+  vign(h){
+    return T(h,
+      `${famCap(h)} ${h.fam===2?'sit':'sits'} you down. Hours got cut at work. Nobody asks you to get a job. Nobody has to.`,
+      `Sixteen. Some friends have cars, some have jobs, and everybody suddenly talks about the SAT like it is weather.`,
+      `Sixteen. The SAT class is booked for March, your parents mention. The real question is what your summer does for your file.`)
+      + `\n\nWhat fills the year?`;
+  },
+  view(h){ return T(h,
+    `A teenager’s paycheck is real money here. The SAT is a fee first and a test second.`,
+    `The class exists, the money argues. Most things here are a trade.`,
+    `Sixteen here is a resume year. Everyone’s summer is doing something for their file.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Twenty five hours at the grocery store', d:'The check covers your phone and some of the light bill.', w:1,
+        out(){ L.gritJob = true; return { text:'You stock shelves after close. The check goes home and it matters. Your grades slip in the spring, and nobody at work is surprised.', fx:[['people',3]], score: 11+Math.round(R()*5), note:'Age 16: the paycheck went home. Homework happened after close.' }; } },
+      { t:'Weekend shifts, weekdays for school', d:'Less money home. You feel it at dinner.', w:2,
+        out(){ L.gritJob = true; return { text:'You guard your weeknights for the library practice book and pay for it in guilt. Nobody says anything, which is louder.', fx:[], score: 13+Math.round(R()*5), note:'Age 16: studying was bought with guilt, an hour at a time.' }; } },
+      { t:'The cash job at the demo site', d:'No papers, better money, now.', w:1,
+        out(){ const hurt = R()<0.25;
+          return hurt
+          ? { text:'Good money for two months, then a pallet comes down wrong on your hand. No papers means no claim. You tape it and go back.', fx:[['health',-8]], score: 4, note:'Age 16: the best paying job came with no protections at all.' }
+          : { text:'Cash on Fridays, more than the grocery store pays. You do not tell the school, and the school does not ask.', fx:[], score: 14+Math.round(R()*5), note:'Age 16: the off books economy paid best and protected least.' }; } }
+    ],
+    [ // mid
+      { t:'The SAT class, nine hundred dollars', d:'It is the brake job and the dentist together.', w:1,
+        out(){ return { text:'Tricks, timing drills, two full practice tests. Your score climbs the way a paid score climbs, and the dentist waits until fall.', fx:[], score: 17+Math.round(R()*6), note:'Age 16: the score went up because a class was paid for, and something else waited its turn.' }; } },
+      { t:'The practice book and a job for a car', d:'Independence, on a budget.', w:1,
+        out(){ L.gritJob = true; return { text:'You buy a Civic with 180 thousand miles and name it. The practice book gets your tired hours, the job gets the rest.', fx:[['people',3]], score: 13+Math.round(R()*5) }; } },
+      { t:'The practice book, no job, all grades', d:'Free, if you actually do it.', w:2,
+        out(){ return { text:'Saturday mornings with a pencil and a timer you run yourself. The score climbs some. Nobody checked whether you showed up except you.', fx:[], score: 15+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The internship at your uncle’s firm', d:'Filing, coffee, and watching how it works.', w:1,
+        out(){ return { text:'Two weeks watching people in nice shirts have meetings. You leave with three business cards and a feel for the room.', fx:[['people',7]], score: 24+Math.round(R()*7), note:'Age 16: an uncle opened a door most kids never see. The SAT class ran in the background, already paid.' }; } },
+      { t:'Lifeguard with your friends', d:'A whistle, a tan, an ordinary summer.', w:2,
+        out(){ return { text:'You save nobody and you are ready to. The best summer of your life so far, and it still counts as a job on the form.', fx:[['people',5],['health',4]], score: 17+Math.round(R()*6) }; } },
+      { t:'The service trip abroad', d:'Two weeks, a school build, a photographer.', w:1,
+        out(){ return { text:'You mix concrete badly and mean well. It shows up in every college essay draft after.', fx:[['people',3]], score: 20+Math.round(R()*6), note:'Age 16: even the good deed came with a travel budget and a college angle.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 17', title:'The fork',
+  vign(h){
+    let a = T(h,
+      `Senior year. The counselor has three hundred students and a stack of forms.`,
+      `Senior year. The counselor hands you the flagship brochure and a federal aid worksheet in the same folder.`,
+      `Senior year. The counselor knows your name, your file, and your father’s preference.`);
+    if (h.pedu<=1) a += ` No one at home has filled out a FAFSA before. The form sits on the counter for a month.`;
+    else a += ` At home the question is not whether. It is which.`;
+    return a + `\n\nWhat happens after graduation?`;
+  },
+  view(h){ return T(h,
+    `College costs money you do not have. Work pays money the house needs. Everyone has an opinion and nobody has a map.`,
+    `The map exists here. The money mostly follows, with loans filling the gap.`,
+    `Every door is open. The question is whose hand is on your shoulder while you choose.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'The state university, away', d:'The aid letter has a lot of asterisks.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=8; L.debt=2;
+          return { text:'You sign for heavy loans and pack one suitcase. You are the first, and everyone comes outside to see you off.', fx:[], score: 22+Math.round(R()*8), note:'Age 17: the same campus other families wrote a check for, carried on heavy loans.' }; } },
+      { t:'Community college, keep the job', d:'Cheap credits, live at home, help out.', w:2, pop:0.3,
+        out(){ L.path='cc'; L.adult=true; L.money=10;
+          return { text:'You stack credits and shifts. The plan is transfer in two years, and plans here need protecting.', fx:[], score: 16+Math.round(R()*6) }; } },
+      { t:'Full time at Ridgeline Distribution', d:'The warehouse pays now, not in four years.', w:1, pop:0.4,
+        out(){ L.path='work'; L.adult=true; L.money=12; L.kidHelp=true;
+          return { text:'Real checks. Some of every one goes home, and it needs to. College people call it a gap year. You call it Tuesday.', fx:[['steady',6]], score: 14+Math.round(R()*6), note:'Age 17: the paycheck was needed at home this year, and every year.' }; } },
+      { t:'Enlist', d:'Training, travel, and the GI Bill after.', w:2, pop:0.15,
+        out(){ L.path='mil'; L.adult=true; L.money=14;
+          return { text:'You ship out in July. It is the first time anyone in your class has seen the ocean.', fx:[['steady',8],['health',3],['people',4]], score: 16+Math.round(R()*6) }; } }
+    ],
+    [ // mid
+      { t:'The state university, away', d:'Loans cover what the aid letter calls the gap.', w:2, pop:0.35,
+        out(){ L.path='college'; L.adult=true; L.money=18; L.debt=1;
+          return { text:'Dorms, a meal plan, a roommate from three hours away. The loan total is a number nobody says out loud yet.', fx:[], score: 20+Math.round(R()*7), note:'Age 17: the same campus, bought partly on credit.' }; } },
+      { t:'The state university, commuting', d:'Save the dorm money, live at home.', w:1, pop:0.2,
+        out(){ L.path='college'; L.adult=true; L.money=22;
+          return { text:'Same lectures, same diploma. You attend the classes and skip the campus, and the campus is where half of it happens.', fx:[['people',-3]], score: 17+Math.round(R()*6), note:'Age 17: commuting saved thousands and cost the network nobody prices.' }; } },
+      { t:'Community college, then transfer', d:'Two cheap years, one plan.', w:1, pop:0.3,
+        out(){ L.path='cc'; L.adult=true; L.money=16;
+          return { text:'Half your high school is in the parking lot. The counselor calls it a smart play in a voice that suggests otherwise.', fx:[], score: 15+Math.round(R()*6) }; } },
+      { t:'Enlist', d:'Structure, travel, and the GI Bill after.', w:1, pop:0.15,
+        out(){ L.path='mil'; L.adult=true; L.money=14;
+          return { text:'You ship out in July. Your parents put a sticker on the car.', fx:[['steady',8],['health',3],['people',4]], score: 15+Math.round(R()*6) }; } }
+    ],
+    [ // high
+      { t:'The flagship, where your dad went', d:'Covered. His roommate’s firm still hires from there.', w:1, pop:0.3,
+        out(){ L.path='college'; L.adult=true; L.money=30;
+          return { text:'The bill is handled and so, quietly, is the path. His old fraternity sends a letter before you even move in.', fx:[['people',6]], score: 26+Math.round(R()*8), note:'Age 17: the bill was covered, and the network came pre installed.' }; } },
+      { t:'The private college with the famous alumni', d:'Small classes, leafy campus, sticker price.', w:2, pop:0.3,
+        out(){ L.path='college'; L.adult=true; L.money=32;
+          return { text:'Sticker price is unspeakable and nobody speaks it. The alumni network alone, your dad says, pays for itself.', fx:[['people',8]], score: 28+Math.round(R()*8), note:'Age 17: a private campus and its address book, bought at full price.' }; } },
+      { t:'The art school you actually want', d:'They will pay. They will not pretend to be pleased.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=26;
+          return { text:'You get in on a real portfolio. Your parents pay the deposit and start describing it to friends as a foundation year.', fx:[['people',2],['health',3]], score: 21+Math.round(R()*7), note:'Age 17: even the rebellion was fully funded.' }; } },
+      { t:'A year abroad first', d:'See something before buckling down.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=26;
+          return { text:'Hostels, trains, a language you half learn. The university holds your spot. Doors hold for some people.', fx:[['people',5],['health',4]], score: 20+Math.round(R()*7), note:'Age 17: a whole year off, and the door stayed open.' }; } },
+      { t:'Skip college, take the desk at the firm', d:'There has always been a desk with your name on it.', w:1, pop:0.1,
+        out(){ L.path='work'; L.adult=true; L.money=30;
+          return { text:'You skip the lecture halls entirely. The ladder is internal, the floor is carpeted, and the name on the building helps with the climbing.', fx:[['steady',8],['people',4]], score: 20+Math.round(R()*7), note:'Age 17: even skipping college was safe. The firm was the net.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 19', title:'Making it stick',
+  vign(h,L){
+    if (L.path==='college'){
+      return T(h,
+        `Sophomore year. Then the car dies in October, the aid office finds a paperwork problem, and ${famWord(h)} stop${h.fam===2?'':'s'} mentioning how things are going at home, which is how you know.\n\nWhat do you do?`,
+        `Sophomore year. Classes are fine. The job, the clubs, and the grades all want the same twenty hours.\n\nWhat do you do?`,
+        `Sophomore year. Classes are fine. The question is what else these four years are for, and everyone here has a theory.\n\nWhat do you do?`);
+    }
+    if (L.path==='cc') return `Three semesters in at Fairview Community. Credits are stacking. The transfer window opens this spring.\n\nWhat do you do?`;
+    if (L.path==='mil') return `Two years in. You have a rank, a routine, and a decision coming about what the service was for.\n\nWhat do you do?`;
+    if (tier(h)==='high') return `Two years at the firm. You know the accounts, the golf schedule, and which partners matter.\n\nWhat do you do?`;
+    return `Two years at Ridgeline. You know the floor, the forklift, and which supervisors matter.\n\nWhat do you do?`;
+  },
+  view(h,L){
+    if (L.path==='college') return T(h,
+      `One paperwork problem up here can end the whole thing. The school calls it a hold. It feels like a trapdoor.`,
+      `The degree is the floor now. What separates people is everything stacked on top of it.`,
+      `Everyone lands on their feet here. The family nets are invisible until someone falls.`);
+    if (L.path==='cc') return `The transfer path works, for the ones who survive the paperwork, the schedule, and the jobs. Most of the attrition is nobody’s decision.`;
+    if (L.path==='mil') return `The service is the one ladder that never asked what your parents make.`;
+    if (tier(h)==='high') return `The firm promotes family the way gravity pulls down. Nobody calls it that in the meetings.`;
+    return `The floor pays honest money. The ladder out of it runs through certificates, seniority, and who the supervisor likes.`;
+  },
+  choices(h,L){
+    if (L.path==='college'){
+      if (tier(h)==='low') return [
+        { t:'Take a term off to sort things out', d:'Just one term.', w:1, pop:0.35,
+          out(){ const back = R() < 0.45;
+            if (back){ return { text:'You work, you help, and against the odds you re-enroll in the fall. Most people who step off this track never step back on. You did.', fx:[['steady',3]], score: 14+Math.round(R()*6), note:'Age 19: a term off almost became forever. It usually does.' }; }
+            L.path='work';
+            return { text:'One term becomes two. The job becomes full time. The university sends mail for a while, then stops.', fx:[['steady',4]], score: 6+Math.round(R()*4), note:'Age 19: one term off quietly became the rest of the plan. It usually does.' }; } },
+        { t:'Borrow more and stay enrolled', d:'The loans are already heavy.', w:2, pop:0.25,
+          out(){ L.debt=2; return { text:'You sign again. The number on the exit counseling sheet stops feeling real, which is its own kind of problem.', fx:[], score: 16+Math.round(R()*6), note:'Age 19: staying enrolled cost new debt. For some teams this round was a club fair.' }; } },
+        { t:'Sell the car and work doubles on weekends', d:'The bus adds ninety minutes a day.', w:2, pop:0.2,
+          out(){ return { text:'You make it work. Your grades pay some of the fare, and so does sleep.', fx:[['health',-6],['money',8]], score: 13+Math.round(R()*6), note:'Age 19: the crisis was survived with hours and sleep.' }; } },
+        { t:'Transfer home to community college', d:'Protect the wallet, lose the four year track.', w:1, pop:0.2,
+          out(){ L.path='cc'; L.debt=1; return { text:'You move home and keep the credits. The four year door does not close, exactly. It just gets heavier every year.', fx:[['steady',2]], score: 10+Math.round(R()*5), note:'Age 19: retreat was the financially sound move. It also rerouted the whole track.' }; } }
+      ];
+      if (tier(h)==='mid') return [
+        { t:'Twenty five hours at the campus job', d:'Spending money and no new loans.', w:1,
+          out(){ L.money+=10; return { text:'You miss some of campus life and none of your bills. There are two colleges here, and you attend the one with a name tag.', fx:[['people',-2]], score: 12+Math.round(R()*5) }; } },
+        { t:'Clubs, offices, the network', d:'The meetings are free. The time is not.', w:1,
+          out(){ return { text:'You end up vice president of two things and known by half the campus. Your grades wobble and hold.', fx:[['people',8]], score: 15+Math.round(R()*6) }; } },
+        { t:'Go deep on grades', d:'The GPA opens doors later.', w:2,
+          out(){ return { text:'Office hours, study groups, a professor who starts saying things like when you apply.', fx:[['people',3]], score: 17+Math.round(R()*6) }; } },
+        { t:'A semester abroad', d:'Everyone says it changed their life.', w:1,
+          gray(h2,L2){ return L2.money<20 ? 'The program costs more than you have, even with the aid.' : null; },
+          out(){ L.money-=12; return { text:'It does change something. You come back with stories, contacts, and a line interviewers always ask about.', fx:[['people',6],['health',4]], score: 16+Math.round(R()*6), note:'Age 20: a semester abroad, paid for without drama.' }; } }
+      ];
+      return [ // high
+        { t:'The junior internship your dad arranged', d:'You did not ask him to make the call.', w:1,
+          out(){ return { text:'A summer downtown with a badge and a mentor. The resume builds itself, which is what resumes do at this altitude.', fx:[['people',6]], score: 22+Math.round(R()*7), note:'Age 20: the internship came from a phone call you never heard.' }; } },
+        { t:'Officer in everything', d:'Three clubs deep by October.', w:1,
+          out(){ return { text:'You collect titles and people. The calendar is brutal and the address book grows.', fx:[['people',9],['health',-2]], score: 17+Math.round(R()*6) }; } },
+        { t:'Actually study, ignore the noise', d:'Let the GPA be the argument.', w:2,
+          out(){ return { text:'You read, you write, you sleep. A professor starts saying when you apply, not if.', fx:[['people',2],['health',3]], score: 19+Math.round(R()*6) }; } },
+        { t:'A semester abroad', d:'Florence, or Copenhagen, or both.', w:1,
+          out(){ L.money-=10; return { text:'You come back with a language, a wardrobe adjustment, and friends whose parents own things in three countries.', fx:[['people',6],['health',4]], score: 18+Math.round(R()*6), note:'Age 20: abroad was a given, not a windfall.' }; } }
+      ];
+    }
+    if (L.path==='cc') return [
+      { t:'Transfer applications, all in', d:'The university takes the credits.', w:2, pop:0.3,
+        out(){
+          if (tier(h)==='low' && R()<0.45){
+            L.cert=true;
+            return { text:'The acceptance comes on a Tuesday. Then the schedule, the job, and the commute take their cut, one term at a time. You finish the applied certificate instead, which is real, and is not what the acceptance letter said.', fx:[['steady',4]], score: 12+Math.round(R()*5), note:'Age 21: the transfer track was open and the life around it was not. Most attrition is nobody’s decision.' };
+          }
+          L.path='college'; if (tier(h)!=='high') L.debt = Math.max(L.debt,1);
+          return { text:'The acceptance comes on a Tuesday. Two cheap years plus two real ones equals the same diploma.', fx:[], score: 18+Math.round(R()*7) }; } },
+      { t:'Finish the applied certificate', d:'HVAC pays real money.', w:2, pop:0.3,
+        out(){ L.cert=true; return { text:'Eighteen months and a wallet card. People will always need cold air and hot water.', fx:[['steady',8]], score: 15+Math.round(R()*6) }; } },
+      { t:'Slow down to night classes and work days', d:'Life keeps charging rent.', w:1, pop:0.4,
+        out(){ L.money+=8; return { text:'Progress drops to a class a term. The math says six more years. The math is patient even when you are not.', fx:[], score: 8+Math.round(R()*4), note:'Age 19: slowing down was the responsible move, and the slow lane mostly does not arrive.' }; } }
+    ];
+    if (L.path==='mil') return [
+      { t:'Re-enlist', d:'The devil you know, plus a bonus.', w:1, pop:0.4,
+        out(){ L.money+=12; return { text:'Four more years. The bonus clears the car loan and starts a real savings account.', fx:[['steady',8]], score: 13+Math.round(R()*5) }; } },
+      { t:'Out, and use the GI Bill', d:'College, paid, if you use it.', w:2, pop:0.35,
+        out(){ L.path='college'; return { text:'You enroll at the state university at twenty one, older than everyone and better at mornings.', fx:[], score: 18+Math.round(R()*7), note:'Age 21: the GI Bill bought what other families buy with wealth.' }; } },
+      { t:'Out, straight to work', d:'Security firms love veterans.', w:1, pop:0.25,
+        out(){ L.path='work'; L.money+=6; return { text:'Good pay, nights, a uniform that is almost the old uniform.', fx:[['steady',6]], score: 12+Math.round(R()*5) }; } }
+    ];
+    if (tier(h)==='high') return [ // the family firm
+      { t:'Learn every desk in the building', d:'Earn it, or close enough.', w:2,
+        out(){ return { text:'You rotate through billing, accounts, the warehouse the firm owns. People stop lowering their voices when you walk in.', fx:[['steady',8],['people',5]], score: 20+Math.round(R()*7) }; } },
+      { t:'Coast on the name', d:'The reviews will be kind either way.', w:0,
+        out(){ return { text:'Long lunches, soft deadlines. The reviews are kind, the way weather is kind to a house with a roof.', fx:[['people',2]], score: 10+Math.round(R()*5), note:'Age 19: the floor under a famous last name is higher than most people’s ceiling.' }; } },
+      { t:'Night classes anyway', d:'A degree, in case the name ever stops working.', w:1,
+        out(){ L.cert=true; return { text:'Two nights a week. The partners call it initiative. Your dad calls it unnecessary, fondly.', fx:[['health',-2]], score: 16+Math.round(R()*6) }; } }
+    ];
+    return [
+      { t:'The union apprenticeship', d:'Electricians. Four years, real wages the whole way.', w:2,
+        out(){ L.cert=true; return { text:'You get in on the second try. Journeyman money is professor money, and nobody tells teenagers that.', fx:[['steady',10],['money',8]], score: 20+Math.round(R()*7), note:'Age 19: the union was the one door here that led somewhere and paid while you walked.' }; } },
+      { t:'Certificate classes at night', d:'Logistics tech. The warehouse would promote you.', w:2,
+        out(){ L.cert=true; return { text:'Two nights a week for a year. Your badge changes color and so does the check.', fx:[['steady',6]], score: 15+Math.round(R()*6) }; } },
+      { t:'Pick up every overtime shift', d:'Money now beats money later.', w:1,
+        out(){ L.money+=14; return { text:'Sixty hour weeks. The account grows and your back files its first complaint.', fx:[['health',-6]], score: 11+Math.round(R()*5) }; } },
+      { t:'Coast with the crew', d:'The job is fine. Life is elsewhere.', w:0,
+        out(){ return { text:'Clock in, clock out, weekends with your people. There are worse lives, and the ceiling is close enough to touch.', fx:[['people',4]], score: 6+Math.round(R()*4) }; } }
+    ];
+  }
+},
+
+{ age:'Age 23', title:'First real chances',
+  vign(h,L){
+    if (L.path==='college' && !L.degreeChecked){ L.degree = true; L.degreeChecked = true; }
+    return L.degree
+      ? `Degree in hand. Now the part nobody grades: getting somebody to pay you for it.\n\nWhat is the move?`
+      : `Twenty three. You know your work and your worth. The question is where they go next.\n\nWhat is the move?`;
+  },
+  view(h,L){
+    if (L.degree) return T(h,
+      `Everyone you graduated with is applying to the same two hundred jobs. The ones who land fast had a name to mention.`,
+      `The degree opens the room. Somebody still has to wave you over, or you wait in line with everyone else.`,
+      `Down here on the job market, you notice something: half your class was hired by somebody’s father.`);
+    if (tier(h)==='high' && L.path==='work') return `No degree, no problem, up here. The name on the building is its own credential.`;
+    return `Job listings ask for the certificate. The certificate asks for time and a fee. Time and fees ask for a paycheck. The circle is the point.`;
+  },
+  choices(h,L){
+    if (L.degree) return [
+      { t:'The referral', d:'Your roommate’s dad knows the hiring manager.', w:1,
+        only: (h.inc>=4 || L.people>=60),
+        out(){ return { text:'One phone call moves your resume from the pile to the desk. The interview is friendly because it was always going to be.', fx:[['money',16],['steady',14]], score: 38+Math.round(R()*14), note:'Age 23: a phone call did what four hundred applications do for other people.' }; } },
+      { t:'The unpaid internship at the firm', d:'The famous one. It leads places.', w:1,
+        gray(h2,L2){ return (L2.money<22 && h2.wealth<3) ? 'The internship pays nothing. Rent is due anyway.' : null; },
+        out(){ L.money-=10; return { text:'Six unpaid months, then the offer. You could afford to work for free, which is the quiet requirement.', fx:[['people',6],['steady',10]], score: 28+Math.round(R()*10), note:'Age 23: working free for six months was affordable. That was the door.' }; } },
+      { t:'Apply wide, take the best offer', d:'The long game of cover letters.', w:2,
+        out(){ return { text:'Eleven weeks and one hundred forty applications later, a decent offer at a decent company. You earned every inch of it.', fx:[['money',10],['steady',10]], score: 22+Math.round(R()*9) }; } },
+      { t:'The hometown offer', d:'Twenty minutes from everyone who needs you.', w:1,
+        out(){ const near = tier(h)==='low' || L.kidHelp;
+          return { text: near
+            ? 'A good job with a visible ceiling, close to home. You take the calls, drive the rides, cover the gaps. Somebody has to, and it is you.'
+            : 'A good job with a visible ceiling, close to home. Sunday dinners come standard.',
+            fx:[['steady',8],['money',8],['people',5]], score: 16+Math.round(R()*7),
+            note: near ? 'Age 23: staying close carried the family and capped the climb. Both are true.' : undefined }; } },
+      { t:'Move to the bigger city', d:'That is where the jobs are.', w:2,
+        gray(h2,L2){ return L2.money<18 ? 'First month, last month, deposit. You cannot get there from here.' : null; },
+        out(){ L.money-=12; return { text:'A shared apartment and a bigger market. The move costs real money and buys real options.', fx:[['people',5],['steady',6]], score: 20+Math.round(R()*8), note:'Age 23: moving to opportunity had a cover charge.' }; } }
+    ];
+    if (tier(h)==='high' && L.path==='work') return [ // the family firm, no degree
+      { t:'Take the regional accounts', d:'The step everyone assumed you would take.', w:2,
+        out(){ return { text:'You get the accounts and the assistant that comes with them. The clients like you before the handshake ends.', fx:[['money',14],['steady',12]], score: 26+Math.round(R()*9), note:'Age 23: the promotion was waiting before the work was. The name closed the gap.' }; } },
+      { t:'Strike out where nobody knows the name', d:'Prove it somewhere neutral.', w:1,
+        out(){ return { text:'A rival firm two states over. You start at the bottom, which for you is the middle, and earn the rest for real.', fx:[['money',8],['steady',6],['people',-3]], score: 18+Math.round(R()*7) }; } },
+      { t:'Finish a degree on the side', d:'It nags at you.', w:1,
+        out(){ L.degree=true; return { text:'Three years of nights. Nobody at the firm cares, and you do, which turns out to be the point.', fx:[['health',-3]], score: 16+Math.round(R()*7) }; } }
+    ];
+    return [
+      { t:'Go for shift lead', d:'The next rung where you are.', w:2,
+        out(){ return { text:'You get it. More money, more headaches, a key to the building.', fx:[['money',8],['steady',8]], score: 16+Math.round(R()*7) }; } },
+      { t:'Apply into the office', d:'Scheduling, dispatch, a desk.', w:1,
+        out(){ return (L.cert||L.degree)
+          ? { text:'The certificate carries you across the floor to a chair. Same building, different life expectancy for your knees.', fx:[['money',9],['steady',10]], score: 19+Math.round(R()*7) }
+          : { text:'They go with somebody who has the certificate. The floor keeps you.', fx:[], score: 6+Math.round(R()*4), note:'Age 23: the desk job wanted a credential the floor never had time to earn.' }; } },
+      { t:'Start classes again on the side', d:'It is never quite too late.', w:2,
+        out(){ L.cert=true; return { text:'Tuesday and Thursday nights. It takes years, and it counts.', fx:[['health',-2]], score: 14+Math.round(R()*6) }; } },
+      { t:'Chase better pay across town', d:'The new warehouse pays two dollars more.', w:1,
+        out(){ return { text:'You jump. The raise is real, the seniority resets to zero, and zero matters when cuts come.', fx:[['money',7],['steady',-4]], score: 9+Math.round(R()*5) }; } }
+    ];
+  }
+},
+
+{ age:'Age 26', title:'Setting up',
+  vign(h,L){
+    let a = `Twenty six. Friends are pairing off, leases are ending, and the word thirty appears on the horizon.`;
+    if (L.debt===2) a += ` The loan payment arrives every month like a second rent.`;
+    return a + `\n\nWhere do you live and what do you build?`;
+  },
+  view(h,L){ return T(h,
+    `Rent eats first here. Saving a deposit while paying rent is bailing a boat that is still filling.`,
+    `The mortgage math almost works. Almost is the middle’s whole housing story.`,
+    `Around you, down payments appear like weather. Nobody calls it what it is at dinner.`); },
+  choices(h,L){
+    const cs = [];
+    if (h.wealth>=3) cs.push(
+      { t:'Buy the starter house, with help', d:'Your parents cover most of the down payment.', w:2,
+        out(){ L.ownHome=true; L.money-=8;
+          return { text:'Your dad calls it an early inheritance and waves it off at Thanksgiving. The equity clock starts a decade early.', fx:[['steady',12]], score: 26+Math.round(R()*9), note:'Age 26: the down payment was a gift. The equity clock started ten years early.' }; } });
+    cs.push(
+      { t:'Buy the starter house on your own', d:'Every dollar you have, and then some.', w:2,
+        gray(h2,L2){ return L2.money<32 ? 'The down payment might as well be a moon landing.' : null; },
+        out(){ L.ownHome=true; L.money-=24;
+          return { text:'Every dollar you scraped for eight years goes into a house on the east side. The mortgage is less than rent was.', fx:[['steady',12]], score: 28+Math.round(R()*9), note:'Age 26: the down payment took eight years of scraping that some teams skipped entirely.' }; } },
+      { t:'Rent the nice place downtown', d:'Walkable, social, not cheap.', w:1,
+        out(){ L.money-=8; return { text:'Rooftop birthdays and a fifteen minute walk to everything. The rent eats the savings line every single month.', fx:[['people',6],['health',2]], score: 12+Math.round(R()*5) }; } },
+      { t:'Rent cheap and stack savings', d:'Roommates at twenty six. It is fine.', w:2,
+        out(){ L.money+=16; return { text:'The place is ugly and the account is not. Delayed gratification is easy to praise and hard to live in.', fx:[['people',-2]], score: 15+Math.round(R()*6) }; } });
+    if (tier(h)==='low' || L.kidHelp) cs.push(
+      { t:'Send money home instead of saving', d:'The deposit fund keeps becoming the family fund.', w:1,
+        out(){ L.money=Math.max(0,L.money-6); return { text:'Your cousin’s books, your mom’s brakes, the gap in the light bill. None of it is optional and none of it comes back.', fx:[['people',5]], score: 10+Math.round(R()*5), note:'Age 26: money flowed up the family, not down. The savings account never got its turn.' }; } });
+    else if (h.fam>=1) cs.push(
+      { t:'Move back home for a while', d:'Free rent, full fridge.', w:1,
+        out(){ L.money+=20; return { text:'Two years in your old room. Embarrassing at parties, unbeatable in a spreadsheet.', fx:[['people',-3]], score: 16+Math.round(R()*6), note:'Age 26: the family home worked as a free launch pad.' }; } });
+    return cs;
+  }
+},
+
+{ age:'Age 28', title:'The money month', type:'allocate',
+  vign(h,L){ return T(h,
+    `Then February happens. Hours get cut, the tax refund is late, and five things land due in the same two weeks. There is money for three.\n\nPick the three that get covered. The other two go without.`,
+    `Then February happens. Five things land in the same month, and covering all five means emptying the emergency fund that finally exists. There is room for three.\n\nPick the three that get covered. The other two wait.`,
+    `February. The bills pay themselves on autopay, and what is left over is the actual question. There is time and appetite for three of these.\n\nPick the three that get a yes.`); },
+  view(h,L){ return T(h,
+    `Here the month is triage. Something always goes without, and it is never nothing.`,
+    `The middle is a juggling act that mostly works. Dropping a ball costs. So does catching them all.`,
+    `Here February is a menu of upsides. The only scarce thing left is time.`); },
+  items(h,L){
+    return T(h,
+    [ // low
+      { t:'Rent', d:'Due on the first, like always.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const kind = R()<0.45;
+          return kind
+          ? { text:'The landlord works with you, this time, with a late fee and a look.', fx:[['steady',-4]], score: 0 }
+          : { text:'Three days late becomes a notice on the door. It gets resolved and it gets remembered.', fx:[['steady',-14]], score: -6, note:'Age 28: one late month put the housing on thin ice. The margin was that thin.' }; } },
+      { t:'The car’s timing belt', d:'The shop says soon. The car says nothing.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const dies = R()<0.55;
+          return dies
+          ? { text:'The belt goes on a Thursday, nineteen miles from work, and takes the engine’s good mood with it.', fx:[['steady',-8]], score: -5, note:'Age 28: skipping the repair cost triple later. Being broke is expensive.' }
+          : { text:'The belt holds. You drive gently and listen hard for months.', fx:[], score: 0 }; } },
+      { t:'Your prescriptions', d:'The refill, the copay, the usual.', w:2,
+        keep(){ return { text:'', fx:[], score: 4 }; },
+        drop(){ return { text:'You stretch the pills to every other day. The refill can wait, says the part of you the pills are for.', fx:[['health',-8]], score: -4, note:'Age 28: health was the bill that could be skipped quietly. It kept its own ledger.' }; } },
+      { t:'Your sister’s daycare gap', d:'Two weeks between her jobs.', w:1,
+        keep(){ return { text:'', fx:[['people',5]], score: 4 }; },
+        drop(){ return { text:'She figures it out. Something between you gets quieter for a while.', fx:[['people',-6]], score: -2 }; } },
+      { t:'The class you are halfway through', d:'The certificate is four months away.', w:1,
+        keep(){ return { text:'', fx:[], score: 6 }; },
+        drop(){ return { text:'The certificate moves to next year. Next year is a busy place.', fx:[], score: -2, note:'Age 28: the future was the only bill with no late fee, so the future got dropped.' }; } }
+    ],
+    [ // mid
+      { t:'The student loan payment', d:'The balance barely moves as it is.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ L.debt=Math.min(2,L.debt+1); return { text:'One skipped month. The balance grows quietly, the way it likes to.', fx:[], score: -4 }; } },
+      { t:'The transmission', d:'The shop found the leak.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const dies = R()<0.45;
+          return dies
+          ? { text:'It lets go on the highway ramp in April. The tow truck driver is nice about it.', fx:[['steady',-8]], score: -4 }
+          : { text:'It leaks, you top it off, it holds. Cars run on luck more than anyone admits.', fx:[], score: 0 }; } },
+      { t:'The dental crown', d:'The dentist used the word eventually.', w:1,
+        keep(){ return { text:'', fx:[['health',2]], score: 4 }; },
+        drop(){ return { text:'The tooth will wait, and charge interest.', fx:[['health',-6]], score: -3 }; } },
+      { t:'Being in the wedding', d:'Flights, the suit, the weekend.', w:1,
+        keep(){ return { text:'', fx:[['people',6]], score: 4 }; },
+        drop(){ return { text:'You send a gift and an apology. The photos go up without you, and stay up.', fx:[['people',-6]], score: -2 }; } },
+      { t:'The certification exam fee', d:'Work would have to give you the title.', w:1,
+        keep(){ return { text:'', fx:[], score: 6 }; },
+        drop(){ return { text:'The exam moves to the fall window. Careers are patient right up until they are not.', fx:[], score: -2 }; } }
+    ],
+    [ // high
+      { t:'Max the retirement match', d:'Free money, the advisor keeps saying.', w:2,
+        keep(){ L.money+=6; return { text:'', fx:[], score: 8, note:'Age 28: extra money went to work making more money. That is the whole trick up here.' }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'The trip with college friends', d:'Lisbon, a group chat, forty tabs.', w:1,
+        keep(){ return { text:'', fx:[['people',6],['health',3]], score: 5 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'Your roommate’s startup round', d:'A small check, a big maybe.', w:1,
+        keep(){ const hits = R()<0.4;
+          return hits
+          ? { text:'', fx:[['money',12]], score: 9, note:'Age 28: a spare check turned into a windfall. Spare checks do that here.' }
+          : { text:'', fx:[['money',-6]], score: 0 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'The charity board your mentor suggested', d:'Second Tuesdays, good cause, better rolodex.', w:1,
+        keep(){ return { text:'', fx:[['people',7]], score: 5, note:'Age 28: even the volunteering came with deal flow.' }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'A down payment loan to your brother', d:'He would do it for you.', w:1,
+        keep(){ return { text:'', fx:[['people',5]], score: 4 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } }
+    ]);
+  },
+  closeText(h){ return T(h,
+    `The month ends. The two you dropped do not disappear. They wait.`,
+    `The month ends. The two you dropped go on the list for spring.`,
+    `The month ends. The two you skipped cost you nothing at all. Not choosing is free up here, and that is the whole difference.`); }
+},
+
+{ age:'Age 31', title:'The year everything happens',
+  vign(h,L){
+    const t = tier(h);
+    const roll = R();
+    let shock;
+    if (t==='high') shock = roll<0.25 ? 'layoff' : roll<0.4 ? 'health' : roll<0.55 ? 'car' : roll<0.8 ? 'promo' : 'inherit';
+    else if (t==='mid') shock = roll<0.3 ? 'layoff' : roll<0.5 ? 'health' : roll<0.65 ? 'car' : roll<0.8 ? 'parent' : 'promo';
+    else shock = roll<0.3 ? 'layoff' : roll<0.55 ? 'health' : roll<0.75 ? 'car' : roll<0.95 ? 'parent' : 'promo';
+    L.shock = shock;
+    const map = {
+      layoff:`The company restructures. Your whole department learns a new word, redundant. Severance covers three weeks, and the next job takes months to find.`,
+      health:`A pain you ignored stops being ignorable. The doctor uses the word procedure${L.steady<50?', and your insurance uses the word deductible':''}.`,
+      car:`The transmission dies on a Tuesday. The quote is twenty eight hundred dollars, and work is nineteen miles away.`,
+      parent:`${famCap(h)} call${h.fam===2?'':'s'}. It is health, it is serious, and somebody has to step up. Everyone knows who somebody means.`,
+      promo:`Your boss takes you to lunch and slides a new title across the table.`,
+      inherit:`Your grandmother passes in the spring. The will leaves you a share of the Maple Street house.`
+    };
+    return `Thirty one arrives, and it brings company.\n\n` + map[shock] + `\n\nWhat do you do?`;
+  },
+  view(h,L){ return T(h,
+    `The ER bills in envelopes that do not stop. The payday window is open late. Every shock lands on the last one’s bruise.`,
+    `One shock is survivable here. It is the second one, landing before the first is paid off, that decides things.`,
+    `Someone at the bank moves some things around. Most problems at this altitude are phone calls.`); },
+  choices(h,L){
+    const sh = L.shock;
+    if (sh==='promo') return [
+      { t:'Take the promotion', d:'More money, more hours.', w:2,
+        out(){ return { text:'The title is real and so is the raise. Your calendar develops opinions about your weekends.', fx:[['money',14],['steady',10],['health',-3]], score: 24+Math.round(R()*10) }; } },
+      { t:'Take it, and negotiate hard', d:'They came to you, after all.', w:2,
+        out(){ const win = R()<0.6; return win
+          ? { text:'You ask for more and get most of it. Turns out the first number was the opening bid.', fx:[['money',18],['steady',10]], score: 30+Math.round(R()*10) }
+          : { text:'They meet you halfway with a flicker of annoyance. Still a win, slightly taxed.', fx:[['money',13],['steady',8]], score: 21+Math.round(R()*8) }; } },
+      { t:'Pass, protect the life you have', d:'The current job fits.', w:1,
+        out(){ return { text:'You stay put. The ladder will still be there, people say, not quite believing it.', fx:[['health',3]], score: 10+Math.round(R()*6) }; } }
+    ];
+    if (sh==='inherit') return [
+      { t:'Keep the house, rent it out', d:'A landlord in the family at last.', w:2,
+        out(){ L.money+=15; return { text:'Rent covers the taxes and then some. Money now arrives while you sleep, which is how the other half has always done it.', fx:[['steady',8]], score: 24+Math.round(R()*10), note:'Age 31: an inheritance started paying monthly. Wealth works even when you do not.' }; } },
+      { t:'Sell your share', d:'Clean and simple.', w:1,
+        out(){ L.money+=25; return { text:'The check clears and the family group chat goes quiet for a month. Money and grief make awkward roommates.', fx:[['people',-4]], score: 19+Math.round(R()*8), note:'Age 31: an inheritance arrived as a lump sum.' }; } }
+    ];
+    const opts = [
+      { t:'Cover it from savings', d:'This is what the account was for.', w:2,
+        gray(h2,L2){ return L2.money<20 ? 'The account will not cover it. That is the whole problem.' : null; },
+        out(){ L.money-=15; return { text:'It hurts and it holds. The buffer did its one job, and now it needs rebuilding.', fx:[['steady',-2]], score: 17+Math.round(R()*8) }; } },
+      { t:'Call home for help', d:'Swallow the pride, make the call.', w:1,
+        gray(h2){ return h2.wealth<2 ? 'There is nothing to borrow. You know that before you dial.' : null; },
+        out(){ return { text:'Your dad covers it and tells you to pay it back whenever. Whenever is a payment plan with no interest and no term.', fx:[], score: 19+Math.round(R()*8), note:'Age 31: the family backstop absorbed the shock without a scratch.' }; } },
+      { t:'Put it on the card', d:'Twenty six percent, but it is tonight.', w:1,
+        out(){ L.debt=Math.min(2,L.debt+1); return { text:'Solved in ten minutes, paid for over three years. The interest quietly becomes its own small emergency.', fx:[['steady',-4]], score: 6+Math.round(R()*5), note:'Age 31: the only credit on offer charged twenty six percent for the privilege of being poor.' }; } },
+      { t:'Take extra shifts and ride it out', d:'Sleep is negotiable, apparently.', w:1,
+        out(){ return { text:'You cover it with hours. The body keeps the books on this kind of loan and always collects.', fx:[['health',-8],['money',5]], score: 10+Math.round(R()*6) }; } }
+    ];
+    if (sh==='parent') opts.push(
+      { t:'Move back and be the one', d:'Somebody has to, and it is you.', w:1,
+        out(){ L.kidHelp=true; return { text:'You move home. Career plans go in a drawer that gets harder to open every year. Nobody thanks you correctly, and you do it anyway.', fx:[['people',6],['steady',-8],['money',-5]], score: 13+Math.round(R()*7), note:'Age 31: a parent’s health redirected the whole decade. Care work found its person, again.' }; } },
+      { t:'Pay for care instead', d:'Help from a distance.', w:1,
+        gray(h2,L2){ return (L2.money<30 && h2.wealth<3) ? 'Care costs more per month than your rent. It is not an option, it is a brochure.' : null; },
+        out(){ L.money-=15; return { text:'A good aide, four days a week. Money substitutes for presence, imperfectly, the way it always has.', fx:[], score: 15+Math.round(R()*7), note:'Age 31: care could be hired instead of becoming your life.' }; } }
+    );
+    return opts;
+  }
+},
+
+{ age:'Age 35', title:'The swing',
+  vign(h,L){
+    return `Thirty five. Settled enough to be restless. A friend wants to open a business with you, your industry is posting openings one rung up, and the ${L.degree?'alumni office':'extension school'} keeps emailing.\n\nTake a swing or hold steady?`;
+  },
+  view(h,L){ return T(h,
+    `Risk is priced differently down here. The same bet that is a story for some people is a crater for you.`,
+    `You can afford exactly one swing. The question is which decade gets it.`,
+    `People here take risks constantly and call it boldness. The net underneath is doing most of the work.`); },
+  choices(h,L){ return [
+    { t:'Start the business', d:'The coffee shop and roastery. A real plan, real risk.', w:1, pop:0.1,
+      gray(h2,L2){ return (L2.money<30 && h2.wealth<3) ? 'There is no cushion under this trapeze. You cannot responsibly jump.' : null; },
+      out(){ const win = R()<0.5;
+        if (win){ L.money+=25; L.ownBiz=true; return { text:'Two brutal years, then it works. Line out the door on Saturdays, your name on the cups.', fx:[['steady',8],['people',8],['health',-4]], score: 36+Math.round(R()*14) }; }
+        if (h.wealth>=3){ L.money-=10; return { text:'It does not make it. The family absorbs the loss, you land a marketing job in six weeks, and at parties it becomes a story about learning.', fx:[['health',-3]], score: 12+Math.round(R()*6), note:'Age 35: the business failed softly. Family money was the net.' }; }
+        L.money=Math.max(0,L.money-25); L.debt=Math.min(2,L.debt+1);
+        return { text:'It does not make it, and the debt is yours alone. The same failure that is a story for some people is a crater for others.', fx:[['steady',-10],['health',-5]], score: 5+Math.round(R()*4), note:'Age 35: the business failed hard. There was no net.' }; } },
+    { t:'Go back for the degree', d:'Nights and weekends for three years.', w:2, pop:0.1,
+      only: !L.degree,
+      out(){
+        if (tier(h)==='low' && R()<0.5){
+          L.cert=true; L.debt=Math.min(2,L.debt+1);
+          return { text:'Two good semesters. Then the overtime season, the car, the family, the tiredness. The credits sit there, real and unfinished, like most adult degrees.', fx:[['health',-3]], score: 9+Math.round(R()*5), note:'Age 35: going back was allowed. Staying back was the expensive part.' };
+        }
+        L.degree=true; L.debt=Math.min(2,L.debt+1); return { text:'You finish at thirty eight, tired and credentialed. The raise takes a year to show up and then keeps showing up.', fx:[['health',-4],['steady',6]], score: 22+Math.round(R()*10) }; } },
+    { t:'Push for the next rung', d:'Same track, higher and harder.', w:2, pop:0.35,
+      out(){ const win = R() < (L.people>=55?0.7:0.45); return win
+        ? { text:'You get it. Somebody on the panel knew your work, which is another way of saying somebody knew you.', fx:[['money',12],['steady',8]], score: 24+Math.round(R()*10) }
+        : { text:'Close, but it goes to an outside hire. You bank the interview practice and the small bitterness.', fx:[], score: 8+Math.round(R()*6) }; } },
+    { t:'Hold steady, live the life', d:'Coach the team, plant the garden.', w:1, pop:0.45,
+      out(){ return { text:'You stop climbing and start living where you are. The ambition industry never mentions this option, and plenty of happy people take it.', fx:[['health',6],['people',6]], score: 13+Math.round(R()*6) }; } }
+  ]; }
+},
+
+{ age:'Age 40', title:'Where you land', closer:true,
+  vign(h,L){
+    const okMoney = L.money>=40, okSteady = L.steady>=60;
+    let a = `Forty. `;
+    a += L.ownHome ? `The house is slowly becoming yours. ` : `The lease renews every year, and every year the rent renews harder. `;
+    a += L.debt===2 ? `The loans are still there, a quiet tax on everything. ` : L.debt===1 ? `The last of the debt is nearly gone. ` : ``;
+    a += okSteady ? `Work is stable enough that you have stopped checking the listings. ` : `Work still feels like standing on one foot. `;
+    a += `\n\nYour kid is seven. `;
+    a += okMoney
+      ? `When their laptop breaks, it is replaced that weekend. There is a form on the fridge for the fall soccer league, and the fee is not a conversation.`
+      : `When their laptop breaks, it stays broken for a while. There is a form for the fall soccer league that does not make it home, and your kid already knows better than to ask.`;
+    a += `\n\nThe deal you were handed at birth has been re-dealt, one generation on.`;
+    return a;
+  },
+  choices(){ return []; }
+}
+];
+
+/* ---------------- engine ---------------- */
+const NLIVES = 3;
+function grayOf(c,h,L){ return typeof c.gray==='function' ? c.gray(h,L) : (c.gray||null); }
+function liveChoices(rd,h,L){ return rd.choices(h,L).filter(c => c.only === undefined || c.only); }
+
+function startGame(team){
+  S = { team, lifeIdx: 0, lives: [], done: false };
+  window.__S = S;
+  startLife();
+}
+function startLife(){
+  const h = (window.__forceHand && window.__forceHand[S.lifeIdx]) ? window.__forceHand[S.lifeIdx] : deal();
+  S.cur = newLife(h);
+  renderRound();
+}
+function meterRow(L){
+  if (!L.adult) return '';
+  const m = (name, cls, v) => `<div class="meter ${cls}"><div class="lab"><span>${name}</span></div><div class="bar"><i style="width:${clamp(v,0,100)}%"></i></div></div>`;
+  return `<div class="meters">
+    ${m('Money','m-money',L.money)}
+    ${m('Steady','m-steady',L.steady)}
+    ${m('Health','m-health',L.health)}
+    ${m('People','m-people',L.people)}
+  </div>
+  <div class="chips">
+    <span class="chip">Loans: <b>${debtWord(L.debt)}</b></span>
+    <span class="chip">Score: <b>${L.score}</b></span>
+  </div>`;
+}
+function viewBlock(rd,h,L){
+  if (!rd.view) return '';
+  return `<div class="view"><b>The view from here</b>${rd.view(h,L)}</div>`;
+}
+function renderRound(){
+  const L = S.cur, rd = ROUNDS[L.roundIdx];
+  if (rd.closer){ renderCloser(); return; }
+  const vignText = rd.vign(L.h, L);
+  if (rd.type==='allocate'){ renderAllocate(rd, vignText); return; }
+  const lifeTag = `<span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>`;
+  const cs = liveChoices(rd, L.h, L);
+  L.curChoices = cs;
+  window.__C = cs.map((c,i)=>({ i, gray: !!grayOf(c,L.h,L), w: c.w }));
+  const optHtml = cs.map((c,i)=>{
+    const gray = grayOf(c,L.h,L);
+    return `<button class="opt${gray?' gray':''}" data-i="${i}" ${gray?'disabled':''}>
+      <span class="ot">${c.t}</span>
+      <span class="od">${gray ? gray : c.d}</span>
+    </button>`;
+  }).join('');
+  $('#app').innerHTML = `
+    ${meterRow(L)}
+    <div class="card">
+      ${lifeTag}
+      <div class="age">${rd.title}</div>
+      <p class="vign">${vignText}</p>
+      ${viewBlock(rd,L.h,L)}
+      <div id="opts">${optHtml}</div>
+      <div id="result"></div>
+    </div>`;
+  document.querySelectorAll('#opts .opt:not([disabled])').forEach(b => b.addEventListener('click', () => choose(+b.dataset.i)));
+}
+function showResult(L, text, shown, sc, drift, btnLabel){
+  $('#result').innerHTML = `
+    <div class="outcome">
+      ${text?`<div>${text}</div>`:''}
+      ${shown.length?`<div class="delta">${shown.join(' &nbsp; ')}</div>`:''}
+      <div class="scoreline">Score ${(sc+drift)>=0?'+':''}${sc+drift}. Life total <b>${L.score}</b>.</div>
+      <div style="margin-top:10px"><button class="btn" id="nextBtn">${btnLabel||'Keep going'}</button></div>
+    </div>`;
+  $('#nextBtn').addEventListener('click', nextRound);
+}
+function fxShown(L, fx){
+  const shown = [];
+  (fx||[]).forEach(([m,d])=>{
+    if (!L.adult && (m==='money'||m==='steady')) return;
+    const label = m==='money'?'Money':m==='steady'?'Steady':m==='health'?'Health':'People';
+    shown.push(`<span class="${d>=0?'up':'dn'}">${label} ${d>=0?'+':''}${d}</span>`);
+  });
+  return shown;
+}
+function choose(i){
+  const L = S.cur, rd = ROUNDS[L.roundIdx];
+  const c = L.curChoices[i];
+  const r = c.out(L.h, L);
+  const shown = fxShown(L, r.fx);
+  const { sc, drift } = applyResult(L, r, c.w, c.t, rd);
+  document.querySelectorAll('#opts .opt').forEach(b => { b.disabled = true; if (+b.dataset.i===i) b.classList.add('picked'); });
+  showResult(L, r.text, shown, sc, drift);
+}
+function renderAllocate(rd, vignText){
+  const L = S.cur;
+  const items = rd.items(L.h, L);
+  L.curItems = items;
+  L.sel = new Set();
+  window.__C = items.map((it,i)=>({ i, gray:false, w: it.w }));
+  const optHtml = items.map((it,i)=>`
+    <button class="opt payopt" data-i="${i}">
+      <span class="ot">${it.t}</span>
+      <span class="od">${it.d}</span>
+    </button>`).join('');
+  $('#app').innerHTML = `
+    ${meterRow(L)}
+    <div class="card">
+      <span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>
+      <div class="age">${rd.title}</div>
+      <p class="vign">${vignText}</p>
+      ${viewBlock(rd,L.h,L)}
+      <div id="opts">${optHtml}</div>
+      <div class="payhead"><span class="muted small" id="payCount">0 of 3 picked</span>
+      <button class="btn" id="payBtn" disabled>Cover these three</button></div>
+      <div id="result"></div>
+    </div>`;
+  document.querySelectorAll('.payopt').forEach(b => b.addEventListener('click', () => {
+    const i = +b.dataset.i;
+    if (L.sel.has(i)){ L.sel.delete(i); b.classList.remove('sel'); }
+    else if (L.sel.size < 3){ L.sel.add(i); b.classList.add('sel'); }
+    $('#payCount').textContent = `${L.sel.size} of 3 picked`;
+    $('#payBtn').disabled = L.sel.size !== 3;
+  }));
+  $('#payBtn').addEventListener('click', () => confirmAllocate(rd));
+}
+function confirmAllocate(rd){
+  const L = S.cur;
+  const items = L.curItems;
+  const kept = [], dropped = [];
+  items.forEach((it,i)=> (L.sel.has(i)?kept:dropped).push(it));
+  let allFx = [], score = 0, wsum = 0, texts = [];
+  kept.forEach(it => {
+    const r = it.keep(L.h, L);
+    allFx.push(...(r.fx||[])); score += r.score||0; wsum += it.w;
+    if (r.note) L.handNotes.push(r.note);
+    if (r.text) texts.push(r.text);
+  });
+  dropped.forEach(it => {
+    const r = it.drop(L.h, L);
+    allFx.push(...(r.fx||[])); score += r.score||0;
+    if (r.note) L.handNotes.push(r.note);
+    if (r.text) texts.push(r.text);
+  });
+  const label = 'Covered: ' + kept.map(k=>k.t.toLowerCase()).join(', ');
+  const shown = fxShown(L, allFx);
+  const r = { text:'', fx: allFx, score, note: null };
+  const { sc, drift } = applyResult(L, r, 0, label, rd);
+  // allocate contributes up to 6 wise points against a max of 6 (override the default 2)
+  L.wiseMax += 4; L.wise += wsum;
+  const text = texts.concat([rd.closeText(L.h)]).join(' ');
+  document.querySelectorAll('.payopt').forEach(b => { b.disabled = true; });
+  $('#payBtn').disabled = true;
+  showResult(L, text, shown, sc, drift);
+}
+function nextRound(){
+  const L = S.cur;
+  L.roundIdx++;
+  if (L.roundIdx >= ROUNDS.length){ endLife(); return; }
+  renderRound();
+}
+function renderCloser(){
+  const L = S.cur, rd = ROUNDS[L.roundIdx];
+  $('#app').innerHTML = `
+    ${meterRow(L)}
+    <div class="card">
+      <span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>
+      <div class="age">${rd.title}</div>
+      <p class="vign">${rd.vign(L.h, L)}</p>
+      <div style="margin-top:10px"><button class="btn" id="nextBtn">Close this life</button></div>
+    </div>`;
+  $('#nextBtn').addEventListener('click', endLife);
+}
+function endLife(){
+  const L = S.cur;
+  const bonus = computeBonuses(L);
+  bonus.forEach(b => { L.score += b.pts; });
+  L.bonus = bonus;
+  L.played = L.wiseMax>0 ? Math.round(100 * L.wise / L.wiseMax) : 0;
+  S.lives.push(L);
+  const last = S.lifeIdx === NLIVES-1;
+  $('#app').innerHTML = `
+    <div class="card">
+      <div class="big">${['First','Second','Third'][S.lifeIdx]} life complete</div>
+      <p>Life score: <b>${L.score}</b>.</p>
+      <p class="muted">${last ? 'That was the third life. Time to open the books.' : 'A new deal is waiting. New family, new street, new everything.'}</p>
+      <button class="btn" id="nextBtn">${last ? 'Open the accounting' : 'Draw the next life'}</button>
+    </div>`;
+  $('#nextBtn').addEventListener('click', () => {
+    if (last){ renderAccounting(); }
+    else { S.lifeIdx++; startLife(); }
+  });
+}
+
+/* ---------------- the accounting ---------------- */
+function handReveal(h){
+  const incW = ['','bottom fifth','next fifth','middle fifth','fourth fifth','top fifth'][h.inc];
+  const weaW = ['nothing to speak of','a little cushion','some real savings','a paid off house','real money'][h.wealth];
+  const eduW = ['did not finish high school','finished high school','some college','college degrees'][h.pedu];
+  const famW = h.fam===2?'two parents':h.fam===1?'your mom':'your grandma';
+  return `
+    <div class="handline">Parents’ income: <b>${incW}</b></div>
+    <div class="handline">Family wealth: <b>${weaW}</b></div>
+    <div class="handline">Parents’ schooling: <b>${eduW}</b></div>
+    <div class="handline">At home: <b>${famW}</b>${h.sibs?`, <b>${h.sibs} sibling${h.sibs>1?'s':''}</b>`:''}</div>
+    <div class="handline">The neighborhood draw: <b>${hoodName(h)}</b></div>
+    <div class="startbar"><i style="width:${h.start}%"></i></div>
+    <div class="small muted">This life started ahead of about ${h.start} percent of the country.</div>`;
+}
+function renderAccounting(){
+  S.done = true;
+  const avgOut = Math.round(S.lives.reduce((a,l)=>a+l.score,0)/NLIVES);
+  const avgPlay = Math.round(S.lives.reduce((a,l)=>a+l.played,0)/NLIVES);
+  const lifeBlocks = S.lives.map((L,i)=>{
+    const cell = v => v===undefined || v===0 ? '<td class="num"></td>' : `<td class="num ${v>=0?'pos':'neg'}">${v>=0?'+':''}${v}</td>`;
+    const rows = L.ledger.map(e=>`<tr><td>${e.age}</td><td>${e.choice}</td>${cell(e.pts)}${cell(e.drift)}</tr>`).join('');
+    const brows = L.bonus.map(b=>`<tr><td>Age 40</td><td>${b.label}</td>${b.pos?'<td class="num"></td>'+cell(b.pts):cell(b.pts)+'<td class="num"></td>'}</tr>`).join('');
+    const choiceSum = L.ledger.reduce((a,e)=>a+e.pts,0) + L.bonus.filter(b=>!b.pos).reduce((a,b)=>a+b.pts,0);
+    const posSum = L.ledger.reduce((a,e)=>a+(e.drift||0),0) + L.bonus.filter(b=>b.pos).reduce((a,b)=>a+b.pts,0);
+    const notes = L.handNotes.length ? `<p class="small" style="margin-top:10px"><b>What the deal did, quietly:</b></p><ul class="small">${L.handNotes.map(n=>`<li>${n}</li>`).join('')}</ul>` : '';
+    return `<div class="card">
+      <div class="big">${['First','Second','Third'][i]} life</div>
+      ${handReveal(L.h)}
+      <hr class="hr">
+      <table><tr><th>Age</th><th>What you chose</th><th class="num">Choice</th><th class="num">Position</th></tr>${rows}${brows}
+      <tr><td></td><td><b>Totals</b></td><td class="num"><b>${choiceSum}</b></td><td class="num"><b>${posSum}</b></td></tr></table>
+      <p class="small muted" style="margin-top:8px">The Choice column is what your decisions earned. The Position column arrived every round on its own. During the game you only ever saw the sum.</p>
+      ${notes}
+      <div class="twoScore">
+        <div class="scorebox"><div class="val">${L.score}</div><div class="cap">Life outcome</div></div>
+        <div class="scorebox"><div class="val">${L.played}</div><div class="cap">How well the hand was played, out of 100</div></div>
+      </div>
+    </div>`;
+  }).join('');
+  $('#app').innerHTML = `
+    <div class="card">
+      <div class="big">The accounting</div>
+      <p>Three lives, three deals. Here is where each one actually started, and what the start was doing while you made your choices.</p>
+      <div class="twoScore">
+        <div class="scorebox"><div class="val">${avgOut}</div><div class="cap">Team average, life outcomes</div></div>
+        <div class="scorebox"><div class="val">${avgPlay}</div><div class="cap">Team average, hands well played</div></div>
+      </div>
+      <p class="small muted">Report both numbers. Your class will rank teams both ways, and the two lists will not agree.</p>
+    </div>
+    ${lifeBlocks}
+    <div class="card">
+      <div class="big">Talk about it</div>
+      <ul class="qs">
+        <li>Which of your three lives would you want to be born into? Say why. Then ask how much of that life’s ending its choices actually decided.</li>
+        <li>People often explain success as hard work and smart choices. After three deals, what does that explanation get right? What does it leave out?</li>
+        <li>Income arrived every month in these lives. Wealth showed up only a few times, and changed everything when it did. What is the difference between the two, and why does it matter so much?</li>
+        <li>Your three lives chose from three different menus. Nobody chooses their own menu. Where do the menus come from, and what would it take to hand somebody a better one?</li>
+        <li>This game dealt money, schooling, family, and neighborhood. It did not deal race or gender. Pick one life you played. Where would race or gender have changed what happened in it?</li>
+        <li>Compare your two team scores. Was your highest scoring life also your best played life? What does the answer tell you about how the world hands out its rewards?</li>
+      </ul>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="againBtn">Draw three new lives</button>
+        <button class="btn secondary" id="leversBtn">Open the levers</button>
+      </div>
+    </div>`;
+  $('#againBtn').addEventListener('click', () => startGame(S.team));
+  $('#leversBtn').addEventListener('click', renderDash);
+}
+
+/* ---------------- simulation (dashboard engine) ---------------- */
+function simulateLife(hand, style, trace){
+  const L = newLife(hand);
+  for (let ri = 0; ri < ROUNDS.length; ri++){
+    L.roundIdx = ri;
+    const rd = ROUNDS[ri];
+    if (rd.closer) break;
+    rd.vign(L.h, L); // may roll state
+    if (rd.type==='allocate'){
+      const items = rd.items(L.h, L);
+      let idx = items.map((it,i)=>i);
+      if (style==='careful') idx.sort((a,b)=>items[b].w-items[a].w || a-b);
+      else if (style==='loose') idx.sort((a,b)=>items[a].w-items[b].w || a-b);
+      else { for (let i=idx.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; } }
+      const keepSet = new Set(idx.slice(0,3));
+      let allFx=[], score=0, wsum=0;
+      items.forEach((it,i)=>{
+        const r = keepSet.has(i) ? it.keep(L.h,L) : it.drop(L.h,L);
+        allFx.push(...(r.fx||[])); score += r.score||0;
+        if (keepSet.has(i)) wsum += it.w;
+      });
+      applyResult(L, {fx:allFx, score}, 0, 'money month', rd);
+      L.wiseMax += 4; L.wise += wsum;
+      if (trace) trace.push({ age: rd.age, choice: 'Covers ' + [...keepSet].map(i=>items[i].t.toLowerCase()).join(', '), text: rd.closeText(L.h) });
+      continue;
+    }
+    const cs = liveChoices(rd, L.h, L).filter(c => !grayOf(c, L.h, L));
+    if (!cs.length) continue;
+    let c;
+    if (style==='careful'){ let best = Math.max(...cs.map(x=>x.w)); const top = cs.filter(x=>x.w===best); c = top[Math.floor(R()*top.length)]; }
+    else if (style==='loose'){ let worst = Math.min(...cs.map(x=>x.w)); const bot = cs.filter(x=>x.w===worst); c = bot[Math.floor(R()*bot.length)]; }
+    else if (cs.some(x=>x.pop!==undefined)){
+      // popularity-weighted typical play where weights exist
+      const tot = cs.reduce((a,x)=>a+(x.pop||0.05),0);
+      let roll = R()*tot;
+      c = cs[0];
+      for (const x of cs){ roll -= (x.pop||0.05); if (roll<=0){ c = x; break; } }
+    }
+    else c = cs[Math.floor(R()*cs.length)];
+    const r = c.out(L.h, L);
+    applyResult(L, r, c.w, c.t, rd);
+    if (trace) trace.push({ age: rd.age, choice: c.t, text: r.text });
+  }
+  // Starting college is not finishing it. Roughly 4 in 10 US students who enrol in a
+  // four year program have no degree six years later, and completion tracks family
+  // income. These rates were set so the model's degree shares land near the measured
+  // ones (Pell Institute, by age 24: 15 / 25 / 44 / 58 percent by family income quarter).
+  if (L.degree){
+    const t = tier(L.h);
+    const finish = t === 'low' ? 0.80 : t === 'mid' ? 0.44 : 0.55;
+    if (R() > finish){ L.degree = false; if (R() < 0.35) L.cert = true; }
+  }
+  // Economic position at forty. Only the RANKING matters: the cutoffs below are
+  // calibrated so the model reproduces measured mobility, so the weights here just
+  // order lives, they do not claim to price anything.
+  const base = L.money * 1.0
+    + (L.steady - 40) * 0.55
+    + (L.degree ? 22 : L.cert ? 13 : 0)
+    + (L.ownHome ? 16 : 0)
+    + (L.ownBiz ? 7 : 0)
+    - (L.debt === 2 ? 15 : L.debt === 1 ? 5 : 0)
+    + (L.health - 50) * 0.12;
+  // Everything the model does not contain: illness, recessions, discrimination, talent,
+  // who a person happens to meet. Its size (SIGMA) was not guessed. It is the single number
+  // fitted so the model reproduces the measured mobility table as closely as it can.
+  // The residual setting shifts this draw. At 'typical' the shift is zero, which is the
+  // only setting the calibration against the national table applies to.
+  const shift = style === 'careful' ? 0.6 : style === 'loose' ? -0.6 : 0;
+  const attain = base + (normalDraw() + shift) * SIGMA;
+  return { degree: L.degree, cert: L.cert, credentialFlag: !!(L.degree || L.cert),
+           ownHome: L.ownHome, debt: L.debt, health: L.health, steady: L.steady, money: L.money,
+           attain, dest: destQuintile(attain), security: securityPct(base) };
+}
+/* SECURITY AT FORTY. This is the model's own composite, not a published measure.
+   It exists because a single income rank misses housing, health, debt and job security.
+   It is reported as a percentile against all simulated lives, so it only has meaning
+   inside this page. REF holds the 0th to 100th percentile of base across the pooled
+   simulated population, computed 2026-08-04. */
+const REF = [-20.2,6.08,11.88,15.4,18.18,20.42,22.48,24.22,25.98,27.5,28.78,30.18,31.44,32.62,33.8,34.88,35.98,37.04,38.06,39.02,39.96,40.96,41.98,43.02,43.96,44.92,45.8,46.66,47.56,48.42,49.34,50.16,51.04,51.9,52.8,53.76,54.6,55.42,56.2,57,57.9,58.78,59.64,60.4,61.28,62.04,62.92,63.8,64.62,65.52,66.34,67.12,67.96,68.76,69.62,70.46,71.32,72.18,73.1,73.96,74.88,75.72,76.64,77.5,78.32,79.26,80.12,81.1,82,82.96,83.88,84.9,85.86,86.88,87.82,88.8,89.86,90.94,91.96,93.02,94.02,95.16,96.34,97.52,98.78,100.16,101.58,103,104.4,105.88,107.38,109.2,111.06,113.28,115.32,117.86,120.64,123.96,128.38,134.72,169.64];
+function securityPct(v){
+  if (!REF) return null;
+  let lo = 0, hi = REF.length - 1;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (REF[mid] < v) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+function normalDraw(){
+  let u = 0, v = 0;
+  while (u === 0) u = R();
+  while (v === 0) v = R();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+/* CALIBRATION. Fitted 2026-08-04 against Chetty, Hendren, Kline and Saez 2014, all 25 cells
+   of the national quintile transition matrix. SIGMA is the one free parameter. The cutoffs
+   are the 20th, 40th, 60th and 80th percentiles of the pooled population, which is what an
+   income fifth is by definition, so they were not tuned to flatter the model.
+   Mean absolute error: about 2 percentage points per cell. Worst fit is the top start. */
+const SIGMA = 49;
+const CUTS = [18.8, 52.8, 82.5, 116.8];
+function destQuintile(a){
+  if (a < CUTS[0]) return 1;
+  if (a < CUTS[1]) return 2;
+  if (a < CUTS[2]) return 3;
+  if (a < CUTS[3]) return 4;
+  return 5;
+}
+// Chetty et al. 2014, Table II. Rows are parent fifth, columns child fifth.
+const CHETTY_ROWS = {
+  1: [33.7,28.0,18.4,12.3,7.5], 2: [24.2,24.2,21.7,17.6,12.3], 3: [17.8,19.8,22.1,22.0,18.3],
+  4: [13.4,16.0,20.9,24.4,25.4], 5: [10.9,11.9,17.0,23.6,36.5]
+};
+
+/* ---------------- the levers dashboard ---------------- */
+const DASH = { inc:1, wealth:0, pedu:1, hood:1, fam:1, sibs:1, style:'typical', n:500, held:null, last:null };
+const DASH_DEFAULTS = { inc:1, wealth:0, pedu:1, hood:1, fam:1, sibs:1, style:'typical', n:500 };
+const HOODW = h => h>=4 ? 'a well funded school zone' : h===3 ? 'an average school zone' : 'an underfunded school zone';
+window.__DASH = DASH;
+function dashHand(){
+  const d = DASH;
+  const raw = d.inc*2.6 + d.wealth*2.2 + d.pedu*1.7 + d.hood*1.7 + (d.fam===2?1.6:d.fam===1?0.6:0) - d.sibs*0.35;
+  const start = clamp(Math.round((raw - 1) / (25.8 - 1) * 100), 2, 98);
+  return { inc:d.inc, wealth:d.wealth, pedu:d.pedu, hood:d.hood, fam:d.fam, sibs:d.sibs, start };
+}
+function runSims(n){
+  const hand = dashHand();
+  const out = [];
+  for (let i=0;i<n;i++) out.push(simulateLife(hand, DASH.style));
+  const pct = f => Math.round(100*out.filter(f).length/n);
+  const dest = [1,2,3,4,5].map(q => Math.round(1000*out.filter(o=>o.dest===q).length/n)/10);
+  const secs = out.map(o=>o.security).sort((a,b)=>a-b);
+  const res = {
+    secMed: secs[Math.floor(n/2)], secLo: secs[Math.floor(n*0.25)], secHi: secs[Math.floor(n*0.75)],
+    n, hand, style: DASH.style,
+    degree: pct(o=>o.degree),
+    credential: pct(o=>o.degree || o.cert),
+    home: pct(o=>o.ownHome),
+    heavy: pct(o=>o.debt===2),
+    shaky: pct(o=>o.steady<40),
+    secure: pct(o=>o.steady>=62),
+    dest, incQ: DASH.inc
+  };
+  DASH.last = res;
+  return res;
+}
+function histBins(scores, lo, hi, step){
+  const bins = [];
+  for (let b=lo;b<hi;b+=step) bins.push(0);
+  scores.forEach(s=>{ const i = clamp(Math.floor((s-lo)/step), 0, bins.length-1); bins[i]++; });
+  return bins;
+}
+const SEG = (id, opts, cur) => `<div class="seg" data-id="${id}">` +
+  opts.map(o=>`<button data-v="${o.v}" class="${String(o.v)===String(cur)?'on':''}">${o.t}</button>`).join('') + `</div>`;
+function renderDash(){
+  const d = DASH;
+  $('#app').innerHTML = `
+    <div class="card">
+      <div class="big">Where a life starts</div>
+      <p>This is a model, not a measurement. It runs hundreds of made up lives from a starting position you choose, birth to forty, and reports where they end up. Set the circumstances, change one at a time, and argue about what happens. Read the note below on what the model can and cannot tell you before you trust anything it says.</p>
+      <div class="warnbox"><b>Read this first: where these numbers come from.</b> The rules inside this model were written by hand. Somebody decided how often a person in each position takes each option, how much a degree helps, how bad a car breakdown gets. Those decisions came from reading sociology, not from estimating anything, so nothing here is a finding about the United States.<br><br>One part was not guessed. The model was <b>calibrated</b>: its scale for economic position at forty, and the size of the random component standing in for everything the model leaves out, were fitted so it reproduces the real mobility table as closely as it can. Every run below shows you how close it got. It misses by about two percentage points on average and misses worst at the richest start. When the model and the measured column disagree, the measured column is right.</div>
+      <div class="levers">
+        <div class="lever"><div class="lab">Parents’ income</div>${SEG('inc',[{v:1,t:'Bottom fifth'},{v:2,t:'Next'},{v:3,t:'Middle'},{v:4,t:'Fourth'},{v:5,t:'Top fifth'}],d.inc)}</div>
+        <div class="lever"><div class="lab">Family wealth</div>${SEG('wealth',[{v:0,t:'None'},{v:1,t:'A little'},{v:2,t:'Some'},{v:3,t:'A paid off house'},{v:4,t:'Real money'}],d.wealth)}</div>
+        <div class="lever"><div class="lab">Parents’ schooling</div>${SEG('pedu',[{v:0,t:'No diploma'},{v:1,t:'High school'},{v:2,t:'Some college'},{v:3,t:'Degrees'}],d.pedu)}</div>
+        <div class="lever"><div class="lab">Neighborhood schools</div>${SEG('hood',[{v:1,t:'Underfunded'},{v:3,t:'Average'},{v:5,t:'Well funded'}],d.hood)}</div>
+        <div class="lever"><div class="lab">At home</div>${SEG('fam',[{v:2,t:'Two parents'},{v:1,t:'One parent'},{v:0,t:'A grandparent'}],d.fam)}</div>
+        <div class="lever"><div class="lab">Everything the start does not determine</div>${SEG('style',[{v:'careful',t:'Breaks their way'},{v:'typical',t:'Average'},{v:'loose',t:'Breaks against them'}],d.style)}</div>
+        <div class="lever"><div class="lab">How many lives to run</div>${SEG('n',[{v:100,t:'100'},{v:500,t:'500'},{v:2000,t:'2,000'}],d.n)}</div>
+      </div>
+      <div class="factbox"><b>What this tool is for, and what it cannot do.</b> It belongs to an old tradition in social science: build a small artificial world, run it, and see what patterns fall out of the rules. Thomas Schelling's segregation model is the famous case. He never measured a real city. He showed that mild preferences about neighbors are enough to produce sharp segregation, and that argument held because of the mechanism it revealed, not because of any number it produced.<br><br><b>What this model can show you:</b> that the same starting position produces a wide spread of endings, that advantages accumulate quietly over years rather than arriving at one dramatic moment, that some options never appear on some people's menus, and that a difference at birth can widen without anyone deciding it should.<br><br><b>What it cannot show you:</b> how much any of that matters. Every magnitude here comes from rules somebody wrote. If you want to know how much wealth matters compared with schooling, this page cannot tell you, and you should distrust it if it seems to. Take those questions to the measured panel further down, or to the research it came from.</div>
+      <div class="factbox"><b>What the last control is.</b> Where you start does not decide where you end up. It never explains more than part of the story, and in the measured data it explains well under half. Everything else lives in that last control: the choices a person makes, their health, the year they happened to graduate, who they met, how they were treated. Sociologists call that the part origin does not explain. It is not the same thing as merit, and this model does not pretend to separate a good decision from good luck.<br><br>Set it to <b>Average</b> and you get lives where that part behaves normally. Set it either way and you are asking a conditional question: what happens to people from this start when everything else breaks for or against them. The model also picks more or less prudent options at each stage, so choices are inside this control, but they are only one of the things inside it.<br><br><b>Note:</b> the comparison against measured data below is only valid at Average, because the measured table describes a whole population, not a favorable slice of it.</div>
+      <div class="factbox"><b>What gets reported.</b> Two kinds of number, and they are not equally trustworthy. First, outcomes that name something real: finishing a degree or credential, owning a home at forty, steady work, heavy debt, living one bad month from trouble. Those can be checked against published figures, and the page does check them.<br><br>Second, <b>security at forty</b>, which is this model's own composite of savings, job security, housing, health, debt and education. It exists because where someone lands in the income distribution misses all of that. It is reported as a percentile against the other simulated lives, so it means something on this page and nowhere else. No published measure corresponds to it. Treat it as a summary of the model, not a fact about the country.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="runBtn">Run the lives</button>
+        <button class="btn secondary" id="holdBtn" ${d.last?'':'disabled'}>Keep this run for comparison</button>
+        <button class="btn secondary" id="clearHoldBtn" ${d.held?'':'disabled'}>Clear the kept run</button>
+        <button class="btn secondary" id="resetBtn">Start over</button>
+      </div>
+      <div id="dashResults">${d.last?'':'<p class="small muted" style="margin-top:10px">Try the bottom fifth first, then change one circumstance and run again. Watch what moves.</p>'}</div>
+      <div id="heldBlock"></div>
+    </div>
+    <div class="card">
+      <div class="big">The real numbers</div>
+      <p class="small">Everything above this line was invented by the person who wrote the model. Everything below it was measured. Where American children raised at the bottom and the top actually end up as adults, by income fifth, from tax records of about 40 million families (Chetty, Hendren, Kline, and Saez 2014).</p>
+      <div class="realgrid">
+        <div class="realcol"><h2><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:6px"></i>Raised in the bottom fifth</h2>${realBars([33.7,28.0,18.4,12.3,7.5],'var(--accent)')}</div>
+        <div class="realcol"><h2><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent2);margin-right:6px"></i>Raised in the top fifth</h2>${realBars([10.9,11.9,17.0,23.6,36.5],'var(--accent2)')}</div>
+      </div>
+      <p class="small muted" style="margin-top:10px">A child of the poorest families has a 7.5 percent chance of reaching the top fifth. A child of the richest families has a 36.5 percent chance of staying there, and children of the highest income families land on average 34 percentiles higher than children of the poorest. These came from tax records, not from anybody's judgment about how the world works.</p>
+      <hr class="hr">
+      <p class="small"><b>Bachelor’s degree by age 24, by family income quarter</b> <span class="muted">(United States, 2022, Pell Institute)</span></p>
+      <div class="hb"><span class="l">Lowest quarter</span><span class="t"><i style="width:15%"></i></span><span class="n">15%</span></div>
+      <div class="hb"><span class="l">Second quarter</span><span class="t"><i style="width:25%"></i></span><span class="n">25%</span></div>
+      <div class="hb"><span class="l">Third quarter</span><span class="t"><i style="width:44%"></i></span><span class="n">44%</span></div>
+      <div class="hb"><span class="l">Highest quarter</span><span class="t"><i style="width:58%"></i></span><span class="n">58%</span></div>
+      <p class="small muted" style="margin-top:8px">Hold the model's degree share against this one. If the model is far off, that tells you something about the model rather than about the country. Checking a model against measured numbers is what keeps it honest, and it is the same thing researchers do to their own.</p>
+    </div>
+    <div class="card">
+      <div class="big">Talk about it</div>
+      <p class="small muted" style="margin-top:0">Start with the first two. They matter more than anything the model says.</p>
+      <ul class="qs">
+        <li>Run the bottom fifth, then run the top fifth, and look at the model against measured column each time. The model nearly nails the bottom and misses the top badly. Why would a model be good at one end of a distribution and bad at the other, and what would you want to change about it?</li>
+        <li>Somebody wrote every rule in here by hand, then fitted two numbers so the model matched the real mobility table. Does fitting it make it more trustworthy, or just better dressed? What would still have to be true for you to believe a claim it produced?</li>
+        <li>Run one start twice without changing anything. The results differ every time. What is that spread standing in for, and why does one person's life story make a weak argument about a whole society?</li>
+        <li>Run the worst start with everything breaking their way, keep it, then run the best start with everything breaking against them. Notice the model refuses to compare either one to real data. Why is a favorable slice of a population not something you can check against a national table?</li>
+        <li>That last control mixes choices, luck, health, timing and how a person gets treated, all in one. Why can a model like this not separate them? What kind of study would you need to pull one apart from the others?</li>
+        <li>The model shows advantages accumulating slowly rather than arriving all at once. Where in a real life would that accumulation actually happen, and who would notice it happening?</li>
+        <li>Some options never appear on some starts. In the real world, who decides which options a person sees? Name three mechanisms.</li>
+        <li>This model only includes class. Real starts also differ by race, gender, health, and place. Pick one and describe how you would find out what it does, rather than guessing.</li>
+      </ul>
+    </div>`;
+  document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const id = seg.dataset.id;
+    DASH[id] = (id==='style') ? b.dataset.v : +b.dataset.v;
+    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+  }));
+  $('#runBtn').addEventListener('click', () => { runSims(DASH.n); drawDashResults(); $('#holdBtn').disabled = false; });
+  $('#holdBtn').addEventListener('click', () => { DASH.held = DASH.last; drawDashResults(); });
+  $('#clearHoldBtn').addEventListener('click', () => { DASH.held = null; drawDashResults(); });
+  $('#resetBtn').addEventListener('click', () => { Object.assign(DASH, DASH_DEFAULTS); DASH.last = null; DASH.held = null; renderDash(); });
+  if (DASH.last) drawDashResults();
+}
+
+function realBars(vals, color){
+  const labs = ['Bottom fifth','Second','Middle','Fourth','Top fifth'];
+  return vals.map((v,i)=>`<div class="rbar"><span class="rl">${labs[i]}</span><span class="rt"><i style="width:${v/40*100}%;background:${color}"></i></span><span class="rv">${v}%</span></div>`).join('');
+}
+function runWords(res){
+  return `${['','bottom fifth','next fifth','middle fifth','fourth fifth','top fifth'][res.hand.inc]} income, ${['no wealth','a little wealth','some wealth','a paid off house','real money'][res.hand.wealth]}, ${['no diploma','high school','some college','degrees'][res.hand.pedu]}, ${HOODW(res.hand.hood)}, with the unexplained part ${res.style==='careful'?'breaking their way':res.style==='loose'?'breaking against them':'behaving normally'}`;
+}
+const OUTCOMES = [
+  ['credential','Finish a degree or trade credential'],
+  ['degree','Finish a four year degree'],
+  ['home','Own their home at forty'],
+  ['secure','Have steady, secure work at forty'],
+  ['heavy','Still carrying heavy debt at forty'],
+  ['shaky','One bad month away from real trouble']
+];
+const QLAB = ['Bottom fifth','Second','Middle','Fourth','Top fifth'];
+function destCompareHTML(res){
+  const real = CHETTY_ROWS[res.incQ];
+  if (res.style !== 'typical'){
+    return `<p class="small" style="margin-top:16px"><b>Where these lives ended up</b></p>
+      ${res.dest.map((v,i)=>`<div class="hb"><span class="l">${QLAB[i]}</span><span class="t"><i style="width:${v/40*100}%"></i></span><span class="n">${v}%</span></div>`).join('')}
+      <div class="factbox">No comparison against the measured table is shown here. You set the unexplained part to ${res.style==='careful'?'break their way':'break against them'}, so these lives are a selected slice rather than a whole population, and the national table has nothing to say about a slice. Set that control back to Average to check the model against real data.</div>`;
+  }
+  const rows = res.dest.map((v,i)=>{
+    const gap = Math.round((v - real[i])*10)/10;
+    return `<div class="cmprow">
+      <span class="cl">${QLAB[i]}</span>
+      <span class="cbars">
+        <span class="t"><i style="width:${v/40*100}%"></i></span>
+        <span class="t"><i style="width:${real[i]/40*100}%;background:var(--good)"></i></span>
+      </span>
+      <span class="cn">${v}% <span class="muted">vs</span> ${real[i]}%</span>
+      <span class="cg ${Math.abs(gap)>=5?'off':''}">${gap>=0?'+':''}${gap}</span>
+    </div>`;
+  }).join('');
+  const err = Math.round(res.dest.reduce((a,v,i)=>a+Math.abs(v-real[i]),0)/5*10)/10;
+  return `
+    <p class="small" style="margin-top:16px"><b>Where these lives ended up, against where real children from the same fifth actually ended up</b></p>
+    <div class="legendrow"><span><i style="background:var(--accent)"></i>This model</span><span><i style="background:var(--good)"></i>Measured, Chetty et al. 2014</span></div>
+    ${rows}
+    <p class="small muted" style="margin-top:6px">Average miss across the five: <b>${err} points</b>. ${err < 3 ? 'Close, for a model built by hand.' : 'That is a large gap. Trust the measured column, not this model.'} The model was fitted to the whole national table at once, so it tracks the poorer starts well and the richest start badly. It cannot really tell the top three starts apart, which is a limit of how it was written, not a fact about the country.</p>`;
+}
+function runBlockHTML(res, orange){
+  const rows = OUTCOMES.map(([k,label])=>`
+    <div class="hb"><span class="l">${label}</span><span class="t"><i style="width:${res[k]}%;${orange?'background:var(--accent2)':''}"></i></span><span class="n">${res[k]}%</span></div>`).join('');
+  return `
+    <p class="small"><b>Out of ${res.n} simulated lives</b> from this start: ${runWords(res)}.</p>
+    ${rows}
+    <p class="small muted" style="margin-top:6px">Each bar is the share of those ${res.n} lives that reached that outcome by age forty. Bars do not add to 100 because a life can reach several.</p>
+    <div class="secbox">
+      <div><b>Security at forty:</b> the typical life from this start sits at the <b>${res.secMed}th percentile</b> of all simulated lives. The middle half fall between the ${res.secLo}th and the ${res.secHi}th.</div>
+      <div class="secbar"><span class="rangebar" style="left:${res.secLo}%;width:${Math.max(res.secHi-res.secLo,1)}%"></span><span class="medmark" style="left:${res.secMed}%"></span></div>
+      <div class="small muted">This is the model's own composite of savings, job security, housing, health, debt and education. It has no published equivalent and means nothing outside this page.</div>
+    </div>
+    ${destCompareHTML(res)}`;
+}
+function drawDashResults(){
+  const cur = DASH.last, held = DASH.held;
+  $('#dashResults').innerHTML = cur ? `<hr class="hr">` + runBlockHTML(cur, false) : '';
+  $('#heldBlock').innerHTML = held
+    ? `<div class="kept"><span class="tag">Kept run</span>` + runBlockHTML(held, true) + `</div>`
+    : '';
+  $('#clearHoldBtn').disabled = !held;
+}
+
+$('#themeBtn').addEventListener('click', () => {
+  const el = document.documentElement;
+  const dark = el.getAttribute('data-theme') === 'dark';
+  el.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('#themeBtn').textContent = dark ? 'Dark' : 'Light';
+});
+
+renderDash();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

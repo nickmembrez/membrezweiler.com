@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What It Costs, What It Buys · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h3 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>What It Costs, What It Buys <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every sentence is an argument about why we punish.</strong> Chapter 13 gives you five answers to that question, and they do not agree with each other. This page comes at the argument from an angle the textbook does not take. Every sentence is also a purchase. Somebody pays for it, and something comes back. Once you can see the price tag and the return next to each other, the five theories stop being abstractions and start being budget decisions. Nothing you do on this page is recorded, and no guess is graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-bill" type="button">The bill</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-buys" type="button">What a dollar buys</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-works" type="button">Predict the rating</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sort" type="button">Name the theory</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-push" type="button">Where the numbers push back</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-bill">
+      <div class="card">
+        <h2>What does one prison cell cost for one year?</h2>
+        <p class="lede">California publishes this number every year in its enacted budget, broken into categories, which makes it the cleanest public accounting of what confinement actually costs. Before you look it up, put down a number. Most people are low by a factor of two or more.</p>
+
+        <div class="guessbox">
+          <div class="gq">California's budgeted annual average cost per incarcerated person, 2025 to 2026.</div>
+          <div class="gr">
+            <input type="range" id="gCost" min="10000" max="200000" step="1000" value="40000">
+            <div class="gval" id="gCostV">$40,000</div>
+            <button class="gbtn" id="gCostBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gCostVerdict"></div>
+        </div>
+
+        <div class="veiled" id="revCost">
+          <div class="costgrid" id="costBars"></div>
+          <p class="srcnote">California Legislative Analyst's Office, annual average cost per incarcerated person, 2025 to 2026 enacted budget. Categories as published. Retrieved August 2026.</p>
+          <div class="teach"><strong>Read the categories, not just the total.</strong> Security is the largest line, which is what you would expect. Health care is the second largest and it is nearly as big, because a prison is also a hospital with a legal obligation to treat everyone inside it, and because the population is aging. That single fact explains a lot of what follows in this chapter, including why incapacitation gets expensive precisely when it is least useful.</div>
+
+          <p class="lede">Now the question that matters for Chapter 13. Of that total, how many dollars go to the line labeled rehabilitation programs, meaning academic education, vocational training, and in-prison programming?</p>
+          <div class="guessbox">
+            <div class="gq">Dollars per person per year, out of the total above, budgeted for rehabilitation programs.</div>
+            <div class="gr">
+              <input type="range" id="gRehab" min="0" max="40000" step="500" value="15000">
+              <div class="gval" id="gRehabV">$15,000</div>
+              <button class="gbtn" id="gRehabBtn" type="button">Lock in my guess</button>
+            </div>
+            <div class="verdict" id="gRehabVerdict"></div>
+          </div>
+
+          <div class="veiled" id="revRehab">
+            <div class="teach"><strong>$4,761 out of $127,788, which is 3.7 cents of every dollar.</strong> Rehabilitation is one of the five official justifications for punishment in this chapter, and it is the one the textbook says came back after Martinson. In the budget it is the second smallest line, ahead of miscellaneous. Hold onto that ratio. It is the sharpest single piece of evidence in the chapter that what a system says it is for and what it spends money on can be two different things.</div>
+            <div class="note"><strong>Two honesty notes.</strong> California is the most expensive state corrections system in the country and is not typical of the other forty nine. The most recent federal figure is $47,162 per person per year, which is $129.21 per day, and most state figures fall between those two numbers rather than near the California one. Also, this line item is what the budget calls rehabilitation, so it undercounts things like mental health treatment that sit in the health care line and arguably do rehabilitative work.</div>
+            <p class="srcnote">Federal figure: Bureau of Prisons, Annual Determination of Average Cost of Incarceration Fee, fiscal year 2024, published in the Federal Register. California figure: Legislative Analyst's Office. The California total has risen about 161 percent since 2010 to 2011. Retrieved August 2026.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-buys">
+      <div class="card">
+        <h2>What a dollar buys, program by program</h2>
+        <p class="lede">The Washington State Institute for Public Policy has spent two decades doing one specific thing: taking the research on a criminal justice program, estimating how much crime it prevents, converting that into dollars, and setting the result against what the program costs to run. It is the closest thing this field has to a price list. Below are four programs from its adult criminal justice results, each showing what it costs to run against the benefit the model projects.</p>
+
+        <div class="bc" id="bcards"></div>
+
+        <div class="teach"><strong>The comparison to make.</strong> A course of cognitive behavioral therapy costs about $1,709 per person. A year in the California cell you just priced costs $127,788, which is about seventy five times as much. That does not make the cell unnecessary, because some of the people in it are there for reasons no program addresses. It does mean that any argument for the cell has to be made on retribution or incapacitation grounds, because on a pure crime-reduction-per-dollar basis it is not close.</div>
+
+        <div class="note"><strong>Read these numbers honestly.</strong> The benefit figures are modeled projections of lifetime benefits in 2023 dollars, not cash that appears in anyone's budget. They include the value of crimes not committed, which counts benefits to future victims and to participants, so they are much larger than the taxpayer-only figure. For cognitive behavioral therapy the total benefit is $7,127 but the taxpayer share is $2,449. A model is an argument with numbers in it, and you are allowed to argue with the model. What you should not do is treat a benefit-cost ratio as if it were a measured outcome.</div>
+        <p class="srcnote">Washington State Institute for Public Policy, benefit-cost results for adult criminal justice, methods last updated December 2024. Figures per participant in 2023 dollars. Retrieved August 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-works">
+      <div class="card">
+        <h2>Predict the rating</h2>
+        <p class="lede">CrimeSolutions is the federal government's evidence clearinghouse, and you have met it in four chapters now. It reads the evaluation literature on a practice and assigns one of three labels: Effective, Promising, or Ineffective. Seven practices are below, one from each corner of this chapter. Predict the label before you look. Pay attention to how the set comes out, because the pattern is the lesson.</p>
+        <div id="rate"></div>
+        <div class="veiled" id="rateWrap">
+          <div class="scorebar">You matched <strong id="rateScore">0 of 7</strong>.</div>
+          <div class="teach"><strong>Notice what almost nothing earns.</strong> Across a chapter about five theories of punishment, exactly one practice here is rated Effective, and it is a place-based policing strategy rather than anything done to a person after conviction. Most of what works earns Promising, which is a statement about the strength and consistency of the evidence as much as about the size of the effect. This is the honest state of the field, and it should make you suspicious of any sentencing argument, from any direction, that claims certainty.</div>
+          <div class="note"><strong>The restorative justice split is the one to remember.</strong> Restorative programs are rated Promising for reducing reoffending and for victims' sense of fairness, and Ineffective for remorse and recognition of wrongdoing. Braithwaite's theory says the mechanism is remorse and reintegration. The measured outcome shows up and the proposed mechanism does not. That is a live problem for the theory even though the policy looks good, and it is exactly the kind of distinction the final exam rewards.</div>
+        </div>
+        <p class="srcnote">NIJ CrimeSolutions practice profiles, retrieved August 2026. Hot spots policing, focused deterrence strategies, adult drug courts, cognitive behavioral therapy for adults at moderate and high risk of offending, rehabilitation programs for adults convicted of a crime, restorative justice programs for juveniles, and Scared Straight.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-sort">
+      <div class="card">
+        <h2>Name the theory behind the sentence</h2>
+        <p class="lede">Ten real sentencing policies and practices. For each one, name the theory of punishment it primarily serves. The trick is that most policies serve more than one, so pick the theory that has to be true for the policy to make sense. If you removed that theory, the policy would have no argument left.</p>
+        <div id="theory"></div>
+        <div class="veiled" id="theoryWrap">
+          <div class="scorebar">You named <strong id="theoryScore">0 of 10</strong>.</div>
+          <div class="teach"><strong>The axis that sorts them fastest.</strong> Retribution looks backward at the act and asks what is deserved. Deterrence and incapacitation look forward at risk and ask what prevents the next one. Rehabilitation looks inward at causes and asks what can be changed. Restoration looks outward at relationships and asks what repairs the harm. On an exam question, find the direction the policy is looking and you have narrowed five choices to two.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-push">
+      <div class="card">
+        <h2>Where the numbers push back</h2>
+        <p class="lede">Three places in this chapter where a policy built on a theory met the evaluation literature and did badly. None of these settles the moral argument, because retribution never claimed to reduce crime in the first place. They matter because each of these policies was sold on a crime-reduction promise, and a promise is a testable claim.</p>
+
+        <h3>One. Three strikes laws</h3>
+        <p>Three strikes is incapacitation written into statute. Beginning with Washington in 1993, twenty three states and the federal government adopted some version within three years. The largest evaluation looked at 188 American cities with populations over 100,000 across 1980 to 2000, comparing 110 cities in three strikes states against 78 cities in states without such a law, and testing separately for a deterrent effect at passage and an incapacitative effect building over time.</p>
+        <div class="teach"><strong>The finding.</strong> No credible evidence of crime reduction through either mechanism. The coefficients were small and mostly not close to statistical significance. The authors also reported that homicide rates in adopting cities rose about 10.4 percent on average afterward, which is a striking result and should be handled carefully. It is an association in their models rather than an established causal effect, and the authors treat it as a reason to doubt the deterrent story rather than as proof that the laws killed people.</div>
+        <p class="srcnote">Kovandzic, T. V., Sloan, J. J., and Vieraitis, L. M. (2004). Striking out as crime reduction policy. Justice Quarterly 21(2), 207 to 239.</p>
+
+        <h3>Two. What happened when California let some of them out</h3>
+        <p>In 2012 California voters passed Proposition 36, which narrowed the three strikes law and allowed people already serving life for a non-serious, non-violent third strike to be resentenced. More than 2,200 people were released. They had served a median of fifteen years, and 88 percent of them were over 45 at release. If selective incapacitation identifies the dangerous few, these were the people the system had identified. Guess how many were convicted of a new crime within three years.</p>
+        <div class="guessbox">
+          <div class="gq">Percentage convicted of a new crime within three years of release. For reference, the figure for California's general release cohort was 42 percent.</div>
+          <div class="gr">
+            <input type="range" id="gProp" min="0" max="100" step="1" value="50">
+            <div class="gval" id="gPropV">50%</div>
+            <button class="gbtn" id="gPropBtn" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="gPropVerdict"></div>
+        </div>
+        <div class="veiled" id="revProp">
+          <div class="bars">
+            <div class="brow"><div class="blabel">Released under Prop 36</div><div class="btrack"><div class="bfill good" id="p1" style="width:0%"></div></div><div class="bval">25%</div></div>
+            <div class="brow"><div class="blabel">General release cohort</div><div class="btrack"><div class="bfill warn" id="p2" style="width:0%"></div></div><div class="bval">42%</div></div>
+          </div>
+          <p class="srcnote">Skog, A. and Lacoe, J. (2025). Three Strikes Resentencing under Proposition 36 (2012). California Policy Lab. Three-year outcomes, 2,217 people resentenced and released. Arrest rates were 39 percent against 67 percent, and returns to prison 12 percent against 17 percent. Nearly two thirds of the new convictions were misdemeanors, against 26 percent in the comparison group.</p>
+          <div class="teach"><strong>Now say what this does and does not show.</strong> It does not show that these men were harmless when they were sentenced. It shows that by the time they were released they were mostly past the age at which people commit crimes, which is the age-crime curve from Chapter 5 doing exactly what it always does. That is the structural problem with selective incapacitation. Prediction happens at sentencing, the sentence runs for decades, and the risk it was predicting decays on a schedule the sentence does not know about. You end up paying $127,788 a year to confine a risk that expired.</div>
+        </div>
+
+        <h3>Three. The ultimate punishment and the deterrence question</h3>
+        <p>Capital punishment is where deterrence claims are made most loudly, so it is where the evidence has been examined most carefully. In 2012 the National Research Council convened a committee to review three decades of studies on whether the death penalty deters homicide.</p>
+        <div class="teach"><strong>The committee's conclusion, in its own words.</strong> Research to date on the effect of capital punishment on homicide is not informative about whether capital punishment decreases, increases, or has no effect on homicide rates. The committee went further and said the existing studies should not be used to inform policy at all. That is not a finding of no effect. It is a finding that the question has not been answered by the research that claims to answer it.</div>
+        <p>Public support has moved anyway. Gallup recorded 52 percent in favor of the death penalty for murder in October 2025, the lowest reading in its trend since 1972, down from a peak of 80 percent in 1994. Among adults aged 18 to 34 it was 41 percent.</p>
+        <p class="srcnote">National Research Council (2012). Deterrence and the Death Penalty. National Academies Press. Gallup, October 2025, reported by the Death Penalty Information Center. Retrieved August 2026.</p>
+
+        <div class="note"><strong>Mandatory minimums, for the record.</strong> In federal fiscal year 2024, 24.3 percent of cases carried a mandatory minimum penalty and 15.9 percent of people sentenced remained subject to one. Their average sentence was 157 months. For people whose offense carried no mandatory minimum it was 31 months. Nearly seventy percent of mandatory minimum cases were drug trafficking. Whatever else a mandatory minimum does, it moves sentencing power from the judge to the prosecutor who chooses the charge, which is a Chapter 11 point about who gets to apply a label.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Take this to the forum</h2>
+        <p class="lede">This week you sentence someone. Use the offense you have been writing about all term, and write as the judge rather than as an advocate. The point is not to be lenient or severe. The point is to be explicit about which theory you are standing on, and honest about what standing there costs you.</p>
+
+        <div class="teach"><strong>Your forum prompt.</strong> Take the offense from your term paper. If you were the judge, which two theories of punishment would drive your sentence, and what would the sentence actually look like? Name the theories, justify the mix, and say what each one sacrifices.</div>
+
+        <p>Three things that will make the difference between an adequate post and a strong one.</p>
+        <p><strong>One. Make the sentence concrete.</strong> Not more punishment or a focus on treatment, but a number and a structure. How long, in what setting, with what conditions, and what happens at release. A theory of punishment that cannot be turned into a sentence is not doing any work.</p>
+        <p><strong>Two. Name the sacrifice.</strong> Every pair of theories gives something up. Retribution plus incapacitation gives up on the person and buys certainty about the next few years. Rehabilitation plus restoration gives up proportionality, because the sentence now depends on what the person needs and what the victim wants rather than only on what they did. Say which trade you made and why you can live with it.</p>
+        <p><strong>Three. Put one number in.</strong> You have a page full of them. The cost of a year of confinement, the share of that budget that goes to programs, the benefit-cost figure for a program you would order, a CrimeSolutions rating, the Prop 36 recidivism comparison. One well-chosen number, cited, will do more for your argument than a paragraph of conviction.</p>
+
+        <div class="note"><strong>Worth knowing before you write.</strong> Gallup asked Americans in October 2025 whether more resources should go to addressing social and economic problems such as drug addiction, homelessness and mental health, or to strengthening law enforcement. Sixty seven percent chose the social and economic problems and 29 percent chose law enforcement, and that gap has widened since 2020. If you argue for a treatment-heavy sentence, you are not arguing against public opinion, whatever the political rhetoric suggests. That is a useful thing to know and a slightly uncomfortable one, because it means the system's spending pattern is not simply a reflection of what people want.</div>
+        <p class="srcnote">Gallup, Crime survey, October 1 to 16, 2025, 1,000 adults nationwide. Retrieved August 2026.</p>
+
+        <div class="teach"><strong>One more thing, about the paper.</strong> Part 4 asks you to apply at least two course theories to your offense and evaluate which the evidence supports better. That is the same intellectual move as this forum post, made once about causes and once about consequences. If you write the forum post carefully, a good deal of Part 4 will already be drafted.</div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Guesses and answers on this page are not recorded anywhere and nobody sees them but you. Data retrieved August 2026 from the sources cited beside each figure. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  function fill(id, pct){ const e = $(id); if (e) setTimeout(() => { e.style.width = pct + '%'; }, 60); }
+  const money = n => '$' + Number(n).toLocaleString('en-US');
+
+  function setupGuess(cfg){
+    const sl = $(cfg.slider), out = $(cfg.val), btn = $(cfg.btn), vd = $(cfg.verdict), rv = $(cfg.reveal);
+    let locked = false;
+    const fmt = cfg.fmt || (v => v + '%');
+    sl.addEventListener('input', () => { out.textContent = fmt(sl.value); });
+    out.textContent = fmt(sl.value);
+    function lock(){
+      if (locked) return;
+      locked = true;
+      const g = Number(sl.value);
+      sl.disabled = true; btn.disabled = true;
+      const diff = Math.round(g - cfg.answer);
+      vd.textContent = Math.abs(diff) < 1
+        ? 'You guessed ' + fmt(g) + '. That is the published figure.'
+        : 'You guessed ' + fmt(g) + '. The published figure is ' + cfg.label + '. You were about ' + Math.abs(diff).toLocaleString('en-US') + ' ' + cfg.unit + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+      rv.style.display = 'block';
+      if (cfg.after) cfg.after();
+    }
+    btn.addEventListener('click', lock);
+    return lock;
+  }
+
+  // ---------- TAB 1: the bill ----------
+  const CA_TOTAL = 127788;
+  const CA = [
+    { k: 'Security', v: 52194, c: 'var(--warn)' },
+    { k: 'Health care', v: 41834, c: 'var(--accent)' },
+    { k: 'Facility operations', v: 11747, c: 'var(--text-muted)' },
+    { k: 'Administration', v: 10814, c: 'var(--text-muted)' },
+    { k: 'Support and food', v: 5709, c: 'var(--text-muted)' },
+    { k: 'Rehabilitation programs', v: 4761, c: 'var(--good)' },
+    { k: 'Miscellaneous', v: 728, c: 'var(--text-muted)' },
+  ];
+  function drawCost(){
+    const el = $('costBars');
+    if (el.dataset.done) return;
+    el.dataset.done = '1';
+    const max = CA[0].v;
+    CA.forEach((row, i) => {
+      const d = document.createElement('div');
+      d.className = 'costrow';
+      d.innerHTML = '<div class="costlab">' + row.k + '</div><div class="costtrack"><div class="costfill" id="cf' + i + '" style="background:' + row.c + '"></div></div><div class="costval">' + money(row.v) + '</div>';
+      el.appendChild(d);
+    });
+    CA.forEach((row, i) => fill('cf' + i, Math.round(row.v / max * 100)));
+    const t = document.createElement('div');
+    t.className = 'costrow';
+    t.innerHTML = '<div class="costlab"><strong>Total per person per year</strong></div><div></div><div class="costval"><strong>' + money(CA_TOTAL) + '</strong></div>';
+    el.appendChild(t);
+  }
+
+  setupGuess({ slider:'gCost', val:'gCostV', btn:'gCostBtn', verdict:'gCostVerdict', reveal:'revCost',
+    answer: CA_TOTAL, label: money(CA_TOTAL), unit:'dollars', fmt: v => money(v), after: drawCost });
+
+  setupGuess({ slider:'gRehab', val:'gRehabV', btn:'gRehabBtn', verdict:'gRehabVerdict', reveal:'revRehab',
+    answer: 4761, label: '$4,761', unit:'dollars', fmt: v => money(v) });
+
+  // ---------- TAB 2: benefit and cost ----------
+  const PROG = [
+    { n: 'Cognitive behavioral therapy', w: 'For adults at moderate and high risk of offending', cost: 1709, ben: 7127 },
+    { n: 'Intensive supervision with treatment', w: 'Supervision paired with services rather than surveillance alone', cost: 995, ben: 8919 },
+    { n: 'Drug courts', w: 'Treatment supervised by a judge in place of a sentence', cost: 6015, ben: 9892 },
+    { n: 'Post-secondary education in prison', w: 'College coursework delivered inside', cost: 2260, ben: 32788 },
+  ];
+  const BMAX = 32788;
+  (function drawProg(){
+    const el = $('bcards');
+    PROG.forEach((p, i) => {
+      const d = document.createElement('div');
+      d.className = 'bcard';
+      d.innerHTML = '<h3>' + p.n + '</h3><p class="who">' + p.w + '</p>' +
+        '<div class="bpair"><span>Cost</span><div class="bt"><div class="bf" id="pc' + i + '" style="background:var(--warn)"></div></div><div class="bn">' + money(p.cost) + '</div></div>' +
+        '<div class="bpair"><span>Benefit</span><div class="bt"><div class="bf" id="pb' + i + '" style="background:var(--good)"></div></div><div class="bn">' + money(p.ben) + '</div></div>' +
+        '<div class="netline">Net ' + money(p.ben - p.cost) + ' per participant</div>';
+      el.appendChild(d);
+    });
+  })();
+  let progFilled = false;
+  document.querySelector('[data-sec="sec-buys"]').addEventListener('click', () => {
+    if (progFilled) return; progFilled = true;
+    PROG.forEach((p, i) => { fill('pc' + i, Math.round(p.cost / BMAX * 100)); fill('pb' + i, Math.round(p.ben / BMAX * 100)); });
+  });
+
+  // ---------- shared sorter ----------
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+    return { answer };
+  }
+
+  // ---------- TAB 3: predict the rating ----------
+  const RATE_OPTS = ['Effective', 'Promising', 'Ineffective'];
+  const RATES = [
+    { t: 'Hot spots policing, concentrating patrol on the small number of places that produce most calls.', a: 'Effective',
+      v: 'Effective, and the only one in this set. Thirty five tests, a small but consistent overall effect size of about 0.109, and no evidence that crime simply moves next door. You met this in Chapter 7 and it returns in Chapter 14. Notice that it is not a theory of punishment at all, it is a theory of place.' },
+    { t: 'Focused deterrence, telling a small named group exactly what will happen and then following through.', a: 'Promising',
+      v: 'Promising, based on 24 studies with an effect size of about 0.383, which is large for this literature. This is Beccaria updated: certainty and communication rather than severity. It is the strongest thing deterrence theory has going for it, and it still does not clear the bar for Effective.' },
+    { t: 'Adult drug courts, where a judge supervises treatment in place of a sentence.', a: 'Promising',
+      v: 'Promising for reoffending. One meta-analysis of 42 studies put recidivism near 37 percent for participants against 50 percent for comparisons. Worth noting that the rating for substance use outcomes specifically is Ineffective, on only four studies, so the court appears to reduce crime more reliably than it reduces drug use.' },
+    { t: 'Cognitive behavioral therapy for adults assessed at moderate and high risk of offending.', a: 'Promising',
+      v: 'Promising, from 32 studies, effect size about -0.14 favoring treatment. This is the workhorse of evidence-based corrections and the program in the benefit-cost tab that returns four dollars for one. Note the qualifier in the title. It works for moderate and high risk, and delivering it to low-risk people can make outcomes worse.' },
+    { t: 'Rehabilitation programs for adults convicted of a crime, taken as a broad category.', a: 'Promising',
+      v: 'Promising, from a meta-analysis of 634 independent effect sizes with an average around 0.203. This is the number that answers Martinson. Something works, the effect is modest and real, and it took forty years of accumulated evaluation to say so with confidence.' },
+    { t: 'Restorative justice programs for juveniles, measured on whether participants show remorse and recognize wrongdoing.', a: 'Ineffective',
+      v: 'Ineffective on that outcome, even though the same practice is rated Promising for reducing delinquency and for victims perceiving the process as fair. Read that pairing slowly. The policy produces the result Braithwaite predicted while the mechanism he proposed does not show up in the measurements.' },
+    { t: 'Scared Straight, where young people visit a prison to be confronted by people serving sentences there.', a: 'Ineffective',
+      v: 'Ineffective, and this is the strong version of the label. The pooled randomized trials from Chapter 9 found the treated groups offending MORE than the controls, with an odds ratio around 1.68. A program can have a negative effect, and this one is the standard example.' },
+  ];
+  buildSorter('rate', RATES, RATE_OPTS, (right, total) => {
+    $('rateScore').textContent = right + ' of ' + total;
+    $('rateWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 4: name the theory ----------
+  const TH_OPTS = ['Retribution', 'Deterrence', 'Incapacitation', 'Rehabilitation', 'Restoration'];
+  const THEORY = [
+    { t: 'A sentencing guidelines grid that sets the range from offense severity and prior record, with no assessment of future risk.', a: 'Retribution',
+      v: 'Retribution. The grid asks only what was done and what was done before, which is a backward-looking desert calculation. The 1980s shift from indeterminate ranges to determinate grids IS the retribution revival written into statute.' },
+    { t: 'Raising a sentence because the offense was committed with particular cruelty.', a: 'Retribution',
+      v: 'Retribution. Aggravating and mitigating factors adjust what is deserved. Cruelty does not predict reoffending and it does not respond to treatment, so the only theory that can explain why it should raise the sentence is desert.' },
+    { t: 'Calling in a small named group of people, telling them exactly what enforcement follows the next shooting, and then doing it.', a: 'Deterrence',
+      v: 'Deterrence, and the focused variety. The whole design is about making the consequence certain and legible in advance, which is the Chapter 6 finding turned into an operation.' },
+    { t: 'Publicizing an enforcement surge so that people who were not caught reconsider.', a: 'Deterrence',
+      v: 'Deterrence, the general kind. The target is not the person being sentenced but everyone watching. This is why deterrence arguments can justify punishing one person more than they deserve, which is the standard objection to it.' },
+    { t: 'A three strikes law that mandates a life term on a third qualifying conviction.', a: 'Incapacitation',
+      v: 'Incapacitation. The claim is not that the sentence is deserved or that it teaches anyone anything, it is that a person confined cannot offend against the public. Retribution is often invoked alongside it, but strip incapacitation out and the length has no defense.' },
+    { t: 'Civil commitment that continues confinement after the criminal sentence has been fully served.', a: 'Incapacitation',
+      v: 'Incapacitation in its purest form. The sentence is finished, so desert is satisfied by definition. The only remaining justification is future risk, which is why this is the most legally contested practice in the chapter.' },
+    { t: 'A drug court where completing supervised treatment replaces the sentence entirely.', a: 'Rehabilitation',
+      v: 'Rehabilitation, delivered through what the text calls therapeutic jurisprudence. The judge becomes a coach and graduation replaces release. Deterrence is in the room too, because failing means the sentence returns, but the design is built around changing the person.' },
+    { t: 'Assigning cognitive behavioral programming based on an assessment of criminogenic needs.', a: 'Rehabilitation',
+      v: 'Rehabilitation, in its modern evidence-based form. Risk, need, and responsivity: match the intensity to the risk, target the things that actually drive offending, and deliver it in a way the person can use.' },
+    { t: 'A facilitated conference where the person who caused harm meets the person harmed and they agree what repair will look like.', a: 'Restoration',
+      v: 'Restoration. Crime is treated as a violation of people and relationships rather than only of a statute, and the outcome is an obligation rather than a penalty. Chapter 11 is where the theory behind it lives.' },
+    { t: 'A court order requiring payment to the victim for losses, agreed in a meeting with the victim.', a: 'Restoration',
+      v: 'Restoration. Restitution on its own can be ordered for retributive reasons, which is why this item says the amount was agreed with the victim. That detail is what moves it from a penalty imposed to a repair negotiated, and noticing that distinction is the skill.' },
+  ];
+  buildSorter('theory', THEORY, TH_OPTS, (right, total) => {
+    $('theoryScore').textContent = right + ' of ' + total;
+    $('theoryWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 5: Prop 36 ----------
+  setupGuess({ slider:'gProp', val:'gPropV', btn:'gPropBtn', verdict:'gPropVerdict', reveal:'revProp',
+    answer:25, label:'25 percent', unit:'points', after: () => { fill('p1',60); fill('p2',100); } });
+
+  window.__S = { activate, CA, PROG, RATES, THEORY, CA_TOTAL };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

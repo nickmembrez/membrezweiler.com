@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Movement - SOC 1113</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;
+    --series-2: #ae4d26;
+    --series-3: #137a55;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+    --wash: rgba(42,120,214,0.06);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --series-3: #199e70;
+    --wash: rgba(57,135,229,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 18px; }
+  .frame { max-width: 880px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 13px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
+  .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+  .big { font-size: 20px; font-weight: 800; line-height: 1.3; }
+  .body-text { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .body-text strong { color: var(--text-primary); }
+  .body-text + .body-text { margin-top: 8px; }
+
+  /* meters */
+  .meters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .meter { flex: 1; min-width: 140px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .meter .m-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; }
+  .meter .m-value { font-size: 18px; font-weight: 800; margin: 2px 0 6px; }
+  .meter .m-sub { font-size: 11.5px; color: var(--text-muted); margin-top: -4px; margin-bottom: 6px; }
+  .meter .m-bar { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; position: relative; }
+  .meter .m-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease, background 0.6s ease; }
+  .meter.score .m-value { color: var(--series-1); }
+  .part-bar { position: relative; height: 10px; border-radius: 5px; background: var(--grid); overflow: visible; }
+  .part-fill { height: 100%; border-radius: 5px; background: var(--series-1); transition: width 0.6s ease; }
+  .part-marker { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--status-critical); }
+  .part-marker-label { position: absolute; top: -20px; transform: translateX(-50%); font-size: 10.5px; font-weight: 700; color: var(--status-critical); white-space: nowrap; }
+
+  /* pillars */
+  .pillars { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pillar { flex: 1; min-width: 110px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; background: var(--surface-1); }
+  .pillar .p-name { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; color: var(--text-muted); }
+  .pillar .p-state { font-size: 13px; font-weight: 700; margin-top: 2px; }
+
+  /* event + tactics */
+  .event { border-left: 4px solid var(--status-warning); background: var(--wash); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 12px; }
+  .event .e-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+  .event .e-text { font-size: 14.5px; color: var(--text-secondary); line-height: 1.55; }
+  .event .e-text strong { color: var(--text-primary); }
+  .choice-opts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .choice-btn { font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-1); color: var(--text-primary); text-align: left; }
+  .choice-btn:hover { border-color: var(--series-1); }
+  .choice-btn[aria-pressed="true"] { border-color: var(--series-1); color: var(--series-1); }
+
+  .tactics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 14px; }
+  .tactic { font: inherit; cursor: pointer; text-align: left; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface-1); color: var(--text-primary); }
+  .tactic:hover:not(:disabled) { border-color: var(--series-1); }
+  .tactic:disabled { opacity: 0.45; cursor: not-allowed; }
+  .tactic .t-name { font-weight: 800; font-size: 14.5px; }
+  .tactic .t-desc { font-size: 13px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45; }
+  .tactic-note { font-size: 12.5px; color: var(--text-muted); margin-top: 10px; }
+
+  .decide { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+  .btn { font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; padding: 12px 22px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .btn.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .outcome-good { border-left: 4px solid var(--status-good); }
+  .outcome-bad { border-left: 4px solid var(--status-critical); }
+  .outcome-warn { border-left: 4px solid var(--status-warning); }
+  .score-delta { font-size: 16px; font-weight: 800; margin-top: 8px; }
+  .score-delta.up { color: var(--status-good); }
+  .score-delta.down { color: var(--status-critical); }
+  .report-lines { margin-top: 8px; }
+  .report-lines li { list-style: none; font-size: 14.5px; line-height: 1.55; color: var(--text-secondary); padding: 6px 0; border-top: 1px solid var(--grid); }
+  .report-lines li:first-child { border-top: none; }
+  .report-lines strong { color: var(--text-primary); }
+
+  /* endgame */
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .log-table th, .log-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  .log-table th { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .final-score { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
+  .concept-tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--wash); color: var(--series-1); white-space: nowrap; }
+  :root[data-theme="dark"] .viz-root .concept-tag { color: #8ab8f0; }
+  .concepts li { font-size: 15px; line-height: 1.55; padding: 9px 0; border-top: 1px solid var(--grid); list-style: none; color: var(--text-secondary); }
+  .concepts li:first-child { border-top: none; }
+  .concepts strong { color: var(--text-primary); }
+
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+  input[type="text"] { font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); width: 100%; max-width: 320px; }
+  .cause-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 12px 0; }
+  .cause-btn { font: inherit; cursor: pointer; text-align: left; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface-1); color: var(--text-primary); }
+  .cause-btn:hover { border-color: var(--series-1); }
+  .cause-btn[aria-pressed="true"] { border-color: var(--series-1); }
+  .cause-btn .c-name { font-weight: 800; font-size: 15px; }
+  .cause-btn .c-desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
+  .rules-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+  .rules-box strong { color: var(--text-primary); }
+
+  footer { color: var(--text-muted); font-size: 12.5px; line-height: 1.6; padding: 8px 2px 20px; }
+  .fade-in { animation: fadeIn 0.45s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Movement<span class="sub">SOC 1113 · How Social Change Actually Happens</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div id="screen"></div>
+
+    <footer role="presentation">A fictional game built for SOC 1113, Introduction to Sociology, Midwestern State University.
+    The 3.5% figure and the finding that nonviolent campaigns succeed about twice as often as violent ones come from
+    Erica Chenoweth and Maria Stephan, <em>Why Civil Resistance Works</em> (2011), and Chenoweth's later research on over 300 campaigns since 1900.</footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const screen = $('screen');
+  const rnd = () => (window.__testRandom ? window.__testRandom() : Math.random());
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  /* ============ CONTENT ============ */
+
+  const POP = 4000000;              // the state you're trying to move
+  const TARGET = 0.035;             // Chenoweth's line
+  const ROUNDS = 10;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const CAUSES = [
+    { id: 'rent', name: 'Rent Is Too High', who: 'renters', lean: 'left',
+      desc: 'Rents across the state jumped 40% in five years while wages barely moved. You want limits on rent hikes and more housing built.',
+      enemy: 'the landlord association', demand: 'rent stabilization and a building program',
+      profile: 'a teacher living in her car', elder: 'grandmother',
+      strikeWin: 'a big property manager breaks ranks and freezes rents',
+      brawlSite: 'a downtown bank branch', counterName: '\u201cProperty Owners United\u201d',
+      ally: 'a homeowners group worried their kids will never afford a place' },
+    { id: 'river', name: 'Clean Water Now', who: 'neighbors', lean: 'left',
+      desc: 'A chemical plant upstream has been dumping into the river your county drinks from. Tests keep coming back bad. You want it stopped and cleaned up.',
+      enemy: 'the plant\u2019s owners', demand: 'an end to the dumping and a funded cleanup',
+      profile: 'a nurse who tested her own tap water', elder: 'grandmother',
+      strikeWin: 'two grocery chains quietly drop the plant\u2019s parent company',
+      brawlSite: 'the plant office', counterName: '\u201cJobs First\u201d',
+      ally: 'hunting and fishing clubs' },
+    { id: 'wage', name: 'Raise the Wage', who: 'low-wage workers', lean: 'left',
+      desc: 'The state minimum wage hasn\u2019t moved in years while everything else has. Full-time work still leaves people at the food bank. You want a raise written into law.',
+      enemy: 'the restaurant and retail lobby', demand: 'a higher minimum wage',
+      profile: 'a home health aide working seventy hours across three jobs', elder: 'line cook near seventy',
+      strikeWin: 'a fast-food franchise breaks ranks and raises pay on its own',
+      brawlSite: 'a franchise headquarters', counterName: '\u201cProtect Small Business\u201d',
+      ally: 'a coalition of church congregations' },
+    { id: 'farms', name: 'Save Our Farms', who: 'farm families', lean: 'right',
+      desc: 'The state wants to seize a strip of family farmland, some of it held for four generations, and hand it to a private development corridor. You want the seizures stopped.',
+      enemy: 'the development authority', demand: 'an end to the land seizures',
+      profile: 'a fourth-generation farm family', elder: 'rancher',
+      strikeWin: 'two contractors walk away from corridor bids',
+      brawlSite: 'the development authority', counterName: '\u201cBuild the Corridor\u201d',
+      ally: 'an urban land-rights group that fights evictions' },
+    { id: 'permits', name: 'Cut the Red Tape', who: 'small business owners', lean: 'right',
+      desc: 'Opening a shop in this state takes fourteen permits, months of waiting, and thousands in fees. The big chains have lawyers for that. You don\u2019t. You want the rules cut down to something fair.',
+      enemy: 'the licensing board', demand: 'a rewrite of the permitting rules',
+      profile: 'a barber who waited fourteen months for permits', elder: 'shop owner',
+      strikeWin: 'a mall operator starts lobbying your side',
+      brawlSite: 'the licensing board office', counterName: '\u201cStandards Matter\u201d',
+      ally: 'a left-leaning street vendors union' },
+    { id: 'taxes', name: 'Cap Our Taxes', who: 'homeowners', lean: 'right',
+      desc: 'Property taxes have doubled in a decade, and retirees on fixed incomes are being taxed out of houses they paid off years ago. You want a hard cap, on the ballot if it has to be.',
+      enemy: 'the statehouse spending coalition', demand: 'a property tax cap',
+      profile: 'a retired machinist facing a tax bill bigger than his pension', elder: 'retired machinist',
+      strikeWin: 'thousands file coordinated assessment appeals and jam the system',
+      brawlSite: 'the county assessor\u2019s office', counterName: '\u201cFund Our Schools\u201d',
+      ally: 'young families priced out by the same bills' }
+  ];
+
+  const FRAMES = [
+    { id: 'human', label: 'Put the human face first', desc: c => 'Lead every story this month with the ' + c.who + ' hit hardest.' },
+    { id: 'blame', label: 'Point at who is to blame', desc: c => 'Name ' + c.enemy + ' and make them answer for it.' },
+    { id: 'us', label: 'Talk to our own people', desc: c => 'Skip the cameras this month. Tend to the ' + c.who + ' you already have.' },
+    { id: 'win', label: 'Tell everyone you are winning', desc: () => 'Momentum draws a crowd. Claim it.' },
+    { id: 'urgent', label: 'Say time is running out', desc: () => 'Deadlines move people. Make this month feel like the last chance.' }
+  ];
+  const SYNERGY = { human: ['media', 'march'], blame: ['strike', 'lobby'], us: ['meetings', 'train'], win: ['march', 'media'], urgent: ['meetings', 'march'] };
+
+  const PILLARS = [
+    { id: 'media', name: 'Local media' },
+    { id: 'business', name: 'Business' },
+    { id: 'pols', name: 'Politicians' },
+    { id: 'courts', name: 'Courts' },
+    { id: 'police', name: 'Police' }
+  ];
+  const PILLAR_WORDS = ['Hostile', 'Cold', 'Watching', 'Leaning your way', 'With you'];
+
+  const TACTICS = [
+    { id: 'meetings', name: 'House meetings', desc: 'Kitchen tables, church basements, break rooms. Slow, steady, and it sticks. People join when someone they know asks them.' },
+    { id: 'march', name: 'March', desc: 'Put people in the street where everyone can count them. Big when sympathy is high. Risky when it isn’t.' },
+    { id: 'media', name: 'Tell the story', desc: 'Chase cameras, pitch reporters, put a face on the cause. Moves public sympathy if the press will have you.' },
+    { id: 'strike', name: 'Boycott / strike', desc: 'Hit them in the wallet. Real pressure on business, but it costs your people and tests their patience. Needs a real base first.' },
+    { id: 'lobby', name: 'Work the inside', desc: 'Meetings with officials, testimony, drafting the actual policy. Politicians listen when you’re big enough to matter.' },
+    { id: 'train', name: 'Train discipline', desc: 'Marshals, de-escalation practice, clear rules for actions. A quiet month that pays off when things get ugly.' }
+  ];
+
+  /* ============ STATE ============ */
+  let S = null;
+
+  function newGame(teamName, causeIdx) {
+    S = {
+      team: teamName || 'The Committee',
+      cause: CAUSES[causeIdx],
+      round: 1,
+      part: 400,                 // people
+      sym: 45, energy: 70, discipline: 0,
+      pillars: { media: -1, business: -2, pols: -1, courts: 0, police: -1 },
+      score: 0, ledger: [], timeline: [],
+      monthFrame: null, lastFrameId: null, professionalized: false, coalition: false,
+      violenceMishandled: 0, electionWindow: 0,
+      usedEvents: [], over: false, ending: null,
+      roundPoints: 0
+    };
+    window.__S = S;
+  }
+
+  function partPct() { return S.part / POP * 100; }
+  function pillarsWithYou() { return PILLARS.filter(p => S.pillars[p.id] >= 2).length; }
+
+  function addPoints(label, base, spread) {
+    const amt = Math.round((base + (rnd() - 0.5) * 2 * spread) / 5) * 5;
+    S.score += amt; S.roundPoints += amt;
+    S.ledger.push({ label, amount: amt });
+    return amt;
+  }
+
+  function logMoment(text, concept) {
+    S.timeline.push({ round: S.round, text, concept });
+  }
+
+  /* ============ EVENTS ============ */
+  // Each event: id, when (state test), tag, text(), choices[{label, effect()}] or auto(effect + text)
+  const EVENTS = [
+    { id: 'label', tag: 'The label', once: true,
+      when: () => S.round >= 3 && partPct() > 0.05,
+      text: () => 'The governor goes on the radio and calls your movement “' + (S.cause.lean === 'right' ? 'a fringe group funded by out-of-state interests' : 'outside agitators stirring up trouble') + '.” The clip is everywhere by noon.',
+      choices: () => [
+        { label: 'Answer with humor. Sell shirts with the insult on them.', effect: () => { S.sym += 7; addPoints('Turned the governor’s insult into a slogan', 60, 20); report('The shirts sell out. The insult belongs to you now.'); logMoment('The governor labeled you. You made it a punchline.', 'Ch. 8 · Labeling'); } },
+        { label: 'Rebut it seriously, point by point.', effect: () => { S.sym += 2; S.pillars.media += 1; report('The fact-check runs on page six. The insult ran on page one.'); logMoment('The governor labeled you. You argued the facts.', 'Ch. 8 · Labeling'); } },
+        { label: 'Ignore it. Keep working.', effect: () => { S.sym -= 3; report('The label floats around unanswered. Some people believe it.'); logMoment('The governor labeled you. You let it stand.', 'Ch. 8 · Labeling'); } }
+      ] },
+
+    { id: 'violence1', tag: 'It gets ugly', once: true,
+      when: () => S.round >= 4 && partPct() > 0.1,
+      text: () => 'After your last action, a handful of people nobody recognizes smash windows at ' + S.cause.brawlSite + '. Every camera in the state is pointed at the broken glass, not at your cause. Your phone is ringing.',
+      choices: () => [
+        { label: 'Condemn it publicly, by name, today.', effect: () => {
+            if (S.discipline >= 1) { S.sym += 5; addPoints('Held the line when windows broke', 70, 20); report('Your marshals back the statement with names and photos. The story becomes your discipline, not the glass.'); }
+            else { S.sym += 1; report('The statement helps, but with no marshals and no receipts, some doubt sticks.'); }
+            logMoment('Windows broke. You condemned it fast.', 'Ch. 14 · Nonviolent discipline'); } },
+        { label: 'Say nothing. It wasn’t us.', effect: () => { S.sym -= 8; S.pillars.media -= 1; S.violenceMishandled += 1; report('Silence reads as a shrug. Opponents run the clip on a loop with your name under it.'); logMoment('Windows broke. You stayed quiet.', 'Ch. 14 · Nonviolent discipline'); } },
+        { label: 'Say people are angry for a reason.', effect: () => { S.sym -= 14; S.pillars.police -= 1; S.pillars.pols -= 1; S.violenceMishandled += 1; addPoints('The broken-glass story stuck to you', -100, 30); report('Your base cheers. Everyone else hears an excuse. Donations from nervous supporters stop the same week.'); logMoment('Windows broke. You defended the anger.', 'Ch. 14 · Nonviolent discipline'); } }
+      ] },
+
+    { id: 'violence2', tag: 'Blood on the courthouse steps', once: true,
+      when: () => S.round >= 6 && partPct() > 0.15,
+      text: () => 'A counter-protest meets your rally on the courthouse steps. Shoving turns into a brawl. Three people go to the hospital, two of them yours, and the cameras got every second of it.',
+      choices: () => [
+        { label: 'Call for calm. Cancel next week’s action.', effect: () => {
+            if (S.discipline >= 2) { S.sym += 4; addPoints('Kept the peace after the courthouse brawl', 60, 20); report('Your marshals separate people on camera. The pause reads as strength, not retreat.'); }
+            else { S.sym += 1; S.energy = clamp(S.energy - 8, 0, 100); report('The pause helps, but it also stalls you, and some of your angriest people drift away.'); }
+            logMoment('A brawl broke out. You called for calm.', 'Ch. 14 · Nonviolent discipline'); } },
+        { label: 'Blame them. They started it.', effect: () => { S.sym -= 6; S.pillars.police -= 1; S.violenceMishandled += 1; report('Maybe they did start it. The clip everyone shares doesn’t show who started it.'); logMoment('A brawl broke out. You blamed the other side.', 'Ch. 14 · Nonviolent discipline'); } },
+        { label: 'Organize a defense squad for next time.', effect: () => { S.sym -= 12; S.pillars.police -= 1; S.pillars.pols -= 1; S.violenceMishandled += 1; S.discipline = Math.max(0, S.discipline - 1); addPoints('The movement got a reputation for fighting', -90, 30); report('Your next rally has two armies at it. Neutral people stop bringing their kids, then stop coming.'); logMoment('A brawl broke out. You armed up for the next one.', 'Ch. 14 · Nonviolent discipline'); } }
+      ] },
+
+    { id: 'overreact', tag: 'The crackdown backfires', once: true,
+      when: () => S.round >= 4 && S.discipline >= 1 && partPct() > 0.15,
+      auto: () => {
+        S.sym += 12; S.pillars.media += 1; S.pillars.police -= 1;
+        const amt = addPoints('Police overreached against a disciplined crowd', 120, 30);
+        logMoment('Police broke up a peaceful action on camera. Sympathy surged.', 'Ch. 14 · Backfire');
+        return 'At a quiet, disciplined action, officers move in hard. Someone films an officer shoving a 70-year-old ' + S.cause.elder + '. The video runs everywhere. Your calm makes their force look worse.';
+      } },
+
+    { id: 'money', tag: 'A check with strings', once: true,
+      when: () => S.round >= 4 && partPct() > 0.08,
+      text: () => 'A national foundation offers serious money: staff, an office, ads. The conditions are quiet ones. Professional messaging. A board seat. “Maybe fewer of the rowdier actions.”',
+      choices: () => [
+        { label: 'Take the money.', effect: () => { S.energy = clamp(S.energy + 25, 0, 100); S.professionalized = true; S.pillars.pols += 1; report('The office opens. The press releases get sharper. The kitchen-table meetings quietly get rarer.'); logMoment('You took the foundation money and the strings that came with it.', 'Ch. 9 · Bureaucratization'); } },
+        { label: 'Turn it down.', effect: () => { S.energy = clamp(S.energy - 10, 0, 100); S.sym += 3; report('Volunteers keep running everything on folding tables. It’s exhausting. It’s also still yours.'); logMoment('You turned down the big check to stay volunteer-run.', 'Ch. 9 · Bureaucratization'); } }
+      ] },
+
+    { id: 'deal', tag: 'The offer', once: true,
+      when: () => S.round >= 6 && (partPct() > 0.8 || pillarsWithYou() >= 1),
+      text: () => 'A back channel opens. ' + S.cause.enemy.charAt(0).toUpperCase() + S.cause.enemy.slice(1) + ' will give you part of what you want, quietly, if the campaign stands down now. Not ' + S.cause.demand + '. A piece of it. The offer expires this week.',
+      choices: () => [
+        { label: 'Take the deal. A real win, in hand.', effect: () => { S.ending = 'deal'; report(''); logMoment('You took the partial deal and stood the campaign down.', 'Ch. 14 · Movement outcomes'); } },
+        { label: 'Refuse. We came for the whole thing.', effect: () => { S.sym += 2; addPoints('Walked away from the quiet deal', 40, 20); report('Word gets out that you said no. Some call it brave. Some call it a mistake. The campaign rolls on.'); logMoment('You refused the partial deal and kept going.', 'Ch. 14 · Movement outcomes'); } }
+      ] },
+
+    { id: 'counter', tag: 'The other side organizes', once: true,
+      when: () => S.round >= 3 && partPct() > 0.1,
+      auto: () => {
+        S.sym -= 5;
+        logMoment('A counter-movement formed against you.', 'Ch. 14 · Countermovements');
+        return 'Your success creates its own opposition: ' + S.cause.counterName + ' launches with money behind it and a spokesperson on every show you were just on. From here, nothing you say goes unanswered.';
+      } },
+
+    { id: 'burnout', tag: 'Running on fumes', once: true,
+      when: () => S.round >= 5 && S.energy < 45,
+      text: () => 'Your best organizer stops answering messages. Two more admit they’re done. The work has been nights and weekends for months, and the meeting-before-the-meeting culture is eating people alive.',
+      choices: () => [
+        { label: 'Slow down for a month. Rest people.', effect: () => { S.energy = clamp(S.energy + 20, 0, 100); report('A slower month. People come back to the work because they chose to.'); logMoment('You slowed down to keep your people.', 'Ch. 9 · What organizations do to people'); } },
+        { label: 'Push through. The moment is now.', effect: () => { S.energy = clamp(S.energy - 15, 0, 100); S.discipline = Math.max(0, S.discipline - 1); report('You keep the pace. Three more organizers quietly drop out, and the ones left are frayed.'); logMoment('You pushed through the burnout.', 'Ch. 9 · What organizations do to people'); } }
+      ] },
+
+    { id: 'coalition', tag: 'Strange allies', once: true,
+      when: () => S.round >= 3 && partPct() > 0.05,
+      text: () => 'An unexpected knock: ' + S.cause.ally + ' wants to join forces. Not your usual crowd. Twice the reach, and a message you’d no longer fully control.',
+      choices: () => [
+        { label: 'Join forces.', effect: () => { S.coalition = true; S.part = Math.round(S.part * 1.4); S.sym += 4; addPoints('Built a coalition across the usual lines', 80, 25); report('The joint rally photographs like nothing the state has seen: your people and theirs, same signs.'); logMoment('You built a coalition with unlikely allies.', 'Ch. 5 · Who joins, and why'); } },
+        { label: 'Stay independent.', effect: () => { S.discipline = Math.min(3, S.discipline + 1); report('You keep the message tight and the membership familiar. Smaller, but nobody wonders who speaks for you.'); logMoment('You turned down the coalition to keep control.', 'Ch. 5 · Who joins, and why'); } }
+      ] },
+
+    { id: 'election', tag: 'The window opens', once: true,
+      when: () => S.round >= 6,
+      auto: () => {
+        S.electionWindow = 2;
+        logMoment('Election season opened a political window.', 'Ch. 14 · Political opportunity');
+        return 'Filing season begins. Suddenly every officeholder is doing math about next November, and three of them ask, through intermediaries, what it would take to get your people’s votes. For the next while, the inside game is wide open.';
+      } },
+
+    { id: 'hitpiece', tag: 'The hit piece', once: true,
+      when: () => S.round >= 5 && S.sym > 55,
+      text: () => 'A commentary show runs twenty minutes on your movement’s “real agenda,” cut together from your worst moments and one ex-member with a grudge.',
+      choices: () => [
+        { label: 'Flood the zone with real stories.', effect: () => { const ok = S.pillars.media >= 0; S.sym += ok ? 6 : 1; report(ok ? 'Reporters who know you run the counter-stories without being asked. The piece ages badly within the week.' : 'You push back, but without friendly reporters the correction never catches the accusation.'); logMoment('A hit piece ran. You answered with stories.', 'Ch. 3 · Whose story wins'); } },
+        { label: 'Ignore it. Audiences forget.', effect: () => { S.sym -= 4; report('Most people forget. The ones who saw it first never hear another version.'); logMoment('A hit piece ran. You let it pass.', 'Ch. 3 · Whose story wins'); } }
+      ] },
+
+    { id: 'defector', tag: 'A crack in the wall', once: true,
+      when: () => S.round >= 5 && S.sym > 55 && partPct() > 0.4,
+      auto: () => {
+        const candidates = PILLARS.filter(p => S.pillars[p.id] === 1);
+        const target = candidates.length ? pick(candidates) : PILLARS[Math.floor(rnd() * PILLARS.length)];
+        S.pillars[target.id] = clamp(S.pillars[target.id] + 1, -2, 2);
+        logMoment('Insiders started reaching out from ' + target.name.toLowerCase() + '.', 'Ch. 14 · Pillars of support');
+        return 'A quiet dinner request: people inside ' + target.name.toLowerCase() + ' want to talk. Off the record, they think you might win, and everyone likes to have been early.';
+      } }
+  ];
+
+  /* ============ ROUND MECHANICS ============ */
+  let reportLines = [];
+  function report(t) { if (t) reportLines.push(t); }
+
+  function applyFrame(tacticId) {
+    const f = S.monthFrame, c = S.cause;
+    if (!f) return;
+    if (f.id !== S.lastFrameId) {
+      logMoment((S.lastFrameId ? 'You changed the message: ' : 'You set the message: ') + f.label.toLowerCase() + '.', 'Ch. 3 · Framing');
+      S.lastFrameId = f.id;
+    }
+    if (f.id === 'human') { S.sym = clamp(S.sym + (S.sym >= 70 ? 1 : 2 + Math.round(rnd() * 2)), 0, 100); report('The stories about ' + c.who + ' get repeated by strangers.'); }
+    if (f.id === 'blame') {
+      S.sym = clamp(S.sym + 1, 0, 100);
+      if (partPct() > 0.4 && rnd() < 0.4) { const t = rnd() < 0.5 ? 'pols' : 'business'; S.pillars[t] = clamp(S.pillars[t] + 1, -2, 2); report('Naming names works. ' + c.enemy.charAt(0).toUpperCase() + c.enemy.slice(1) + ' spends the month on defense.'); }
+      else report('You name names. ' + c.enemy.charAt(0).toUpperCase() + c.enemy.slice(1) + ' calls it slander and moves on.');
+    }
+    if (f.id === 'us') { S.energy = clamp(S.energy + 6, 0, 100); report('A month of talking to your own people. The base tightens.'); }
+    if (f.id === 'win') {
+      if (S.sym >= 55) { S.sym = clamp(S.sym + 1, 0, 100); report('The winning story spreads, and people like joining a winner.'); }
+      else { S.sym = clamp(S.sym - 3, 0, 100); report('You claim momentum nobody can see. It reads as spin.'); }
+    }
+    if (f.id === 'urgent') { S.energy = clamp(S.energy - 4, 0, 100); report('Urgency gets people off the couch, and wears them out.'); }
+    if (SYNERGY[f.id] && SYNERGY[f.id].includes(tacticId)) report('The message and the month’s work fit together, and both land harder.');
+  }
+
+  function growthFor(tactic) {
+    // returns multiplier and flat adds; the S-curve heart of the game
+    const symF = clamp(S.sym / 55, 0.3, 1.6);
+    const momentum = clamp(S.energy / 60, 0.5, 1.3);
+    let mult = 1.0, flat = 0;
+    if (tactic === 'meetings') { mult = 1.55 + (S.professionalized ? -0.15 : 0.1); flat = 400 + Math.round(rnd() * 400); }
+    if (tactic === 'march') { mult = 1.0 + 0.7 * symF * momentum; }
+    if (tactic === 'media') { mult = 1.15 + (S.pillars.media >= 0 ? 0.45 : 0.1); }
+    if (tactic === 'strike') { mult = 1.25; }
+    if (tactic === 'lobby') { mult = 1.1; }
+    if (tactic === 'train') { mult = 1.05; }
+    if (S.coalition) mult += 0.1;
+    if (S.monthFrame && SYNERGY[S.monthFrame.id] && SYNERGY[S.monthFrame.id].includes(tactic)) mult += 0.1;
+    if (S.monthFrame && S.monthFrame.id === 'win' && S.sym >= 55) mult += 0.06;
+    if (S.monthFrame && S.monthFrame.id === 'urgent') flat += 250;
+    mult += Math.min(0.2, S.part / 250000);    // growth feeds itself once you're big
+    const saturation = clamp(1 - S.part / (POP * 0.06), 0.15, 1);    // and then slows near the ceiling
+    mult = 1 + (mult - 1) * saturation;
+    return { mult, flat };
+  }
+
+  function applyTactic(tactic) {
+    const c = S.cause;
+    if (tactic === 'meetings') {
+      S.energy = clamp(S.energy - 5, 0, 100);
+      report('A month of kitchen tables and break rooms among ' + S.cause.who + '. The sign-up sheets fill up.');
+      if (rnd() < 0.5) report('Most new names came in through someone they already knew.');
+    }
+    if (tactic === 'march') {
+      S.energy = clamp(S.energy - 10, 0, 100);
+      const turnout = Math.round(S.part * (0.3 + rnd() * 0.4));
+      report(turnout.toLocaleString() + ' people march on the capitol. The overhead photo is the story.');
+      if (S.sym < 40) { S.sym -= 2; report('But with the public cold on you, the coverage leads with traffic complaints.'); }
+      else { S.sym += 3; }
+      if (S.discipline === 0 && rnd() < 0.35) { S.sym -= 4; report('A shoving match near the barricades makes the evening news. No marshals were there to stop it.'); }
+      S.pillars.police = clamp(S.pillars.police - (S.discipline >= 2 ? 0 : (rnd() < 0.4 ? 1 : 0)), -2, 2);
+    }
+    if (tactic === 'media') {
+      S.energy = clamp(S.energy - 5, 0, 100);
+      if (S.pillars.media >= 0) { S.sym = clamp(S.sym + (S.sym >= 75 ? 3 : 6 + Math.round(rnd() * 4)), 0, 100); S.pillars.media = clamp(S.pillars.media + (rnd() < 0.5 ? 1 : 0), -2, 2); report('A profile of ' + c.profile + ' runs statewide. It travels.'); }
+      else { S.sym = clamp(S.sym + 2, 0, 100); report('You pitch every outlet in the state. Two small stations bite. The big papers still won’t return calls.'); }
+    }
+    if (tactic === 'strike') {
+      if (partPct() < 0.2) { S.sym -= 3; S.energy = clamp(S.energy - 15, 0, 100); report('The boycott call goes out and mostly doesn’t land. You weren’t big enough yet, and it shows.'); }
+      else {
+        S.energy = clamp(S.energy - 15, 0, 100);
+        S.pillars.business = clamp(S.pillars.business + (rnd() < 0.65 ? 1 : 0), -2, 2);
+        S.sym -= 2;
+        report('The pressure lands where it counts: ' + c.strikeWin + '.');
+      }
+    }
+    if (tactic === 'lobby') {
+      S.energy = clamp(S.energy - 5, 0, 100);
+      const weight = partPct() > 0.8 || S.sym > 60 || S.electionWindow > 0;
+      const boost = S.electionWindow > 0 ? 2 : 1;
+      if (weight) { S.pillars.pols = clamp(S.pillars.pols + (rnd() < 0.7 ? boost : 0), -2, 2); S.pillars.courts = clamp(S.pillars.courts + (rnd() < 0.3 ? 1 : 0), -2, 2); report('You arrive with numbers behind you, and the meetings are different now. Staffers ask for your draft language.'); }
+      else { report('Polite meetings, warm handshakes, nothing moves. You don’t yet have what officials respect: a crowd they’re afraid of losing.'); }
+    }
+    if (tactic === 'train') {
+      S.energy = clamp(S.energy - 3, 0, 100);
+      S.discipline = Math.min(3, S.discipline + 1);
+      report('Marshal trainings in a borrowed gym: how to keep a line calm, how to de-escalate, what to do when someone wants a fight.');
+    }
+    // growth
+    // quiet drift: success makes friends
+    if (S.sym > 60 && partPct() > 0.3) {
+      const drifters = PILLARS.filter(p => S.pillars[p.id] < 2 && p.id !== 'police');
+      if (drifters.length && rnd() < 0.45) {
+        const d = pick(drifters);
+        S.pillars[d.id] = clamp(S.pillars[d.id] + 1, -2, 2);
+      }
+    }
+    const g = growthFor(tactic);
+    const before = S.part;
+    S.part = Math.round(clamp(S.part * g.mult + g.flat, 100, POP * 0.06));
+    if (S.part > before) {
+      const gained = S.part - before;
+      report('Rolls this month: +' + gained.toLocaleString() + ' people.' + (gained > before * 0.4 ? ' Growth is feeding itself now.' : ''));
+    }
+    S.energy = clamp(S.energy + 6, 0, 100);   // baseline recovery
+    if (S.electionWindow > 0) S.electionWindow -= 1;
+  }
+
+  const MILESTONES = [
+    { pct: 0.1, label: 'Reached 4,000 people (0.1%)', base: 60 },
+    { pct: 0.5, label: 'Reached 20,000 people (0.5%)', base: 110 },
+    { pct: 1.0, label: 'Reached 40,000 people (1%)', base: 170 },
+    { pct: 2.0, label: 'Reached 80,000 people (2%)', base: 260 },
+    { pct: 3.5, label: 'Crossed the 3.5% line: 140,000 people', base: 400 }
+  ];
+
+  function checkMilestones(prevPct) {
+    MILESTONES.forEach(ms => {
+      if (prevPct < ms.pct && partPct() >= ms.pct) {
+        addPoints(ms.label, ms.base, ms.base * 0.2);
+        report('Milestone: ' + ms.label.toLowerCase() + '.');
+        if (ms.pct === 1.0) { S.pillars.pols = clamp(S.pillars.pols + 1, -2, 2); report('At this size, officials stop pretending you don’t exist.'); }
+        if (ms.pct === 2.0) { S.pillars.business = clamp(S.pillars.business + 1, -2, 2); S.pillars.pols = clamp(S.pillars.pols + 1, -2, 2); report('Business starts hedging its bets. So do the officials.'); }
+        if (ms.pct === 3.5) { S.pillars.media = clamp(S.pillars.media + 1, -2, 2); S.pillars.pols = clamp(S.pillars.pols + 1, -2, 2); logMoment('You crossed 3.5% of the state.', 'Ch. 14 · The 3.5% line'); }
+      }
+    });
+  }
+
+  function checkPillars(prev) {
+    PILLARS.forEach(p => {
+      if (prev[p.id] < 2 && S.pillars[p.id] >= 2) {
+        addPoints(p.name + ' came over to your side', 140, 30);
+        report(p.name + ' is now with you.');
+        logMoment(p.name + ' defected to your side.', 'Ch. 14 · Pillars of support');
+      }
+    });
+  }
+
+  /* ============ RENDER ============ */
+  function meterColor(v) {
+    if (v > 60) return 'var(--status-good)';
+    if (v > 35) return 'var(--status-warning)';
+    if (v > 15) return 'var(--status-serious)';
+    return 'var(--status-critical)';
+  }
+
+  function metersHTML() {
+    const pct = partPct();
+    const barPct = clamp(pct / 4 * 100, 1, 100);
+    const markerLeft = 3.5 / 4 * 100;
+    return '<div class="meters fade-in">' +
+      '<div class="meter score"><div class="m-label">Score</div><div class="m-value">' + S.score + '</div><div class="m-bar"><div class="m-fill" style="width:' + clamp(S.score / 20, 0, 100) + '%;background:var(--series-1)"></div></div></div>' +
+      '<div class="meter" style="flex:2;min-width:220px"><div class="m-label">Movement size</div><div class="m-value">' + S.part.toLocaleString() + ' <span style="font-size:12.5px;color:var(--text-muted);font-weight:600">(' + pct.toFixed(2) + '% of the state)</span></div>' +
+      '<div class="part-bar"><div class="part-fill" style="width:' + barPct + '%"></div><div class="part-marker" style="left:' + markerLeft + '%"></div><div class="part-marker-label" style="left:' + markerLeft + '%">3.5%</div></div></div>' +
+      '<div class="meter"><div class="m-label">Public sympathy</div><div class="m-value">' + Math.round(S.sym) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.sym + '%;background:' + meterColor(S.sym) + '"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Organizer energy</div><div class="m-value">' + Math.round(S.energy) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.energy + '%;background:' + meterColor(S.energy) + '"></div></div></div>' +
+      '</div>' +
+      '<div class="pillars fade-in">' + PILLARS.map(p => {
+        const v = S.pillars[p.id];
+        const col = v >= 2 ? 'var(--status-good)' : v === 1 ? 'var(--series-1)' : v === 0 ? 'var(--text-muted)' : v === -1 ? 'var(--status-serious)' : 'var(--status-critical)';
+        return '<div class="pillar"><div class="p-name">' + p.name + '</div><div class="p-state" style="color:' + col + '">' + PILLAR_WORDS[v + 2] + '</div></div>';
+      }).join('') + '</div>';
+  }
+
+  /* ============ SCREENS ============ */
+  function showSetup() {
+    screen.innerHTML =
+      '<div class="card fade-in">' +
+      '<div class="kicker">Chapter 14 · Social change</div>' +
+      '<div class="big">Can you make a movement for social change?</div>' +
+      '<p class="body-text" style="margin-top:8px">Your team runs a movement for ten months. Each month: handle what the month throws at you, pick your message, and choose where your people’s time goes. You are trying to grow, keep the public with you, and pull the pillars that hold up the status quo (press, money, officials, courts, police) over to your side.</p>' +
+      '<p class="body-text">One number to know: across 300+ real campaigns, no nonviolent movement that got <strong>3.5% of the population</strong> actively involved has ever failed. That line is on your screen the whole game.</p>' +
+      '<div class="rules-box"><strong>Scoring</strong><br>' +
+      'Some choices will cost you points and some will win you points. Use what you know about how movements actually work. Highest score in the class wins the prize.</div>' +
+      '<p class="body-text"><strong>Pick your fight.</strong> Same game underneath. Different enemies, different friends.</p>' +
+      '<div class="cause-grid">' + CAUSES.map((c, i) =>
+        '<button class="cause-btn" data-ci="' + i + '" aria-pressed="false"><div class="c-name">' + c.name + '</div><div class="c-desc">' + c.desc + '</div></button>').join('') + '</div>' +
+      '<div class="kicker" style="margin-top:6px">Movement name for the record</div>' +
+      '<input type="text" id="teamName" maxlength="40" placeholder="e.g., Group 3, The Front Row Coalition">' +
+      '<div class="decide"><button class="btn primary" id="startBtn" disabled>Start organizing</button></div>' +
+      '</div>';
+    let chosen = null;
+    document.querySelectorAll('.cause-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.cause-btn').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      chosen = parseInt(b.dataset.ci, 10);
+      $('startBtn').disabled = false;
+    }));
+    $('startBtn').addEventListener('click', () => {
+      newGame($('teamName').value.trim(), chosen);
+      showRound();
+    });
+  }
+
+  function pickEvent() {
+    const avail = EVENTS.filter(e => !S.usedEvents.includes(e.id) && e.when());
+    if (!avail.length || (S.round > 2 && rnd() < 0.2)) return null;    // some months are quiet
+    let e;
+    const hot = avail.filter(x => x.id === 'violence1' || x.id === 'violence2');
+    if (hot.length && rnd() < 0.55) e = pick(hot);                      // trouble finds a big movement
+    else e = pick(avail);
+    S.usedEvents.push(e.id);
+    return e;
+  }
+
+  function showRound() {
+    if (S.round > ROUNDS) { endGame(); return; }
+    S.roundPoints = 0;
+    reportLines = [];
+    const month = MONTHS[(S.round + 1) % 12];
+    const ev = pickEvent();
+    S.currentEvent = ev;
+    S.eventResolved = !ev || !ev.choices;
+
+    let evHTML = '';
+    if (ev) {
+      if (ev.choices) {
+        evHTML = '<div class="event"><div class="e-tag">' + ev.tag + '</div><div class="e-text">' + ev.text() + '</div>' +
+          '<div class="choice-opts">' + ev.choices().map((c, i) =>
+            '<button class="choice-btn" data-choice="' + i + '">' + c.label + '</button>').join('') + '</div></div>';
+      } else {
+        const txt = ev.auto();
+        evHTML = '<div class="event"><div class="e-tag">' + ev.tag + '</div><div class="e-text">' + txt + '</div></div>';
+      }
+    }
+
+    // three message options this month
+    const framePool = FRAMES.slice();
+    S.monthFrameOptions = [];
+    for (let i = 0; i < 3; i++) S.monthFrameOptions.push(framePool.splice(Math.floor(rnd() * framePool.length), 1)[0]);
+    S.monthFrame = null;
+    const frameHTML = '<div class="event" style="border-left-color: var(--series-1)"><div class="e-tag">This month’s message</div>' +
+      '<div class="e-text">What story does the movement tell this month? It shapes how everything else lands.</div>' +
+      '<div class="choice-opts">' + S.monthFrameOptions.map((f, i) =>
+        '<button class="choice-btn frame-btn" data-frame="' + i + '"><strong>' + f.label + '</strong><br><span style="font-weight:500;font-size:12.5px;color:var(--text-muted)">' + f.desc(S.cause) + '</span></button>').join('') + '</div></div>';
+
+    const strikeReady = partPct() >= 0.2;
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' +
+      '<div class="kicker">Month ' + S.round + ' of ' + ROUNDS + ' · ' + month + '</div>' +
+      '<div class="big">' + S.cause.name + '</div>' +
+      '<p class="body-text" style="margin-top:6px">Your demand: ' + S.cause.demand + '. Standing in the way: ' + S.cause.enemy + '.</p>' +
+      evHTML + frameHTML +
+      '<div class="tactics">' + TACTICS.map(t => {
+        const disabled = (t.id === 'strike' && !strikeReady);
+        return '<button class="tactic" data-t="' + t.id + '"' + (disabled ? ' disabled' : '') + '><div class="t-name">' + t.name + (t.id === 'strike' && !strikeReady ? ' (too small yet)' : '') + '</div><div class="t-desc">' + t.desc + '</div></button>';
+      }).join('') + '</div>' +
+      '<div class="tactic-note" id="tacticNote">' + (S.eventResolved ? 'Pick a message, then pick what this month goes to.' : 'Deal with the moment above, pick a message, then pick what this month goes to.') + '</div>' +
+      '</div>';
+
+    document.querySelectorAll('.frame-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.frame-btn').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      S.monthFrame = S.monthFrameOptions[parseInt(b.dataset.frame, 10)];
+      if (S.eventResolved) $('tacticNote').textContent = 'Message set. Now pick what this month goes to.';
+    }));
+
+    if (ev && ev.choices) {
+      const choices = ev.choices();
+      document.querySelectorAll('.choice-btn:not(.frame-btn)').forEach(b => b.addEventListener('click', () => {
+        if (S.eventResolved) return;
+        document.querySelectorAll('.choice-btn:not(.frame-btn)').forEach(x => { x.setAttribute('aria-pressed', 'false'); x.disabled = true; });
+        b.setAttribute('aria-pressed', 'true');
+        choices[parseInt(b.dataset.choice, 10)].effect();
+        S.eventResolved = true;
+        if (S.ending === 'deal') { endGame(); return; }
+        $('tacticNote').textContent = S.monthFrame ? 'Now pick what this month goes to.' : 'Now pick a message, then what this month goes to.';
+      }));
+    }
+
+    document.querySelectorAll('.tactic').forEach(b => b.addEventListener('click', () => {
+      if (!S.eventResolved) { $('tacticNote').textContent = 'The moment above needs an answer first.'; return; }
+      if (!S.monthFrame) { $('tacticNote').textContent = 'Pick this month’s message first.'; return; }
+      resolveRound(b.dataset.t);
+    }));
+  }
+
+  function resolveRound(tacticId) {
+    const prevPct = partPct();
+    const prevPillars = Object.assign({}, S.pillars);
+    S.sym = clamp(S.sym, 0, 100);
+    applyFrame(tacticId);
+    applyTactic(tacticId);
+    S.sym = clamp(S.sym, 0, 100);
+    checkMilestones(prevPct);
+    checkPillars(prevPillars);
+
+    const tName = TACTICS.find(t => t.id === tacticId).name;
+    S.timeline.push({ round: S.round, text: 'Month ' + S.round + ': ' + tName + '.', concept: null, minor: true });
+
+    // crackdown check
+    if (S.sym < 22 && S.pillars.police <= -2 && S.violenceMishandled >= 2) {
+      S.ending = 'crackdown';
+      endGame();
+      return;
+    }
+
+    const delta = S.roundPoints;
+    const deltaHTML = delta === 0 ? '' :
+      '<div class="score-delta ' + (delta > 0 ? 'up' : 'down') + '">' + (delta > 0 ? '+' : '−') + Math.abs(delta) + ' points</div>';
+
+    S.round += 1;
+    screen.innerHTML = metersHTML() +
+      '<div class="card ' + (delta < 0 ? 'outcome-warn' : 'outcome-good') + ' fade-in">' +
+      '<div class="kicker">Month ' + (S.round - 1) + ' · ' + tName + '</div>' +
+      '<div class="big">The month in review</div>' +
+      deltaHTML +
+      '<ul class="report-lines">' + reportLines.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
+      '<div class="decide"><button class="btn primary" id="nextBtn">' + (S.round > ROUNDS ? 'See how it ends' : 'Next month') + ' →</button></div>' +
+      '</div>';
+    $('nextBtn').addEventListener('click', showRound);
+  }
+
+  /* ============ ENDGAME ============ */
+  function computeEnding() {
+    if (S.ending === 'deal') return 'deal';
+    if (S.ending === 'crackdown') return 'crackdown';
+    const pct = partPct(), pw = pillarsWithYou();
+    if (pct >= 3.5 && (pw >= 2 || (S.sym >= 70 && S.violenceMishandled === 0))) return 'victory';
+    if ((pct >= 1.2 && S.sym >= 30) || pw >= 2) return 'concession';
+    return 'fizzle';
+  }
+
+  function endGame() {
+    const ending = computeEnding();
+    S.over = true;
+    // ending points
+    if (ending === 'victory') addPoints('Full victory: ' + S.cause.demand, 500, 60);
+    if (ending === 'concession') addPoints('Forced a real concession', 250, 50);
+    if (ending === 'deal') addPoints('The quiet deal: part of the demand, in hand', 200, 40);
+    if (ending === 'crackdown') addPoints('The movement was broken up', -300, 50);
+    showEnding(ending);
+  }
+
+  function partChartSVG() {
+    // participation over time from milestone crossings is not tracked per round; draw pillars summary instead
+    return '';
+  }
+
+  function showEnding(ending) {
+    const pct = partPct(), pw = pillarsWithYou();
+    let headline, lede;
+    if (ending === 'victory') {
+      headline = 'They gave in';
+      lede = 'With ' + S.part.toLocaleString() + ' people (' + pct.toFixed(2) + '% of the state) and ' + pw + ' pillars on your side, holding out stopped being possible. You got ' + S.cause.demand + '. Movements this size almost never lose.';
+    } else if (ending === 'concession') {
+      headline = 'They gave ground';
+      lede = 'You didn’t get everything. You got something real: ' + S.part.toLocaleString() + ' people (' + pct.toFixed(2) + '%)' + (pw >= 2 ? ', with ' + pw + ' pillars leaning your way,' : ',') + ' enough that the other side moved to make you stop. Most movements that win anything at all win like this.';
+    } else if (ending === 'deal') {
+      headline = 'You took the deal';
+      lede = 'Part of the demand, in hand, without another month of grind. The organizers argue to this day about whether you cashed out early or banked a win while it was there. What do you think, looking at what your movement still had left?';
+    } else if (ending === 'crackdown') {
+      headline = 'They broke it up';
+      lede = 'With the public cold on you, the police hostile, and the broken-glass stories doing their work, the arrests came and almost nobody objected. The cause didn’t die. Your organization did. What would you protect differently next time?';
+    } else {
+      headline = 'It faded out';
+      lede = 'No disaster, no crackdown. The meetings just got smaller, and one month there wasn’t a next action. You reached ' + S.part.toLocaleString() + ' people (' + pct.toFixed(2) + '%). The grievance is still out there, waiting for the next crew to pick it up. What would you do differently from month one?';
+    }
+
+    let ledgerRows = '';
+    S.ledger.forEach(en => {
+      const pos = en.amount >= 0;
+      ledgerRows += '<tr><td>' + en.label + '</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:' + (pos ? 'var(--status-good)' : 'var(--status-critical)') + '">' + (pos ? '+' : '−') + Math.abs(en.amount) + '</td></tr>';
+    });
+
+    let timelineRows = '';
+    S.timeline.filter(t => !t.minor).forEach(t => {
+      timelineRows += '<tr><td style="white-space:nowrap">Month ' + t.round + '</td><td>' + t.text + '</td><td>' + (t.concept ? '<span class="concept-tag">' + t.concept + '</span>' : '') + '</td></tr>';
+    });
+
+    const gap = pct >= 3.5 ? 'You crossed it.' : 'You reached ' + pct.toFixed(2) + '%. The line was 3.5%, about ' + (140000 - S.part > 0 ? (140000 - S.part).toLocaleString() + ' more people than you had.' : '');
+
+    screen.innerHTML =
+      '<div class="card fade-in ' + (ending === 'victory' ? 'outcome-good' : ending === 'crackdown' ? 'outcome-bad' : 'outcome-warn') + '">' +
+      '<div class="kicker">Ten months later · ' + S.cause.name + '</div>' +
+      '<div class="big">' + headline + '</div>' +
+      '<p class="body-text" style="margin-top:8px">' + lede + '</p>' +
+      '<div class="kicker" style="margin-top:12px">On the record: ' + S.team + '</div>' +
+      '<div class="kicker" style="margin-top:12px">The accounting, unsealed</div>' +
+      '<table class="log-table"><thead><tr><th>What happened</th><th style="text-align:right">Points</th></tr></thead><tbody>' + ledgerRows + '</tbody></table>' +
+      '<div class="kicker" style="margin-top:14px">Final score</div><div class="final-score">' + S.score + ' points</div>' +
+      '<p class="body-text" style="font-size:13.5px">Report this number for the class board.</p>' +
+      '</div>' +
+      '<div class="card fade-in">' +
+      '<div class="kicker">Your campaign, month by month</div>' +
+      '<table class="log-table"><tbody>' + timelineRows + '</tbody></table>' +
+      '<p class="body-text" style="margin-top:12px"><strong>The 3.5% line.</strong> ' + gap + ' Across more than 300 campaigns since 1900, no nonviolent movement that mobilized 3.5% of its population has failed, and nonviolent campaigns succeeded about twice as often as violent ones (Chenoweth and Stephan). Why do you think the violent ones lose more often?</p>' +
+      '</div>' +
+      '<div class="card fade-in"><div class="kicker">Talk about it</div><ul class="concepts">' +
+      '<li>Your movement had to convince people that something ordinary was actually unjust. What does it take to make people see the same situation differently?</li>' +
+      '<li>Movements run on resources: people, money, attention, organization. Which did you have, which were you always short of, and how did that shape your choices?</li>' +
+      '<li>When things got ugly, what did your response cost or save you? Would you answer the same way again?</li>' +
+      '<li>Somebody offered you part of what you wanted. Is compromise winning or selling out? Who inside a movement gets to decide?</li>' +
+      '<li>Teams in this class ran campaigns from across the political spectrum with the same six tactics. Is a movement a set of beliefs, or a set of tools?</li>' +
+      '<li>If 3.5% of a population is enough to win, where does power in a society actually sit?</li>' +
+      '</ul>' +
+      '<div class="decide"><button class="btn primary" id="againBtn">Run another campaign</button></div>' +
+      '</div>';
+    $('againBtn').addEventListener('click', showSetup);
+  }
+
+  /* ============ THEME + BOOT ============ */
+  const themeBtn = $('themeBtn');
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+  let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(isDark);
+  themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+  showSetup();
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<style>:root:not([data-theme="dark"]) .kicker { color: #5a5954 !important; }</style><script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

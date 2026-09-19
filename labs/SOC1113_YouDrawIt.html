@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>You Draw It · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;   /* actual */
+    --series-2: #ae4d26;   /* your guess */
+    --series-3: #137a55;   /* companion series (divorce) */
+    --accent-wash: rgba(42,120,214,0.07);
+    --draw-wash: rgba(235,104,52,0.05);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --series-3: #199e70;
+    --accent-wash: rgba(57,135,229,0.08);
+    --draw-wash: rgba(255,255,255,0.03);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root {
+    min-height: 100vh;
+    background: var(--page);
+    color: var(--text-primary);
+    padding: 20px;
+  }
+  .frame { max-width: 1040px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer;
+  }
+  .theme-btn:hover { color: var(--text-primary); }
+
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab {
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 8px 16px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-secondary);
+  }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .tab .ch { font-weight: 500; opacity: 0.85; font-size: 12px; margin-right: 6px; }
+
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; margin-bottom: 14px;
+  }
+  .prompt-line { font-size: 20px; font-weight: 700; line-height: 1.35; }
+  .prompt-detail { color: var(--text-secondary); font-size: 15px; margin-top: 6px; line-height: 1.5; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 4px 0 10px; font-size: 13px; color: var(--text-secondary); }
+  .legend .key { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { width: 18px; height: 0; border-top: 3px solid; border-radius: 2px; display: inline-block; }
+  .swatch.dashed { border-top-style: dashed; }
+  .swatch.ref { border-top: 2px dotted var(--text-muted); }
+
+  .chart-wrap { position: relative; }
+  svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axisline { stroke: var(--baseline); stroke-width: 1; }
+  .ticklabel { fill: var(--text-muted); font-size: 12.5px; }
+  .axistitle { fill: var(--text-secondary); font-size: 13px; font-weight: 600; }
+  .anchor-path { stroke: var(--series-1); stroke-width: 2.5; fill: none; }
+  .actual-path { stroke: var(--series-1); stroke-width: 2.5; fill: none; }
+  .guess-path { stroke: var(--series-2); stroke-width: 2.5; stroke-dasharray: 7 5; fill: none; }
+  .companion-path { stroke: var(--series-3); stroke-width: 2.5; fill: none; }
+  .ref-line { stroke: var(--text-muted); stroke-width: 1.5; stroke-dasharray: 2 5; }
+  .direct-label { font-size: 13px; font-weight: 700; }
+  .hint-text { fill: var(--text-muted); font-size: 15px; font-weight: 600; }
+  .draw-region { fill: var(--draw-wash); }
+  .anchor-region { fill: var(--accent-wash); }
+  .anchor-dot { fill: var(--series-1); }
+
+  .tooltip {
+    position: absolute; pointer-events: none; display: none;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+    padding: 9px 12px; font-size: 13px; line-height: 1.55; color: var(--text-secondary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); min-width: 130px; z-index: 5;
+  }
+  .tooltip .tt-year { font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+  .tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
+  .tt-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+    padding: 10px 22px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+  }
+  .btn.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.ghost { border: none; background: none; color: var(--text-muted); font-weight: 500; font-size: 14px; text-decoration: underline; }
+  .progress-note { color: var(--text-muted); font-size: 13.5px; }
+
+  .verdict { display: none; }
+  .verdict.show { display: block; }
+  .verdict-title { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+  .verdict-sub { color: var(--text-secondary); font-size: 15px; line-height: 1.55; }
+  .reveal-fact { font-size: 16px; line-height: 1.6; color: var(--text-secondary); }
+  .reveal-fact strong { color: var(--text-primary); }
+
+  .twist { display: none; }
+  .twist.show { display: block; }
+  .twist h3 { font-size: 17px; margin-bottom: 4px; }
+  .twist .twist-sub { color: var(--text-secondary); font-size: 14.5px; margin-bottom: 12px; line-height: 1.5; }
+
+  .debrief { display: none; }
+  .debrief.show { display: block; }
+  .debrief h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px; }
+  .debrief ul { list-style: none; }
+  .debrief li { font-size: 16px; line-height: 1.5; padding: 8px 0; border-top: 1px solid var(--grid); }
+  .debrief li:first-child { border-top: none; }
+
+  details { margin-bottom: 14px; }
+  summary { cursor: pointer; color: var(--text-muted); font-size: 13.5px; padding: 4px 2px; }
+  table { border-collapse: collapse; font-size: 13px; margin-top: 10px; width: 100%; max-width: 560px; }
+  th, td { text-align: right; padding: 4px 12px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-secondary); }
+  th:first-child, td:first-child { text-align: left; }
+
+  footer { color: var(--text-muted); font-size: 12.5px; line-height: 1.6; padding: 6px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>You Draw It<span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="tabs" role="tablist" id="tabs"></div>
+
+    <div class="card">
+      <div class="prompt-line" id="promptLine"></div>
+      <div class="prompt-detail" id="promptDetail"></div>
+    </div>
+
+    <div class="card">
+      <div class="legend" id="legend"></div>
+      <div class="chart-wrap">
+        <svg id="chart" viewBox="0 0 960 470" aria-label="Interactive drawing chart"></svg>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="revealBtn" type="button" disabled>Reveal the real data</button>
+        <button class="btn" id="clearBtn" type="button">Clear my line</button>
+        <button class="btn ghost" id="skipBtn" type="button">Skip drawing and show the data</button>
+        <span class="progress-note" id="progressNote"></span>
+      </div>
+    </div>
+
+    <div class="card verdict" id="verdictCard">
+      <div class="verdict-title" id="verdictTitle"></div>
+      <div class="verdict-sub" id="verdictSub"></div>
+      <div style="height:10px"></div>
+      <div class="reveal-fact" id="revealFact"></div>
+    </div>
+
+    <div class="card twist" id="twistCard">
+      <h3 id="twistTitle"></h3>
+      <div class="twist-sub" id="twistSub"></div>
+      <div class="chart-wrap">
+        <svg id="twistChart" viewBox="0 0 960 260" aria-label="Companion chart"></svg>
+        <div class="tooltip" id="twistTooltip"></div>
+      </div>
+    </div>
+
+    <div class="card debrief" id="debriefCard">
+      <h3>Discuss</h3>
+      <ul id="debriefList"></ul>
+    </div>
+
+    <details id="tableDetails">
+      <summary>View the data table</summary>
+      <div id="tableWrap"></div>
+    </details>
+
+    <footer role="presentation" id="sources"></footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= DATA ================= */
+  // U.S. homicide rate per 100,000 (FBI UCR / CDC; 2025 = CCJ mid-year estimate)
+  const HOMICIDE = {
+    start: 1960,
+    values: [5.1,4.8,4.6,4.6,4.9,5.1,5.6,6.2,6.9,7.3,   // 1960s
+             7.9,8.6,9.0,9.4,9.8,9.6,8.7,8.8,9.0,9.8,   // 1970s
+             10.2,9.8,9.1,8.3,7.9,8.0,8.6,8.3,8.5,8.7,  // 1980s
+             9.4,9.8,9.3,9.5,9.0,8.2,7.4,6.8,6.3,5.7,   // 1990s
+             5.5,5.6,5.6,5.7,5.5,5.6,5.8,5.7,5.4,5.0,   // 2000s
+             4.8,4.7,4.7,4.5,4.4,4.9,5.4,5.3,5.0,5.1,   // 2010s
+             6.5,6.8,6.3,5.7,4.9,4.0]                    // 2020–2025
+  };
+  // Gallup: % saying there is MORE crime in the U.S. than a year ago (null = not asked)
+  const GALLUP = {
+    start: 1989,
+    values: [84,84,null,89,87,null,null,71,64,52,null,  // 1989–1999
+             47,41,62,60,53,67,68,71,67,74,             // 2000–2009
+             66,68,null,64,63,70,70,68,60,64,           // 2010–2019
+             78,74,78,77,64,49]                          // 2020–2025
+  };
+  // Marriages / divorces per 1,000 total population (CDC NVSS)
+  const MARRIAGE = {
+    start: 1960,
+    values: [8.5,8.5,8.5,8.8,9.0,9.3,9.5,9.7,10.4,10.6,
+             10.6,10.6,10.9,10.8,10.5,10.0,9.9,9.9,10.3,10.4,
+             10.6,10.6,10.6,10.5,10.5,10.1,10.0,9.9,9.8,9.7,
+             9.8,9.4,9.3,9.0,9.1,8.9,8.8,8.9,8.4,8.6,
+             8.2,8.2,7.8,7.7,7.8,7.6,7.5,7.3,7.1,6.8,
+             6.8,6.8,6.8,6.8,6.9,6.9,6.9,6.9,6.5,6.1,
+             5.1,6.0,6.2,6.1]
+  };
+  const DIVORCE = {
+    start: 1960,
+    values: [2.2,2.3,2.2,2.3,2.4,2.5,2.5,2.6,2.9,3.2,
+             3.5,3.7,4.0,4.3,4.6,4.8,5.0,5.0,5.1,5.3,
+             5.2,5.3,5.1,4.9,5.0,5.0,4.9,4.8,4.8,4.7,
+             4.7,4.7,4.8,4.6,4.6,4.4,4.3,4.3,4.2,4.1,
+             4.0,4.0,3.9,3.8,3.7,3.6,3.7,3.6,3.5,3.5,
+             3.6,3.6,3.4,3.3,3.2,3.1,3.0,2.9,2.9,2.7,
+             2.3,2.5,2.4,2.3]
+  };
+  // U.S. total fertility rate, births per woman (CDC/NCHS)
+  const TFR = {
+    start: 1960,
+    values: [3.65,3.62,3.46,3.32,3.19,2.91,2.72,2.56,2.46,2.46,
+             2.48,2.27,2.01,1.88,1.84,1.77,1.74,1.79,1.76,1.81,
+             1.84,1.81,1.83,1.80,1.81,1.84,1.84,1.87,1.93,2.01,
+             2.08,2.06,2.05,2.02,2.00,1.98,1.98,1.97,2.00,2.01,
+             2.06,2.03,2.01,2.04,2.05,2.05,2.10,2.12,2.07,2.00,
+             1.93,1.89,1.88,1.86,1.86,1.84,1.82,1.77,1.73,1.71,
+             1.64,1.66,1.65,1.62,1.60]
+  };
+
+  function toSeries(d) {
+    return d.values.map((v, i) => ({ year: d.start + i, value: v }));
+  }
+
+  /* ================= DATASET CONFIGS ================= */
+  const DATASETS = [
+    {
+      id: 'crime',
+      tab: 'Crime', ch: 'Ch. 1',
+      prompt: 'Draw what you think happened to the U.S. homicide rate after 1990.',
+      detail: 'The line shows the real rate from 1960 to 1990. Click (or touch) in the shaded area and drag left-to-right to draw your prediction through 2025. Draw what you honestly expect.',
+      unit: 'homicides per 100,000 people',
+      yMax: 12, yTick: 2, fmt: v => v.toFixed(1),
+      main: toSeries(HOMICIDE),
+      anchorYear: 1990,
+      actualLabel: 'Actual rate',
+      goodMAE: 0.9, okMAE: 1.8,
+      verdicts: {
+        good: ['Very close to the real line.', 'Your line tracked one of the least-guessed trends in American life: a large, decades-long decline.'],
+        ok: ['Partly right.', 'You caught some of the direction, but the real drop is bigger than almost anyone guesses.'],
+        far: ['Most Americans get this wrong too.', 'In most years, a majority tell Gallup that crime is rising. The data says otherwise. That gap between belief and evidence is what sociology studies.']
+      },
+      revealFact: 'The homicide rate peaked at <strong>10.2 per 100,000 in 1980</strong>, fell by roughly half through the 1990s, and after a real but temporary jump in 2020–21 has dropped to an estimated <strong>4.0 in 2025</strong>, the lowest level recorded since at least 1900 (Council on Criminal Justice).',
+      twist: {
+        title: 'What Americans believed over the same years',
+        sub: 'Gallup has asked since 1989: “Is there more crime in the U.S. than a year ago?” The line shows the share saying MORE. Compare it to the line above.',
+        series: toSeries(GALLUP), unit: '% saying “more crime than a year ago”',
+        yMax: 100, yTick: 25, fmt: v => v + '%', color: 'var(--series-2)',
+        label: 'said “more”'
+      },
+      debrief: [
+        'Where did your line come from? News, family, personal experience? Who supplied your “data”?',
+        'In 1992, 89% of Americans said crime was rising, just as the long decline was beginning. What keeps perception and reality apart?',
+        'Mills: is fear of crime a personal trouble or a public issue? Who benefits when people believe crime is always rising?'
+      ],
+      sources: 'Sources: FBI Uniform Crime Reports / CDC (homicide rate, 1960–2024). Council on Criminal Justice (2025 estimate). Gallup (perception series, 1989–2025).'
+    },
+    {
+      id: 'family',
+      tab: 'Marriage', ch: 'Ch. 7',
+      prompt: 'Draw what you think happened to the U.S. marriage rate after 1990.',
+      detail: 'The blue line shows real marriages per 1,000 people, 1960–1990. Draw your prediction through 2023. After the reveal, you’ll also see what divorce did. Most people guess that one wrong too.',
+      unit: 'marriages per 1,000 people',
+      yMax: 12, yTick: 2, fmt: v => v.toFixed(1),
+      main: toSeries(MARRIAGE),
+      anchorYear: 1990,
+      actualLabel: 'Marriage rate',
+      goodMAE: 0.5, okMAE: 1.1,
+      verdicts: {
+        good: ['Very close to the real line.', 'You tracked the long decline. Marriage is being postponed more than abandoned.'],
+        ok: ['Partly right.', 'You had the direction. The real decline is steadier and deeper than most people draw.'],
+        far: ['Most people miss this one.', 'Most people draw marriage holding steady. It has been falling for two generations. The 2020 dip is COVID postponing weddings.']
+      },
+      revealFact: 'Marriage fell from <strong>10.6 per 1,000 in 1980</strong> to <strong>6.1 in 2023</strong>. People marry later, and fewer marry at all. <strong>Divorce peaked in 1981</strong> and has fallen ever since, partly because the people still marrying are older, more educated, and more selected.',
+      companion: { series: toSeries(DIVORCE), label: 'Divorce rate' },
+      debrief: [
+        'Is this a decline of the family or a transformation of it? What counts as “family” in these numbers, and what’s invisible to them?',
+        'Divorce has fallen for 40 years. Why does everyone “know” half of marriages end in divorce?',
+        'Predict the next decade: where does each line go by 2035, and what social forces would bend it?'
+      ],
+      sources: 'Sources: CDC / National Vital Statistics System, marriage and divorce rates per 1,000 total population, 1960–2023 (divorce series excludes a few non-reporting states in later years).'
+    },
+    {
+      id: 'fertility',
+      tab: 'Fertility', ch: 'Ch. 13',
+      prompt: 'Draw what you think happened to the U.S. fertility rate after 1980.',
+      detail: 'The line shows real births per woman, 1960–1980, the end of the Baby Boom. Draw your prediction through 2024. The dotted line marks “replacement level”: 2.1 children per woman keeps a population stable without immigration.',
+      unit: 'births per woman (total fertility rate)',
+      yMax: 4, yTick: 1, fmt: v => v.toFixed(2),
+      main: toSeries(TFR),
+      anchorYear: 1980,
+      actualLabel: 'Fertility rate',
+      refLine: { value: 2.1, label: 'Replacement: 2.1', legend: 'Replacement level (2.1 births/woman)' },
+      goodMAE: 0.12, okMAE: 0.28,
+      verdicts: {
+        good: ['Very close to the real line.', 'You drew the demographic transition almost exactly: stability near replacement, then the slide after 2007.'],
+        ok: ['Partly right.', 'You caught the flatness or the fall. The real line hugs replacement for decades, then slides after the Great Recession.'],
+        far: ['Most people miss this one.', 'Most people draw fertility rising. It has been at or below replacement since 1971 and just hit a record low.']
+      },
+      revealFact: 'U.S. fertility has been near or below <strong>replacement (2.1) since 1971</strong>. It hovered around 2.0 for decades, then slid steadily after 2007 to a <strong>record low of 1.60 in 2024</strong> (CDC). Population growth now depends heavily on immigration, and the age pyramid is becoming a column.',
+      debrief: [
+        'If fertility stays at 1.6, what happens to the ratio of workers to retirees, and to Social Security, healthcare, and housing?',
+        'The fall since 2007 tracks recessions, student debt, housing costs, and delayed marriage (Ch. 7). Personal choice or social structure?',
+        'Almost every developing country is following the same curve. Why does fertility fall as societies develop?'
+      ],
+      sources: 'Sources: CDC / National Center for Health Statistics, total fertility rate, 1960–2024 (2024 final data, record low).'
+    }
+  ];
+
+  /* ================= CHART GEOMETRY ================= */
+  const W = 960, H = 470, M = { top: 28, right: 150, bottom: 46, left: 64 };
+  const IW = W - M.left - M.right, IH = H - M.top - M.bottom;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const svg = document.getElementById('chart');
+  const tooltip = document.getElementById('tooltip');
+  let ds = null;          // active dataset config
+  let years = [];         // all years
+  let anchorIdx = 0;      // index of anchor year
+  let guess = [];         // user values by index (anchorIdx..end), guess[anchorIdx] fixed
+  let drawn = false, revealed = false;
+  let xOf, yOf, yInv, iOfX;
+
+  function el(name, attrs, parent) {
+    const n = document.createElementNS(NS, name);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(n);
+    return n;
+  }
+
+  function pathFrom(points) {
+    return points.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join('');
+  }
+
+  function setScales(cfg) {
+    const y0 = cfg.main[0].year, y1 = cfg.main[cfg.main.length - 1].year;
+    xOf = yr => M.left + (yr - y0) / (y1 - y0) * IW;
+    yOf = v => M.top + (1 - v / cfg.yMax) * IH;
+    yInv = py => Math.max(0, Math.min(cfg.yMax, (1 - (py - M.top) / IH) * cfg.yMax));
+    iOfX = px => {
+      const yr = y0 + (px - M.left) / IW * (y1 - y0);
+      return Math.max(0, Math.min(years.length - 1, Math.round(yr - y0)));
+    };
+  }
+
+  /* ================= RENDER ================= */
+  function renderBase() {
+    svg.innerHTML = '';
+    const cfg = ds;
+
+    // regions
+    el('rect', { x: M.left, y: M.top, width: xOf(cfg.anchorYear) - M.left, height: IH, class: 'anchor-region', rx: 4 });
+    el('rect', { x: xOf(cfg.anchorYear), y: M.top, width: M.left + IW - xOf(cfg.anchorYear), height: IH, class: 'draw-region', rx: 4, id: 'drawRegion' });
+
+    // gridlines + y ticks
+    for (let v = 0; v <= cfg.yMax; v += cfg.yTick) {
+      el('line', { x1: M.left, x2: M.left + IW, y1: yOf(v), y2: yOf(v), class: v === 0 ? 'axisline' : 'gridline' });
+      el('text', { x: M.left - 10, y: yOf(v) + 4, 'text-anchor': 'end', class: 'ticklabel' }).textContent = cfg.fmt(v);
+    }
+    // x ticks each decade
+    const y0 = years[0], y1 = years[years.length - 1];
+    for (let yr = Math.ceil(y0 / 10) * 10; yr <= y1; yr += 10) {
+      el('line', { x1: xOf(yr), x2: xOf(yr), y1: M.top + IH, y2: M.top + IH + 5, class: 'axisline' });
+      el('text', { x: xOf(yr), y: M.top + IH + 22, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+    }
+    // final year tick if not on decade
+    if (y1 % 10 !== 0) {
+      el('text', { x: xOf(y1), y: M.top + IH + 22, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = y1;
+    }
+    // y axis title
+    el('text', { x: M.left, y: 16, class: 'axistitle' }).textContent = cfg.unit;
+
+    // reference line
+    if (cfg.refLine) {
+      el('line', { x1: M.left, x2: M.left + IW, y1: yOf(cfg.refLine.value), y2: yOf(cfg.refLine.value), class: 'ref-line' });
+      el('text', { x: M.left + IW + 6, y: yOf(cfg.refLine.value) + 4, class: 'ticklabel' }).textContent = cfg.refLine.label;
+    }
+
+    // anchor segment (actual data up to anchor year)
+    const anchorPts = cfg.main.slice(0, anchorIdx + 1).map(d => [xOf(d.year), yOf(d.value)]);
+    el('path', { d: pathFrom(anchorPts), class: 'anchor-path' });
+    el('circle', { cx: xOf(cfg.anchorYear), cy: yOf(cfg.main[anchorIdx].value), r: 5, class: 'anchor-dot' });
+
+    // draw hint
+    const hint = el('text', { x: xOf(cfg.anchorYear) + (M.left + IW - xOf(cfg.anchorYear)) / 2, y: M.top + IH / 2, 'text-anchor': 'middle', class: 'hint-text', id: 'drawHint' });
+    hint.textContent = '✏︎  Draw your guess here →';
+
+    // guess path (updated live)
+    el('path', { d: '', class: 'guess-path', id: 'guessPath' });
+
+    // group for reveal layers
+    el('g', { id: 'revealLayer' });
+    // hover crosshair
+    el('line', { x1: 0, x2: 0, y1: M.top, y2: M.top + IH, stroke: 'var(--baseline)', 'stroke-width': 1, id: 'crosshair', style: 'display:none' });
+  }
+
+  function guessPathD() {
+    const pts = [];
+    for (let i = anchorIdx; i < years.length; i++) {
+      if (guess[i] != null) pts.push([xOf(years[i]), yOf(guess[i])]);
+    }
+    return pts.length > 1 ? pathFrom(pts) : '';
+  }
+
+  function updateGuessPath() {
+    document.getElementById('guessPath').setAttribute('d', guessPathD());
+    const covered = coverage();
+    const note = document.getElementById('progressNote');
+    const btn = document.getElementById('revealBtn');
+    if (revealed) { note.textContent = ''; return; }
+    if (covered >= 0.95) {
+      btn.disabled = false;
+      note.textContent = 'Locked in? Hit reveal.';
+    } else if (covered > 0) {
+      btn.disabled = true;
+      const yrLeft = years[years.length - 1] - lastDrawnYear();
+      note.textContent = 'Keep going. Draw all the way to ' + years[years.length - 1] + (yrLeft > 0 ? ' (' + yrLeft + ' years left)' : '');
+    } else {
+      btn.disabled = true;
+      note.textContent = '';
+    }
+  }
+
+  function coverage() {
+    let have = 0, need = years.length - 1 - anchorIdx;
+    for (let i = anchorIdx + 1; i < years.length; i++) if (guess[i] != null) have++;
+    return need ? have / need : 0;
+  }
+  function lastDrawnYear() {
+    for (let i = years.length - 1; i > anchorIdx; i--) if (guess[i] != null) return years[i];
+    return years[anchorIdx];
+  }
+
+  /* ================= DRAWING ================= */
+  let drawing = false, lastIdx = null;
+
+  function svgPoint(evt) {
+    const r = svg.getBoundingClientRect();
+    const sx = W / r.width, sy = H / r.height;
+    return { x: (evt.clientX - r.left) * sx, y: (evt.clientY - r.top) * sy };
+  }
+
+  function applyDraw(evt) {
+    const p = svgPoint(evt);
+    let i = iOfX(p.x);
+    if (i <= anchorIdx) i = anchorIdx;   // clamp into draw zone; anchor stays fixed
+    const v = yInv(p.y);
+    if (i > anchorIdx) {
+      if (lastIdx != null && Math.abs(i - lastIdx) > 1) {
+        // fill skipped indices by interpolation
+        const from = Math.min(lastIdx, i), to = Math.max(lastIdx, i);
+        const vFrom = guess[lastIdx] != null ? guess[lastIdx] : v;
+        for (let k = from; k <= to; k++) {
+          if (k <= anchorIdx) continue;
+          const t = (k - lastIdx) / (i - lastIdx);
+          guess[k] = vFrom + (v - vFrom) * (isFinite(t) ? t : 1);
+        }
+      } else {
+        guess[i] = v;
+      }
+      lastIdx = i;
+      const hint = document.getElementById('drawHint');
+      if (hint) hint.style.display = 'none';
+      updateGuessPath();
+    }
+  }
+
+  svg.addEventListener('pointerdown', evt => {
+    if (revealed) return;
+    const p = svgPoint(evt);
+    if (p.x < M.left || p.x > M.left + IW || p.y < M.top || p.y > M.top + IH) return;
+    evt.preventDefault();
+    drawing = true; lastIdx = null;
+    svg.setPointerCapture(evt.pointerId);
+    applyDraw(evt);
+  });
+  svg.addEventListener('pointermove', evt => {
+    if (drawing && !revealed) { applyDraw(evt); return; }
+    if (revealed) hoverTip(evt);
+  });
+  svg.addEventListener('pointercancel', () => { drawing = false; lastIdx = null; });
+  svg.addEventListener('pointerup', () => { drawing = false; lastIdx = null; });
+  svg.addEventListener('pointerleave', () => {
+    if (!drawing) { tooltip.style.display = 'none'; const c = document.getElementById('crosshair'); if (c) c.style.display = 'none'; }
+  });
+
+  /* ================= KEYBOARD DRAWING ================= */
+  svg.setAttribute('tabindex', '0');
+  svg.setAttribute('role', 'application');
+  svg.setAttribute('aria-label', 'Drawable chart. Press the arrow keys to draw your guess: right and left choose the year, up and down set the value.');
+  const kbdLive = document.createElement('div');
+  kbdLive.setAttribute('aria-live', 'polite');
+  kbdLive.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)';
+  svg.parentNode.appendChild(kbdLive);
+  const kbdHint = document.createElement('p');
+  kbdHint.textContent = 'Keyboard option: click or tab to the chart, then use the arrow keys. Right and left choose the year, up and down set your guess.';
+  kbdHint.style.cssText = 'font-size:12.5px;color:var(--text-muted);margin:6px 0 0';
+  svg.parentNode.parentNode.insertBefore(kbdHint, svg.parentNode.nextSibling);
+  let kIdx = null, kVal = null;
+  function kbdBounds() {
+    return { hi: yInv(M.top), lo: yInv(M.top + IH) };
+  }
+  function kbdAnnounce() {
+    kbdLive.textContent = years[kIdx] + ': ' + (Math.round(kVal * 10) / 10);
+  }
+  svg.addEventListener('keydown', evt => {
+    if (revealed) return;
+    const keys = ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'];
+    if (!keys.includes(evt.key)) return;
+    evt.preventDefault();
+    const b = kbdBounds();
+    const step = (b.hi - b.lo) / 40;
+    if (kIdx === null || kIdx <= anchorIdx || kIdx >= years.length) {
+      kIdx = anchorIdx + 1;
+      kVal = guess[kIdx] != null ? guess[kIdx] : (guess[anchorIdx] != null ? guess[anchorIdx] : (b.hi + b.lo) / 2);
+    }
+    if (evt.key === 'ArrowRight' && kIdx < years.length - 1) {
+      kIdx++;
+      if (guess[kIdx] != null) kVal = guess[kIdx];
+    } else if (evt.key === 'ArrowLeft' && kIdx > anchorIdx + 1) {
+      kIdx--;
+      if (guess[kIdx] != null) kVal = guess[kIdx];
+    } else if (evt.key === 'ArrowUp') {
+      kVal = Math.min(b.hi, kVal + step);
+    } else if (evt.key === 'ArrowDown') {
+      kVal = Math.max(b.lo, kVal - step);
+    }
+    guess[kIdx] = kVal;
+    const hint = document.getElementById('drawHint');
+    if (hint) hint.style.display = 'none';
+    updateGuessPath();
+    kbdAnnounce();
+  });
+
+  /* ================= REVEAL ================= */
+  function animatePath(path, dur) {
+    const len = path.getTotalLength();
+    path.style.strokeDasharray = len + ' ' + len;
+    path.style.strokeDashoffset = len;
+    path.getBoundingClientRect();
+    path.style.transition = 'stroke-dashoffset ' + dur + 'ms ease-out';
+    path.style.strokeDashoffset = '0';
+    setTimeout(() => { path.style.strokeDasharray = ''; path.style.transition = ''; }, dur + 80);
+  }
+
+  function fillGaps() {
+    // interpolate interior gaps, extend the tail flat, so a near-complete drawing scores cleanly
+    let lastKnown = anchorIdx;
+    for (let i = anchorIdx + 1; i < years.length; i++) {
+      if (guess[i] != null) {
+        if (i - lastKnown > 1) {
+          for (let k = lastKnown + 1; k < i; k++) {
+            const t = (k - lastKnown) / (i - lastKnown);
+            guess[k] = guess[lastKnown] + (guess[i] - guess[lastKnown]) * t;
+          }
+        }
+        lastKnown = i;
+      }
+    }
+    for (let i = lastKnown + 1; i < years.length; i++) guess[i] = guess[lastKnown];
+  }
+
+  function reveal(skipped) {
+    if (revealed) return;
+    revealed = true;
+    if (!skipped && coverage() > 0) { fillGaps(); updateGuessPath(); }
+    const cfg = ds;
+    document.getElementById('revealBtn').disabled = true;
+    document.getElementById('progressNote').textContent = '';
+    const hint = document.getElementById('drawHint');
+    if (hint) hint.style.display = 'none';
+
+    const layer = document.getElementById('revealLayer');
+
+    // actual line from anchor onward
+    const pts = cfg.main.slice(anchorIdx).map(d => [xOf(d.year), yOf(d.value)]);
+    const actual = el('path', { d: pathFrom(pts), class: 'actual-path' }, layer);
+    animatePath(actual, 1800);
+
+    // direct label at line end
+    const last = cfg.main[cfg.main.length - 1];
+    setTimeout(() => {
+      el('text', { x: xOf(last.year) + 8, y: yOf(last.value) + 4, class: 'direct-label', fill: 'var(--series-1)' }, layer)
+        .textContent = cfg.fmt(last.value) + ' · ' + cfg.actualLabel;
+    }, 1800);
+
+    // companion series (e.g. divorce)
+    if (cfg.companion) {
+      setTimeout(() => {
+        const cp = cfg.companion.series.map(d => [xOf(d.year), yOf(d.value)]);
+        const compPath = el('path', { d: pathFrom(cp), class: 'companion-path' }, layer);
+        animatePath(compPath, 1800);
+        const cl = cfg.companion.series[cfg.companion.series.length - 1];
+        setTimeout(() => {
+          el('text', { x: xOf(cl.year) + 8, y: yOf(cl.value) + 4, class: 'direct-label', fill: 'var(--series-3)' }, layer)
+            .textContent = cfg.fmt(cl.value) + ' · ' + cfg.companion.label;
+          const legendComp = document.getElementById('legendComp');
+          if (legendComp) legendComp.style.display = 'inline-flex';
+        }, 1800);
+      }, 2100);
+    }
+
+    // verdict
+    const card = document.getElementById('verdictCard');
+    card.classList.add('show');
+    let title, sub;
+    if (skipped || coverage() < 0.5) {
+      title = 'The reveal'; sub = '';
+    } else {
+      const mae = maeVsActual();
+      const v = mae <= cfg.goodMAE ? cfg.verdicts.good : mae <= cfg.okMAE ? cfg.verdicts.ok : cfg.verdicts.far;
+      title = v[0];
+      sub = v[1] + ' (Your average miss: ' + cfg.fmt(mae) + ' ' + shortUnit(cfg) + '.)';
+    }
+    document.getElementById('verdictTitle').textContent = title;
+    document.getElementById('verdictSub').textContent = sub;
+    document.getElementById('revealFact').innerHTML = cfg.revealFact;
+
+    // twist panel (Gallup)
+    if (cfg.twist) {
+      setTimeout(() => {
+        document.getElementById('twistCard').classList.add('show');
+        renderTwist(cfg.twist);
+        document.getElementById('twistCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 2400);
+    }
+    setTimeout(() => document.getElementById('debriefCard').classList.add('show'), cfg.twist ? 3000 : 2200);
+
+    document.getElementById('clearBtn').textContent = 'Try again';
+    document.getElementById('skipBtn').style.display = 'none';
+  }
+
+  function shortUnit(cfg) {
+    if (cfg.id === 'crime') return 'per 100k';
+    if (cfg.id === 'family') return 'per 1,000';
+    return 'births/woman';
+  }
+
+  function maeVsActual() {
+    let sum = 0, n = 0;
+    for (let i = anchorIdx + 1; i < years.length; i++) {
+      if (guess[i] != null) { sum += Math.abs(guess[i] - ds.main[i].value); n++; }
+    }
+    return n ? sum / n : Infinity;
+  }
+
+  /* ================= TWIST PANEL (Gallup) ================= */
+  const twistSvg = document.getElementById('twistChart');
+  const twistTip = document.getElementById('twistTooltip');
+  const TH = 260, TM = { top: 22, right: 150, bottom: 36, left: 64 };
+  const TIH = TH - TM.top - TM.bottom;
+  let tXOf, tPts = [];
+
+  function renderTwist(t) {
+    twistSvg.innerHTML = '';
+    document.getElementById('twistTitle').textContent = t.title;
+    document.getElementById('twistSub').textContent = t.sub;
+    const TIW = W - TM.left - TM.right;
+    const y0 = years[0], y1 = years[years.length - 1];
+    tXOf = yr => TM.left + (yr - y0) / (y1 - y0) * TIW;   // aligned with main chart x
+    const tyOf = v => TM.top + (1 - v / t.yMax) * TIH;
+
+    function tel(name, attrs) {
+      const n = document.createElementNS(NS, name);
+      for (const k in attrs) n.setAttribute(k, attrs[k]);
+      twistSvg.appendChild(n);
+      return n;
+    }
+
+    for (let v = 0; v <= t.yMax; v += t.yTick) {
+      tel('line', { x1: TM.left, x2: TM.left + TIW, y1: tyOf(v), y2: tyOf(v), class: v === 0 ? 'axisline' : 'gridline' });
+      tel('text', { x: TM.left - 10, y: tyOf(v) + 4, 'text-anchor': 'end', class: 'ticklabel' }).textContent = t.fmt(v);
+    }
+    for (let yr = Math.ceil(y0 / 10) * 10; yr <= y1; yr += 10) {
+      tel('text', { x: tXOf(yr), y: TM.top + TIH + 20, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+    }
+    tel('text', { x: TM.left, y: 13, class: 'axistitle' }).textContent = t.unit;
+    // 50% reference
+    tel('line', { x1: TM.left, x2: TM.left + TIW, y1: tyOf(50), y2: tyOf(50), class: 'ref-line' });
+    tel('text', { x: TM.left + 8, y: tyOf(50) - 7, class: 'ticklabel' }).textContent = 'half the country';
+
+    // line with gaps
+    tPts = t.series.filter(d => d.value != null);
+    const d = tPts.map((p, i) => (i ? 'L' : 'M') + tXOf(p.year).toFixed(1) + ',' + tyOf(p.value).toFixed(1)).join('');
+    const path = tel('path', { d, fill: 'none', stroke: t.color, 'stroke-width': 2.5 });
+    animatePath(path, 1600);
+    tPts.forEach(p => tel('circle', { cx: tXOf(p.year), cy: tyOf(p.value), r: 3, fill: t.color }));
+    const lastP = tPts[tPts.length - 1];
+    setTimeout(() => {
+      tel('text', { x: tXOf(lastP.year) + 8, y: tyOf(lastP.value) + 4, class: 'direct-label', fill: t.color }).textContent = lastP.value + '% · ' + t.label;
+    }, 1600);
+
+    twistSvg.onpointermove = evt => {
+      const r = twistSvg.getBoundingClientRect();
+      const px = (evt.clientX - r.left) * (W / r.width);
+      let best = null, bd = Infinity;
+      tPts.forEach(p => { const dd = Math.abs(tXOf(p.year) - px); if (dd < bd) { bd = dd; best = p; } });
+      if (!best || bd > 30) { twistTip.style.display = 'none'; return; }
+      twistTip.style.display = 'block';
+      twistTip.innerHTML = '<div class="tt-year">' + best.year + '</div><div class="tt-row"><span class="tt-dot" style="background:var(--series-2)"></span>' + best.value + '% said “more crime”</div>';
+      positionTip(twistTip, twistSvg, evt);
+    };
+    twistSvg.onpointerleave = () => { twistTip.style.display = 'none'; };
+  }
+
+  /* ================= TOOLTIP (main, post-reveal) ================= */
+  function hoverTip(evt) {
+    const p = svgPoint(evt);
+    if (p.x < M.left || p.x > M.left + IW) { tooltip.style.display = 'none'; document.getElementById('crosshair').style.display = 'none'; return; }
+    const i = iOfX(p.x);
+    const yr = years[i];
+    const cross = document.getElementById('crosshair');
+    cross.setAttribute('x1', xOf(yr)); cross.setAttribute('x2', xOf(yr));
+    cross.style.display = 'block';
+    let html = '<div class="tt-year">' + yr + '</div>';
+    html += '<div class="tt-row"><span class="tt-dot" style="background:var(--series-1)"></span>' + ds.actualLabel + ': <strong>' + ds.fmt(ds.main[i].value) + '</strong></div>';
+    if (ds.companion) html += '<div class="tt-row"><span class="tt-dot" style="background:var(--series-3)"></span>' + ds.companion.label + ': <strong>' + ds.fmt(ds.companion.series[i].value) + '</strong></div>';
+    if (i > anchorIdx && guess[i] != null) html += '<div class="tt-row"><span class="tt-dot" style="background:var(--series-2)"></span>Your guess: <strong>' + ds.fmt(guess[i]) + '</strong></div>';
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    positionTip(tooltip, svg, evt);
+  }
+
+  function positionTip(tip, host, evt) {
+    const wr = host.parentElement.getBoundingClientRect();
+    let lx = evt.clientX - wr.left + 16, ly = evt.clientY - wr.top - 10;
+    if (lx + tip.offsetWidth > wr.width - 4) lx = evt.clientX - wr.left - tip.offsetWidth - 16;
+    tip.style.left = lx + 'px'; tip.style.top = ly + 'px';
+  }
+
+  /* ================= LEGEND / TABLE / SETUP ================= */
+  function renderLegend() {
+    const cfg = ds;
+    let html = '<span class="key"><span class="swatch dashed" style="border-color:var(--series-2)"></span>Your guess</span>';
+    html += '<span class="key"><span class="swatch" style="border-color:var(--series-1)"></span>' + cfg.actualLabel + '</span>';
+    if (cfg.companion) html += '<span class="key" id="legendComp" style="display:none"><span class="swatch" style="border-color:var(--series-3)"></span>' + cfg.companion.label + '</span>';
+    if (cfg.refLine) html += '<span class="key"><span class="swatch ref"></span>' + (cfg.refLine.legend || cfg.refLine.label) + '</span>';
+    document.getElementById('legend').innerHTML = html;
+  }
+
+  function renderTable() {
+    const cfg = ds;
+    let html = '<table><thead><tr><th>Year</th><th>' + cfg.actualLabel + '</th>';
+    if (cfg.companion) html += '<th>' + cfg.companion.label + '</th>';
+    if (cfg.twist) html += '<th>' + cfg.twist.label + '</th>';
+    html += '</tr></thead><tbody>';
+    for (let i = 0; i < years.length; i += (years.length > 40 ? 5 : 1)) {
+      html += '<tr><td>' + years[i] + '</td><td>' + cfg.fmt(cfg.main[i].value) + '</td>';
+      if (cfg.companion) html += '<td>' + cfg.fmt(cfg.companion.series[i].value) + '</td>';
+      if (cfg.twist) {
+        const g = cfg.twist.series.find(d => d.year === years[i]);
+        html += '<td>' + (g && g.value != null ? g.value + '%' : '–') + '</td>';
+      }
+      html += '</tr>';
+    }
+    // always include final year
+    const li = years.length - 1;
+    if ((li % 5) !== 0 && years.length > 40) {
+      html += '<tr><td>' + years[li] + '</td><td>' + cfg.fmt(cfg.main[li].value) + '</td>';
+      if (cfg.companion) html += '<td>' + cfg.fmt(cfg.companion.series[li].value) + '</td>';
+      if (cfg.twist) {
+        const g = cfg.twist.series.find(d => d.year === years[li]);
+        html += '<td>' + (g && g.value != null ? g.value + '%' : '–') + '</td>';
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('tableWrap').innerHTML = html;
+  }
+
+  function loadDataset(cfg) {
+    ds = cfg;
+    years = cfg.main.map(d => d.year);
+    anchorIdx = years.indexOf(cfg.anchorYear);
+    guess = new Array(years.length).fill(null);
+    guess[anchorIdx] = cfg.main[anchorIdx].value;
+    drawn = false; revealed = false;
+    setScales(cfg);
+
+    document.getElementById('promptLine').textContent = cfg.prompt;
+    document.getElementById('promptDetail').textContent = cfg.detail;
+    document.getElementById('verdictCard').classList.remove('show');
+    document.getElementById('twistCard').classList.remove('show');
+    document.getElementById('debriefCard').classList.remove('show');
+    document.getElementById('debriefList').innerHTML = cfg.debrief.map(q => '<li>' + q + '</li>').join('');
+    document.getElementById('sources').textContent = cfg.sources + ' Built for SOC 1113 · Introduction to Sociology · Midwestern State University.';
+    document.getElementById('clearBtn').textContent = 'Clear my line';
+    document.getElementById('skipBtn').style.display = '';
+    document.getElementById('revealBtn').disabled = true;
+    tooltip.style.display = 'none';
+
+    renderLegend();
+    renderBase();
+    updateGuessPath();
+    renderTable();
+  }
+
+  /* ================= TABS / BUTTONS ================= */
+  const tabsBox = document.getElementById('tabs');
+  DATASETS.forEach((cfg, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+    b.innerHTML = '<span class="ch">' + cfg.ch + '</span>' + cfg.tab;
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', 'false'));
+      b.setAttribute('aria-selected', 'true');
+      loadDataset(cfg);
+    });
+    tabsBox.appendChild(b);
+  });
+
+  document.getElementById('revealBtn').addEventListener('click', () => reveal(false));
+  document.getElementById('skipBtn').addEventListener('click', () => reveal(true));
+  document.getElementById('clearBtn').addEventListener('click', () => loadDataset(ds));
+
+  const themeBtn = document.getElementById('themeBtn');
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+  let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(isDark);
+  themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+  loadDataset(DATASETS[0]);
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

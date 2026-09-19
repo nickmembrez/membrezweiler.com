@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Askable Question · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  .lede + .lede { margin-top: 11px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 16px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.good .v { color: var(--good); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+  .note { border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin: 10px 0; }
+  .note strong { color: var(--text-primary); }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .scoreline { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scoreline:first-of-type { border-top: none; padding-top: 2px; }
+  #ssPicks .scoreline:first-of-type, #ssPicks2 .scoreline:first-of-type { padding-top: 14px; }
+  .sclaim { font-size: 15px; font-weight: 600; line-height: 1.5; }
+  .swho { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .scv { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-top: 9px; }
+  .scv strong { color: var(--text-primary); }
+  .grade { display: block; width: fit-content; font-size: 11.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-bottom: 6px; }
+  .grade.right { background: rgba(46,139,87,0.16); color: var(--good); }
+  .grade.wrong { background: rgba(235,104,52,0.16); color: var(--warn); }
+  .grade.mixed { background: rgba(42,120,214,0.14); color: var(--accent); }
+
+  .qopts { display: flex; flex-direction: column; gap: 6px; margin: 9px 0; }
+  .qopt { font: inherit; font-size: 13.5px; text-align: left; padding: 9px 13px; border-radius: 9px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; line-height: 1.4; }
+  .qopt:hover { color: var(--text-primary); }
+  .qopt.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qopt.answer { border-color: var(--good); color: var(--good); font-weight: 700; }
+  .qopt.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .qopt:disabled { cursor: default; opacity: 0.95; }
+  .qtag { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .scorebar { position: sticky; top: 0; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 700; margin-bottom: 12px; z-index: 5; }
+  .scorebar span { color: var(--accent); }
+
+  .maprow { border-top: 1px solid var(--border); padding: 11px 0; display: flex; gap: 14px; flex-wrap: wrap; }
+  .maprow:first-of-type { border-top: none; }
+  .mapch { min-width: 92px; font-size: 12.5px; font-weight: 800; color: var(--warn); letter-spacing: 0.04em; text-transform: uppercase; padding-top: 2px; }
+  .mapbody { flex: 1; min-width: 260px; }
+  .mapt { font-size: 14.5px; font-weight: 700; }
+  .mapd { font-size: 13px; color: var(--text-secondary); line-height: 1.45; margin-top: 3px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .p22 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 6px; }
+  .pcell { background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .pcell .pn { font-size: 14px; font-weight: 800; }
+  .pcell .pd { font-size: 12px; color: var(--text-secondary); margin: 2px 0 9px; line-height: 1.4; }
+  .pcell input[type=range] { width: 100%; accent-color: var(--accent); }
+  .pcell .pv { font-size: 15px; font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums; }
+  .pcell .pactual { display: none; font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .pcell.revealed .pactual { display: block; }
+  .pcell.revealed { background: rgba(46,139,87,0.10); }
+  .pcell.revealed .pv { color: var(--text-muted); font-weight: 600; font-size: 13px; }
+
+  .bonds { display: flex; gap: 12px; flex-wrap: wrap; margin: 14px 0 4px; }
+  .bond { flex: 1; min-width: 210px; background: var(--wash); border-radius: 11px; padding: 13px 15px; }
+  .bond .bn { font-size: 15px; font-weight: 800; }
+  .bond .bd { font-size: 12.5px; color: var(--text-secondary); line-height: 1.45; margin-top: 4px; }
+  .cn { border: 1px solid var(--warn); border-radius: 11px; padding: 13px 16px; font-size: 13.5px; line-height: 1.55; color: var(--text-secondary); margin-bottom: 14px; background: rgba(235,104,52,0.05); }
+  .cn strong { color: var(--text-primary); }
+  .costgrid { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 14px 0 4px; }
+  .costrow { display: grid; grid-template-columns: 210px 1fr 92px; gap: 10px; align-items: center; }
+  .costlab { font-size: 13px; color: var(--text-secondary); }
+  .costtrack { height: 20px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+  .costfill { height: 100%; width: 0; border-radius: 4px; transition: width 900ms ease; }
+  .costval { font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; color: var(--text-primary); font-weight: 600; }
+  .bc { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 14px 0 6px; }
+  .bcard { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; background: var(--surface-1); }
+  .bcard h3 { margin: 0 0 4px; font-size: 14px; color: var(--text-primary); }
+  .bcard .who { font-size: 12px; color: var(--text-muted); margin: 0 0 8px; }
+  .bpair { display: grid; grid-template-columns: 74px 1fr 78px; gap: 8px; align-items: center; margin-bottom: 5px; }
+  .bpair span:first-child { font-size: 12px; color: var(--text-secondary); }
+  .bpair .bt { height: 14px; background: var(--grid); border-radius: 3px; overflow: hidden; }
+  .bpair .bf { height: 100%; width: 0; transition: width 900ms ease; }
+  .bpair .bn { font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+  .netline { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  @media (max-width: 720px) { .bc { grid-template-columns: 1fr; } .costrow { grid-template-columns: 140px 1fr 78px; } }
+  .checklist { margin: 14px 0 4px; }
+  .cki { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: start; padding: 9px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .cki:last-child { border-bottom: 0; }
+  .ckbox { width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px; margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--surface-1); font-weight: 700; }
+  .cki.on .ckbox { background: var(--good); border-color: var(--good); color: #fff; }
+  .cki.on .ckt { color: var(--text-muted); }
+  .ckt { font-size: 13.5px; color: var(--text-primary); line-height: 1.45; }
+  .ckt strong { color: var(--text-primary); }
+  .ckcount { font-size: 13px; font-weight: 700; color: var(--accent); margin-top: 10px; }
+  .ref { font-family: Georgia, "Times New Roman", serif; font-size: 14px; line-height: 1.7; background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  #apa .sclaim { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 14px; line-height: 1.7; }
+  .ref em { font-style: italic; }
+  .ref .lbl { display: block; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+  .refbad { border-color: var(--warn); }
+  .refgood { border-color: var(--good); }
+  .steps { counter-reset: st; margin: 12px 0; }
+  .step { border-left: 3px solid var(--grid); padding: 2px 0 12px 16px; margin-left: 6px; }
+  .step:last-child { padding-bottom: 0; }
+  .step h3 { margin: 0 0 4px; font-size: 13.5px; color: var(--accent); }
+  .step .qv { font-family: Georgia, "Times New Roman", serif; font-size: 15px; color: var(--text-primary); margin: 4px 0 6px; }
+  .step .why { font-size: 13px; color: var(--text-secondary); margin: 0; }
+  .step.on { border-left-color: var(--good); }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Askable Question <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Part 1 asks you for three things, and one of them is much harder than it looks.</strong> Picking an offense type takes an afternoon. Finding three peer-reviewed sources takes a session with the library databases. Writing a research question that can actually be answered takes real thought, and it is the one that governs everything else, because Parts 2 through 5 are all answers to it. This page is here for that. Nothing you do here is recorded and nothing is graded.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-job" type="button">What the question has to do</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-judge" type="button">Judge ten questions</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-hone" type="button">Hone a broad one</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-journal" type="button">Vet the journal</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-apa" type="button">APA, exactly</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-check" type="button">Before you submit</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-job">
+      <div class="card">
+        <h2>What a research question is for</h2>
+        <p class="lede">A research question is not a topic with a question mark on the end. A topic is a thing you are interested in. A question is a specific claim you do not yet know the truth of, phrased so that evidence could settle it. The difference is what separates a paper that goes somewhere from a paper that circles.</p>
+
+        <div class="teach"><strong>The test, in one sentence.</strong> Could two careful researchers, looking at the same body of evidence, agree that your question has been answered? If the answer is no, you do not have a research question yet. You have either a topic, an opinion, or a project that would take a career.</div>
+
+        <h3>Four things a usable question has</h3>
+        <p><strong>One. It names a specific thing, not a category.</strong> Crime is not a subject. Burglary is a subject. Residential burglary in the daytime is a question waiting to happen. Broad categories do have research literatures, and that is not what is wrong with them. The trouble is that a literature on property crime covers a dozen offenses at once, so only a slice of it is ever about yours. Narrow until most of what you find speaks to your question, and then stop. You do not have to reach the narrowest possible thing.</p>
+        <p><strong>Two. It asks about a relationship, a pattern, or an explanation.</strong> Good questions usually take one of a few shapes. What explains X? Who experiences X, and why them? Does Y reduce X? How has X been measured, and what does that measurement miss? Notice that all four can be answered wrongly, which is what makes them answerable at all.</p>
+        <p><strong>Three. Evidence could change the answer.</strong> If no possible finding would make you say the opposite, the question is not empirical. That does not make it a bad question. It makes it a question for a different assignment, because this paper is a review of research findings.</p>
+        <p><strong>Four. Somebody has already studied it.</strong> This is a mini-literature review, so a question with no literature behind it cannot be written. You will find this out fast in the library. If three searches turn up nothing, the question is not wrong, it is just not answerable in this format.</p>
+
+        <div class="note"><strong>A preliminary question is allowed to be wrong.</strong> Part 1 says preliminary, and it means it. Almost every real project changes its question once the researcher reads the literature and discovers that the interesting disagreement is somewhere they did not expect. Changing your question between Part 1 and Part 2 is a sign the reading worked. What you cannot do is keep a question you already know is unanswerable and hope nobody notices.</div>
+
+        <div class="teach"><strong>How this question rules the next four parts.</strong> Part 2 defines and measures the thing your question is about. Part 3 gives its patterns. Part 4 explains it with theory. Part 5 puts all of that into one narrative and says what is still unknown. If your question is vague, every one of those parts inherits the vagueness and you will feel it in October. If it is sharp, each part has an obvious job.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-judge">
+      <div class="card">
+        <h2>Ten questions. Which ones can be answered?</h2>
+        <p class="lede">Every one of these came from the same impulse a good paper starts with. Sort each into one of three piles. Some need only a small repair, and the verdict shows you the repair.</p>
+        <div id="judge"></div>
+        <div class="veiled" id="judgeWrap">
+          <div class="scorebar">You sorted <strong id="judgeScore">0 of 10</strong>.</div>
+          <div class="teach"><strong>The pattern in the misses.</strong> The two failure modes here are opposite and equally common. A question that is too broad has no boundary, so no amount of reading finishes it. A question that is not empirical has a boundary but no evidence that could cross it. Both feel productive to write, which is why both survive until the paper is due.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-hone">
+      <div class="card">
+        <h2>Four moves that turn a topic into a question</h2>
+        <p class="lede">Start with something far too broad, which is where everyone starts. Then apply four moves in order. Click each step to see what it does. The example below uses burglary, but the moves work on anything.</p>
+
+        <div class="steps" id="hone"></div>
+
+        <div class="veiled" id="honeDone">
+          <div class="teach"><strong>Notice what got smaller and what got bigger.</strong> The subject narrowed at every step. The paper got more interesting at every step, because a specific question has a specific literature, and a specific literature has disagreements in it you can write about. You do not have to go all the way to move four to have a workable topic. You do have to go far enough that the studies you find are about your offense rather than about crime in general.</div>
+          <div class="note"><strong>Now do it to yours.</strong> Write your topic in one line. Apply move one and rewrite. Apply move two and rewrite. Do not skip ahead to a polished sentence, because the whole value is in seeing what each move removes. Bring both versions, the first and the last, to your office hours meeting. The comparison is the most useful thing you can show up with.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-journal">
+      <div class="card">
+        <h2>Is this the right kind of source?</h2>
+        <p class="lede">Peer-reviewed is necessary and it is not sufficient. Two things have to be true. The journal has to be in criminology, criminal justice, or sociology, and social psychology counts when the journal itself is about crime, law, or the legal system. The article itself has to report research. A superb journal in the wrong field is the wrong source, and so is the wrong kind of piece inside the right journal.</p>
+
+        <div class="teach"><strong>How to check, in ninety seconds.</strong> Find the article. Note the journal name. Search that name plus the words aims and scope, or go to the publisher page and look for the tab that says About or Aims and Scope. Read the paragraph the editors wrote about what they publish. That paragraph is the journal telling you, in its own words, what it is for. You are looking for crime, offending, victimization, the legal system, or criminal justice to appear in it as the subject rather than as an example.</div>
+
+        <p class="lede">Seven sources. For each, decide whether it belongs in your Part 1.</p>
+        <div id="jrnl"></div>
+        <div class="veiled" id="jrnlWrap">
+          <div class="scorebar">You judged <strong id="jrnlScore">0 of 7</strong>.</div>
+          <div class="teach"><strong>The question underneath all seven.</strong> Ask what the authors did and what they found. A source that reports no study, and reviews no body of studies, is not a research article however good it is and however respectable the journal around it is. That one question sorts the hard cases faster than any checklist.</div>
+          <div class="note"><strong>Two warning signs worth knowing.</strong> First, if you cannot find an aims and scope statement at all, or the statement covers every field at once, you are probably looking at a predatory journal that publishes for a fee without real review. Second, a magazine written for practitioners is not a journal, however useful it is. If there is no volume and issue number and no reference list at the end of the article, stop and find something else.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-apa">
+      <div class="card">
+        <h2>APA, down to the punctuation</h2>
+        <p class="lede">The references page is worth points, and it is the easiest place in the whole assignment to collect them, because the rules are fixed and public. Here is a correct journal article reference in APA 7th edition with every element labeled.</p>
+
+        <div class="ref refgood">
+          <span class="lbl">Correct</span>
+          Pager, D. (2003). The mark of a criminal record. <em>American Journal of Sociology, 108</em>(5), 937&ndash;975.
+        </div>
+
+        <div class="teach"><strong>Read it element by element.</strong> Last name, comma, initial with a period. Year in parentheses, then a period. Article title in sentence case, meaning only the first word and any proper nouns are capitalized, then a period. Journal name in title case and italics, then a comma. Volume number, also italic, then the issue number in parentheses and not italic, then a comma. Page range with an en dash, then a period. If the article has a DOI, it goes last as a full link in the form https://doi.org/ followed by the number, with no period after it.</div>
+
+        <p class="lede">Now find what is wrong. Each reference below has exactly one error. Click the element you think is broken.</p>
+        <div id="apa"></div>
+        <div class="veiled" id="apaWrap">
+          <div class="scorebar">You found <strong id="apaScore">0 of 5</strong>.</div>
+          <div class="teach"><strong>The two rules that catch most people.</strong> Sentence case on the article title and title case on the journal name feels backward, and it is the single most common error in submitted work. Second, the ampersand is used inside a reference and inside a parenthetical citation, but the word "and" is used when you name the authors in your own sentence. So it is (Guerette &amp; Bowers, 2009), and it is "Guerette and Bowers found that ..."</div>
+          <div class="note"><strong>Use the official guidance rather than a citation generator.</strong> Generators get the italics and the capitalization wrong constantly, and the error is yours once you submit it. The Purdue OWL pages linked below are free, they are specific to APA 7th edition, and they have an example of every source type you are likely to need.</div>
+        </div>
+
+        <h3>The three pages you need</h3>
+        <p><a href="https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/general_format.html" target="_blank" rel="noopener">Purdue OWL, APA general format</a> covers margins, spacing, and the layout of the paper itself.</p>
+        <p><a href="https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/in_text_citations_the_basics.html" target="_blank" rel="noopener">Purdue OWL, in-text citations</a> covers what goes in parentheses inside your sentences.</p>
+        <p><a href="https://owl.purdue.edu/owl/research_and_citation/apa_style/apa_formatting_and_style_guide/reference_list_articles_in_periodicals.html" target="_blank" rel="noopener">Purdue OWL, articles in periodicals</a> is the one you will use most, because almost everything you cite in this course is a journal article.</p>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-check">
+      <div class="card">
+        <h2>Before you submit Part 1</h2>
+        <p class="lede">Work down this list with your draft open. Click a line when it is true, not when you plan for it to be true. Nothing here is recorded.</p>
+        <div class="checklist" id="ck"></div>
+        <div class="ckcount" id="ckCount">0 of 13 checked</div>
+        <div class="veiled" id="ckDone">
+          <div class="teach"><strong>That is all of it.</strong> Part 1 is the smallest piece of the project and the one that determines how hard the other four are. An hour spent on the question now saves several in October.</div>
+        </div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Nothing on this page is recorded and nobody sees your answers but you. The reference examples use real articles from this course. Built for SOC 3333 Criminology, Department of Sociology, Midwestern State University.
+    </footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const themeBtn = $('themeBtn');
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+    themeBtn.textContent = dark ? 'Dark mode' : 'Light mode';
+  });
+  function activate(id){
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === id));
+    document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === id)));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  function buildSorter(mountId, items, options, onDone){
+    const el = $(mountId);
+    const state = items.map(() => null);
+    items.forEach((item, i) => {
+      const d = document.createElement('div');
+      d.className = 'scoreline';
+      let btns = '';
+      options.forEach(o => { btns += '<button class="pick" data-k="' + mountId + '" data-i="' + i + '" data-a="' + o + '" type="button">' + o + '</button>'; });
+      d.innerHTML = '<div class="sclaim">' + (i+1) + '. ' + item.t + '</div><div class="pickrow">' + btns + '</div><div class="scv" id="' + mountId + 'v' + i + '"></div>';
+      el.appendChild(d);
+    });
+    function answer(i, a){
+      const btns = el.querySelectorAll('[data-i="' + i + '"]');
+      if (!btns.length || btns[0].disabled) return;
+      btns.forEach(b => {
+        b.disabled = true;
+        if (b.dataset.a === a) b.classList.add('chosen');
+        if (b.dataset.a === items[i].a) b.classList.add('answer');
+      });
+      state[i] = (a === items[i].a);
+      const box = $(mountId + 'v' + i);
+      box.innerHTML = '<div class="grade ' + (state[i] ? 'right' : 'mixed') + '">' + (state[i] ? 'that is it' : 'not quite') + '</div>' + items[i].v;
+      box.style.display = 'block';
+      if (state.every(v => v !== null) && onDone) onDone(state.filter(Boolean).length, items.length);
+    }
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-i]');
+      if (b && b.dataset.k === mountId) answer(Number(b.dataset.i), b.dataset.a);
+    });
+  }
+
+  // ---------- TAB 2: judge the questions ----------
+  const J_OPTS = ['Ready to use', 'Too broad', 'Not answerable with evidence'];
+  const JUDGE = [
+    { t: 'Why do people commit crime?', a: 'Too broad',
+      v: 'Too broad, and it is the question the entire discipline exists to answer. Fourteen chapters of this course are competing attempts at it. Narrow it three ways at once: which offense, which people, and which kind of explanation. A workable version is something like: does low self-control predict shoplifting among adolescents better than peer influence does?' },
+    { t: 'Should catalytic converter theft carry a mandatory minimum sentence?', a: 'Not answerable with evidence',
+      v: 'Not answerable with evidence, because should is a moral question and no finding settles it. There is an empirical question hiding inside it, and it is a good one: do mandatory minimum sentences reduce the offenses they cover? Ask that instead, and your conclusion can inform the moral question without pretending to resolve it.' },
+    { t: 'What explains the sharp decline in residential burglary in the United States since the 1990s?', a: 'Ready to use',
+      v: 'Ready to use. It names one offense, one country, and one time period, and there is a real literature with genuine disagreement in it about security improvements, opportunity structures, and demographic change. A question with a live disagreement inside it is the best kind, because your paper gets to adjudicate rather than summarize.' },
+    { t: 'Is identity theft bad for victims?', a: 'Not answerable with evidence',
+      v: 'Not answerable in this form, because nobody disagrees. A question whose answer is obvious before you read anything produces a paper that reports the obvious. The version worth writing asks about magnitude or mechanism: what financial and psychological consequences do identity theft victims report, and how long do those consequences last?' },
+    { t: 'How do intimate partner violence victimization rates differ between the NCVS and police records, and what explains the gap?', a: 'Ready to use',
+      v: 'Ready to use, and it is a strong choice because it builds Part 2 for you. It names the offense, names two specific measurement instruments, and asks for an explanation of the difference between them. Everything Chapter 2 taught you about the dark figure feeds straight into it.' },
+    { t: 'What is corporate fraud?', a: 'Too broad',
+      v: 'Too broad, and it is also a definition rather than a question. Definitions belong in Part 2, and they are the setup rather than the point. Turn it into a question about the definition doing work: how does the legal definition of corporate fraud shape which cases enter official statistics, and what does that leave uncounted?' },
+    { t: 'Do hot spots policing interventions reduce robbery, and does the crime move to nearby areas?', a: 'Ready to use',
+      v: 'Ready to use, and notice that it asks two connected things rather than two unrelated things. The displacement half is what makes it a real question rather than a summary of an evaluation literature. Chapter 14 gave you both halves of the answer, which means you already know a real disagreement exists to write about.' },
+    { t: 'Are drug dealers evil?', a: 'Not answerable with evidence',
+      v: 'Not answerable with evidence, and this is the clearest case on the list. Evil is a moral category and no study can measure it. If the impulse behind the question is about how people involved in drug distribution understand what they do, that is a real and well-studied question, and neutralization theory from Chapter 9 is where it lives.' },
+    { t: 'How has cybercrime changed over time?', a: 'Too broad',
+      v: 'Too broad on two axes at once. Cybercrime covers fraud, intrusion, harassment, and market offenses, which share almost nothing but a medium. Over time has no boundary either. Pick one offense and one period: how have reported losses from business email compromise changed since 2015, and how reliable is the reporting?' },
+    { t: 'Does the victim-offender overlap hold for young adults who report sexual victimization?', a: 'Ready to use',
+      v: 'Ready to use, and it is the kind of question that shows real reading behind it. It takes an established general finding from Chapter 12 and asks whether it holds in a specific population where the mechanism is contested. Testing a general claim against a specific case is one of the most reliable ways to find a question worth writing.' },
+  ];
+  buildSorter('judge', JUDGE, J_OPTS, (right, total) => {
+    $('judgeScore').textContent = right + ' of ' + total;
+    $('judgeWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 3: honing ----------
+  const HONE = [
+    { h: 'Start here', q: 'I want to write about burglary.',
+      w: 'This is a topic. It has no question in it, so there is no way to be finished and no way to be wrong. Every step below removes something.' },
+    { h: 'Move 1. Name the specific offense', q: 'I want to write about residential burglary.',
+      w: 'Burglary of a home and burglary of a warehouse have different offenders, different targets, and different literatures. Naming which one cuts the reading in half and doubles how relevant it is.' },
+    { h: 'Move 2. Add a population or a setting', q: 'I want to write about daytime residential burglary in suburban neighborhoods.',
+      w: 'Now the routine activity material from Chapter 7 becomes directly usable, because you have specified when the guardians are absent. A setting also tells you which studies are about your case and which are merely nearby.' },
+    { h: 'Move 3. Turn it into a relationship', q: 'Does the presence of an occupied home nearby reduce daytime residential burglary in suburban neighborhoods?',
+      w: 'This is now a question, and evidence could answer it either way. It also has a name in the literature, which is guardianship, so your library searches will start returning the right things.' },
+    { h: 'Move 4. Add the disagreement', q: 'Does natural guardianship reduce daytime residential burglary in suburban neighborhoods, and does the effect survive when household routines change?',
+      w: 'The second clause is where the paper lives. It takes a settled-sounding finding and asks under what conditions it holds, which is what a review is for. You now have a question that Parts 2 through 5 can each answer one piece of.' },
+  ];
+  (function buildHone(){
+    const el = $('hone');
+    let opened = 0;
+    HONE.forEach((st, i) => {
+      const d = document.createElement('div');
+      d.className = 'step';
+      d.innerHTML = '<h3>' + st.h + '</h3><div class="qv">' + st.q + '</div><p class="why" style="display:none">' + st.w + '</p>';
+      d.addEventListener('click', () => {
+        if (d.classList.contains('on')) return;
+        d.classList.add('on');
+        d.querySelector('.why').style.display = 'block';
+        opened++;
+        if (opened === HONE.length) $('honeDone').style.display = 'block';
+      });
+      el.appendChild(d);
+    });
+  })();
+
+  // ---------- TAB 4: journals ----------
+  const JR_OPTS = ['Use it', 'Not for this paper'];
+  const JRNL = [
+    { t: '<strong>Criminology: An Interdisciplinary Journal.</strong> Its publisher describes it as interdisciplinary and devoted to crime and deviant behavior, drawing on sociology, psychology, design, systems analysis, and decision theory as applied to crime and criminal justice.', a: 'Use it',
+      v: 'Use it. This is the flagship journal of the American Society of Criminology and the scope statement names crime as the subject rather than as an example. Anything published here clears the bar without further checking.' },
+    { t: '<strong>Journal of Experimental Criminology.</strong> Its publisher says it focuses on experimental and quasi-experimental research advancing criminological theory or evidence-based crime and justice policy.', a: 'Use it',
+      v: 'Use it. Note the useful extra information in that scope statement. A journal built around experimental designs tells you in advance that its articles will have the kind of evidence Chapter 2 taught you to prefer, which is worth knowing when you choose between two candidate sources.' },
+    { t: '<strong>Law and Human Behavior.</strong> Its publisher describes it as a multidisciplinary forum for articles on issues arising from the relationships between human behavior and the law, the legal system, and the legal process.', a: 'Use it',
+      v: 'Use it. This is the social psychology case that qualifies. It is a psychology journal, and the scope statement puts the legal system at the center rather than treating it as one topic among many. Eyewitness memory, interrogation, and jury decision-making all live here and all count for this paper.' },
+    { t: '<strong>Journal of Experimental Social Psychology.</strong> It publishes experimental research across social psychology, including attitudes, group processes, social cognition, and close relationships.', a: 'Not for this paper',
+      v: 'Not for this paper, and this is the hard one. It is an excellent journal and it sometimes publishes work touching aggression or moral judgment. But the journal is not about crime, so an article from it is a psychology finding you would have to argue your way into using. If you have a specific article you think is essential, bring it to office hours rather than assuming.' },
+    { t: '<strong>A monthly magazine for police executives</strong>, with practitioner columns, association news, and short articles on department programs.', a: 'Not for this paper',
+      v: 'Not for this paper. This is a trade publication, not a peer-reviewed journal. It can be genuinely useful for understanding practice, and it may be worth reading, but it does not count toward your three sources. The quick test is whether the article has a reference list and a volume and issue number.' },
+    { t: '<strong>A journal whose website says it publishes in medicine, engineering, education, management, law, and the social sciences</strong>, with a stated review time of one week and an author fee.', a: 'Not for this paper',
+      v: 'Not for this paper, and this is a predatory journal. Three signs appear together: a scope covering every field at once, a review time far too short for real peer review, and a fee attached to publication rather than to access. Anything can appear in a journal like this, including work that no reviewer ever read.' },
+    { t: '<strong>A four-page review of a new book about policing</strong>, written by a professor and published in a criminology journal, in a section headed Book Reviews.', a: 'Not for this paper',
+      v: 'Not for this paper, and this one catches careful students. The journal qualifies, the author is a scholar, and the piece went through an editor. It is still not a research article. A book review gives one scholar\'s assessment of a book and presents no study of its own. Ask what the authors did and what they found. If neither question has an answer, the source does not count toward your three.' },
+  ];
+  buildSorter('jrnl', JRNL, JR_OPTS, (right, total) => {
+    $('jrnlScore').textContent = right + ' of ' + total;
+    $('jrnlWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 5: APA errors ----------
+  const A_OPTS = ['Author names', 'Year', 'Article title', 'Journal name or volume', 'Page numbers'];
+  const APA = [
+    { t: 'Sykes, G. M., &amp; Matza, D. (1957). Techniques Of Neutralization: A Theory Of Delinquency. <em>American Sociological Review, 22</em>(6), 664&ndash;670.', a: 'Article title',
+      v: 'The article title is in title case and it must be in sentence case. Only the first word, the first word after a colon, and any proper nouns are capitalized. The correct form is: Techniques of neutralization: A theory of delinquency.' },
+    { t: 'Merton, R. K. (1938). Social structure and anomie. <em>american sociological review, 3</em>(5), 672&ndash;682.', a: 'Journal name or volume',
+      v: 'The journal name is in lower case and it must be in title case, so it is American Sociological Review. This is the mirror image of the previous error, and the two together are the most common pair in submitted work. The article title goes down and the journal name goes up.' },
+    { t: 'Jennings, William G., Piquero, Alex R., &amp; Reingle, Jennifer M. (2012). On the overlap between victimization and offending. <em>Aggression and Violent Behavior, 17</em>(1), 16&ndash;26.', a: 'Author names',
+      v: 'First names are spelled out and APA uses initials only. The correct form is Jennings, W. G., Piquero, A. R., &amp; Reingle, J. M. Note also that the ampersand belongs before the last author in a reference, where your own sentences would use the word and.' },
+    { t: 'Weisburd, D. The law of crime concentration and the criminology of place. (2015). <em>Criminology, 53</em>(2), 133&ndash;157.', a: 'Year',
+      v: 'The year is in the wrong position. It goes in parentheses immediately after the author names and before the article title, never after the title. The order is fixed: who, when, what, where.' },
+    { t: 'Kovandzic, T. V., Sloan, J. J., &amp; Vieraitis, L. M. (2004). Striking out as crime reduction policy. <em>Justice Quarterly, 21</em>(2), pp. 207&ndash;239.', a: 'Page numbers',
+      v: 'The abbreviation pp. does not appear in a journal article reference. Page numbers are given as bare numerals with an en dash between them, so it is 207&ndash;239. You do use p. or pp. inside an in-text citation when you quote directly.' },
+  ];
+  buildSorter('apa', APA, A_OPTS, (right, total) => {
+    $('apaScore').textContent = right + ' of ' + total;
+    $('apaWrap').style.display = 'block';
+  });
+
+  // ---------- TAB 6: checklist ----------
+  const CK = [
+    'My offense type is <strong>narrow enough</strong> that most of the research I find is about my offense, not about crime in general.',
+    'My research question <strong>could be answered wrongly</strong>. Some possible finding would change my answer.',
+    'My research question is <strong>not a should question</strong> and not a definition.',
+    'A search in the library databases returns <strong>real articles</strong> on my question, not merely adjacent to it.',
+    'All three sources are <strong>peer-reviewed research articles</strong> with a volume, an issue, and a reference list.',
+    'None of my three sources is a <strong>book review</strong>, an editorial, or a magazine piece. Each one reports a study or reviews a body of studies.',
+    'I visited each journal\'s own <strong>aims and scope</strong> page and confirmed that the journal is about crime, criminal justice, or the legal system.',
+    'I found all three sources <strong>myself, in the library databases</strong>, and no AI tool suggested any of them.',
+    'I <strong>read</strong> each article. Each annotation says what the study did, what it found, and how it connects to my question.',
+    'Every reference follows <strong>APA 7th edition</strong>: sentence case title, title case journal, italics in the right places.',
+    'Author names use <strong>initials</strong>, and the ampersand appears in the reference rather than the word and.',
+    'My <strong>prompt index</strong> lists every prompt I gave an AI tool, in order, with nothing left out.',
+    'The file is a <strong>PDF or DOC or DOCX</strong>, and I uploaded it before I closed the tab.',
+  ];
+  (function buildCk(){
+    const el = $('ck');
+    CK.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'cki';
+      d.innerHTML = '<div class="ckbox">&#10003;</div><div class="ckt">' + t + '</div>';
+      d.addEventListener('click', () => {
+        d.classList.toggle('on');
+        const n = document.querySelectorAll('.cki.on').length;
+        $('ckCount').textContent = n + ' of ' + CK.length + ' checked';
+        $('ckDone').style.display = n === CK.length ? 'block' : 'none';
+      });
+      el.appendChild(d);
+    });
+    $('ckCount').textContent = '0 of ' + CK.length + ' checked';
+  })();
+
+  window.__S = { activate, JUDGE, JRNL, APA, HONE, CK };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

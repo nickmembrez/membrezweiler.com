@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Culture Compare · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --a: #266cc1;
+    --b: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+    --hl: #137a55;
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --a: #3c8ff3;
+    --b: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+    --hl: #199e70;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .pickers { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
+  select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .cname { font-weight: 800; }
+  .cname.a { color: var(--a); }
+  .cname.b { color: var(--b); }
+  .swapbtn { font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+
+  .mrow { display: grid; grid-template-columns: 1fr 210px; gap: 14px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--grid); }
+  .mrow:last-child { border-bottom: none; }
+  .mlabel { font-size: 14px; font-weight: 700; }
+  .mdesc { font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-top: 2px; }
+  .bars { display: flex; flex-direction: column; gap: 4px; }
+  .barline { display: flex; align-items: center; gap: 8px; }
+  .barval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 4ch; text-align: right; font-weight: 700; }
+  .barval.a { color: var(--a); }
+  .barval.b { color: var(--b); }
+  .btrack { flex: 1; height: 10px; border-radius: 5px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 5px; }
+  .bfill.a { background: var(--a); }
+  .bfill.b { background: var(--b); }
+  .nodata { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .gapline { margin-top: 12px; font-size: 14px; background: var(--wash); border-radius: 10px; padding: 10px 14px; color: var(--text-secondary); line-height: 1.5; }
+  .gapline strong { color: var(--text-primary); }
+
+  svg { display: block; width: 100%; height: auto; user-select: none; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .axisline { stroke: var(--grid); stroke-width: 1.5; }
+  .ticklabel { fill: var(--text-muted); font-size: 12px; }
+  .axistitle { fill: var(--text-secondary); font-size: 13px; font-weight: 700; }
+  .dotlabel { fill: var(--text-secondary); font-size: 10.5px; }
+  .dotlabel.sel { font-weight: 800; font-size: 12px; }
+
+  .axispick { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 10px; }
+  .axispick label { font-size: 13.5px; color: var(--text-secondary); font-weight: 700; margin-right: 6px; }
+
+  .rankrow { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+  .rankname { font-size: 13px; min-width: 130px; text-align: right; color: var(--text-secondary); }
+  .rankname.sel { font-weight: 800; color: var(--text-primary); }
+  .ranktrack { flex: 1; height: 13px; border-radius: 6px; background: var(--grid); overflow: hidden; }
+  .rankfill { height: 100%; border-radius: 6px; background: var(--text-muted); opacity: 0.55; }
+  .rankfill.sela { background: var(--a); opacity: 1; }
+  .rankfill.selb { background: var(--b); opacity: 1; }
+  .rankval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 4ch; font-weight: 700; color: var(--text-secondary); }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .srcrows { display: flex; flex-direction: column; gap: 10px; }
+  .srcrow { display: flex; gap: 10px; font-size: 14px; line-height: 1.5; }
+  .srcrow .dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--a); margin-top: 7px; }
+  .table-toggle { background: none; border: none; color: var(--text-muted); font: inherit; font-size: 13.5px; text-decoration: underline; cursor: pointer; padding: 0; }
+  table { border-collapse: collapse; margin-top: 10px; font-size: 12.5px; }
+  th, td { padding: 4px 9px; text-align: right; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th { color: var(--text-secondary); position: sticky; top: 0; background: var(--surface-1); }
+  td:first-child, th:first-child { text-align: left; }
+  .tablebox { display: none; max-height: 320px; overflow: auto; }
+  .tablebox.show { display: block; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Culture Compare <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every number on this page is a published survey measurement of a whole country.</strong> Researchers have been putting numbers on culture for decades: how strictly norms are enforced, how much unequal power is accepted, whether the self or the group is the unit. Pick two countries and compare them across nine measures. Then read the last tab before you conclude anything, because a country average is a real measurement of a population and says nothing certain about any single person in it.</p>
+    </div>
+
+    <div class="pickers card" style="padding:14px 22px">
+      <span class="cname a" id="nameA">United States</span>
+      <select id="pickA"></select>
+      <span style="color:var(--text-muted); font-weight:700">vs</span>
+      <select id="pickB"></select>
+      <span class="cname b" id="nameB">Japan</span>
+      <button class="swapbtn" id="swapBtn" type="button">Swap</button>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ SIDE BY SIDE ============ -->
+    <div class="section active" id="sec-compare">
+      <div class="card">
+        <div id="rows"></div>
+        <div class="gapline" id="gapLine"></div>
+      </div>
+    </div>
+
+    <!-- ============ THE MAP ============ -->
+    <div class="section" id="sec-map">
+      <div class="card">
+        <h2>All 27 countries on two measures of your choosing</h2>
+        <div class="axispick">
+          <span><label for="xPick">Across</label><select id="xPick"></select></span>
+          <span><label for="yPick">Up</label><select id="yPick"></select></span>
+        </div>
+        <svg id="mapSvg" viewBox="0 0 960 560"></svg>
+        <p class="lede" style="font-size:13px; margin-top:8px">Your two countries are highlighted. Countries missing either measure are left off and listed under the chart. This page draws no line through the dots on purpose: two measures moving together across countries is a clue, never a verdict.</p>
+        <p class="lede" style="font-size:12.5px; color:var(--text-muted)" id="mapMissing"></p>
+      </div>
+    </div>
+
+    <!-- ============ TIGHT AND LOOSE ============ -->
+    <div class="section" id="sec-tight">
+      <div class="card">
+        <h2>Tightness, all 27 countries, ranked</h2>
+        <p class="lede" style="margin-bottom:12px">Gelfand and colleagues measured how strongly social norms are enforced in 33 nations by surveying nearly 7,000 people about what behavior is acceptable where. Higher means tighter: stronger norms and less tolerance for deviance. Your two countries are highlighted.</p>
+        <div id="rankList"></div>
+        <div class="gapline" style="margin-top:14px">Neither end is better. Tightness buys coordination, order, and self-control, and it costs openness. Looseness buys creativity and tolerance, and it costs coordination when it counts. Every country pays one of the two bills.</div>
+      </div>
+    </div>
+
+    <!-- ============ READING A SCORE ============ -->
+    <div class="section" id="sec-read">
+      <div class="card">
+        <h2>Where these numbers come from</h2>
+        <div class="srcrows">
+          <div class="srcrow"><span class="dot"></span><span><strong>Tightness (Gelfand et al., Science, 2011).</strong> Surveys of 6,823 people across 33 nations about the strength of norms and tolerance for deviance. Germany's score here is from the West Germany sample.</span></div>
+          <div class="srcrow"><span class="dot"></span><span><strong>Six Hofstede dimensions (Geert Hofstede's published 2015 data file).</strong> Built from decades of workplace value surveys. Scores are relative positions, roughly 0 to 100, and a few exceed 100. Israel has no published indulgence score.</span></div>
+          <div class="srcrow"><span class="dot"></span><span><strong>Social trust (World Values Survey and European Values Study, via Our World in Data).</strong> Share agreeing that most people can be trusted, most recent wave, mostly 2017 to 2022. Israel's most recent published value is from 2004.</span></div>
+          <div class="srcrow"><span class="dot"></span><span><strong>Religion important in daily life (Gallup, 2009).</strong> The oldest measure on this page, and shown anyway because coverage is broad. Six countries here were not in that table and are marked as having no data rather than guessed.</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>What a country score is not</h2>
+        <p class="lede">A country score is an average of thousands of answers. It is real, it replicates, and it predicts things at the level of countries. It is not a description of any individual. Treating a group average as a fact about one person is called the ecological fallacy, and it is the statistical version of the single story: one number standing in for millions of different people. The Adichie talk you are writing about this week makes the same point without the math.</p>
+      </div>
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Find the biggest gap between your two countries. Name one concrete workplace situation where that gap would show up before lunch.</li>
+          <li>Power distance is the cockpit dimension. Look up the two countries from the Korean Air story and check whether the scores fit the story. Then ask what else could explain a crash rate.</li>
+          <li>The United States scores near the top of the world on individualism. What does that setting buy, and what does it cost?</li>
+          <li>Pick two measures on the map tab that seem to move together across countries. Give one causal story in each direction, and one third variable that could drive both.</li>
+          <li>These scores describe countries, not people. What would you need to know before predicting anything about one person from their country's scores?</li>
+          <li>Culture is measured here with surveys. What can a survey of stated values not capture about a culture, and what method from Chapter 2 would you add?</li>
+        </ol>
+        <p class="lede" style="margin-top:12px"><button class="table-toggle" id="tableBtn" type="button">View the full data table</button></p>
+        <div class="tablebox" id="tableBox"></div>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Gelfand et al., "Differences Between Tight and Loose Cultures: A 33-Nation Study," Science 332 (2011). Geert Hofstede, six-dimension country scores, published data file, 2015 edition (geerthofstede.com). World Values Survey and European Values Study, interpersonal trust item, via Our World in Data. Gallup, "Is religion important in your daily life?", 2009. All values as published. Missing values are shown as missing, never estimated.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* name, tightness, trust %, religion % (null = not in source), pdi, idv, mas, uai, lto, ivr */
+const C = [
+  ['United States', 5.1, 37.0, 65, 40, 91, 62, 46, 26, 68],
+  ['Mexico', 7.2, 10.5, 73, 81, 30, 69, 82, 24, 97],
+  ['Brazil', 3.5, 6.5, 87, 69, 38, 49, 76, 44, 59],
+  ['Venezuela', 3.7, 14.2, 79, 81, 12, 73, 76, 16, 100],
+  ['United Kingdom', 6.9, 43.3, 27, 35, 89, 66, 35, 51, 69],
+  ['France', 6.3, 26.3, 30, 68, 71, 43, 86, 63, 48],
+  ['Germany', 6.5, 41.6, 40, 35, 67, 66, 65, 83, 40],
+  ['Netherlands', 3.3, 57.0, null, 38, 80, 14, 53, 67, 68],
+  ['Norway', 9.5, 72.1, null, 31, 69, 8, 50, 35, 55],
+  ['Spain', 5.4, 41.0, 49, 57, 51, 42, 86, 48, 44],
+  ['Italy', 6.8, 26.6, 72, 50, 76, 70, 75, 61, 30],
+  ['Greece', 3.9, 8.4, 71, 60, 35, 57, 112, 45, 50],
+  ['Poland', 6.0, 24.1, 75, 68, 60, 64, 93, 38, 29],
+  ['Turkey', 9.2, 14.0, 82, 66, 37, 45, 85, 46, 49],
+  ['Israel', 3.1, 22.9, 51, 13, 54, 47, 81, 38, null],
+  ['Pakistan', 12.3, 23.3, 92, 55, 14, 50, 70, 50, 0],
+  ['India', 11.0, 16.9, 90, 77, 48, 56, 40, 51, 26],
+  ['China', 7.9, 63.5, null, 80, 20, 66, 30, 87, 24],
+  ['South Korea', 10.0, 32.9, 43, 60, 18, 39, 85, 100, 29],
+  ['Japan', 8.6, 33.7, 24, 54, 46, 95, 92, 88, 42],
+  ['Singapore', 10.4, 34.4, 70, 74, 20, 48, 8, 72, 46],
+  ['Hong Kong', 6.3, 36.4, 24, 68, 25, 57, 29, 61, 17],
+  ['Australia', 4.4, 48.5, null, 38, 90, 61, 51, 21, 71],
+  ['New Zealand', 3.9, 56.6, null, 22, 79, 58, 49, 33, 75],
+  ['Portugal', 7.8, 16.9, null, 63, 27, 31, 104, 28, 33],
+  ['Hungary', 2.9, 27.2, 39, 46, 80, 88, 82, 58, 31],
+  ['Malaysia', 11.8, 19.6, 96, 104, 26, 50, 36, 41, 57],
+].map(r => ({ name: r[0], tight: r[1], trust: r[2], rel: r[3], pdi: r[4], idv: r[5], mas: r[6], uai: r[7], lto: r[8], ivr: r[9] }));
+
+const MEASURES = [
+  { key: 'tight', label: 'Tightness', desc: 'How strongly norms are enforced and how little deviance is tolerated (Gelfand 2011).', fmt: v => v.toFixed(1) },
+  { key: 'pdi', label: 'Power distance', desc: 'How much unequal power is accepted and expected. The cockpit dimension (Hofstede).', fmt: v => String(v) },
+  { key: 'idv', label: 'Individualism', desc: 'The self as the unit versus the group as the unit (Hofstede).', fmt: v => String(v) },
+  { key: 'mas', label: 'Achievement orientation', desc: 'Competition and achievement versus caring and quality of life. Hofstede called it masculinity (Hofstede).', fmt: v => String(v) },
+  { key: 'uai', label: 'Uncertainty avoidance', desc: 'Discomfort with ambiguity, preference for rules and structure (Hofstede).', fmt: v => String(v) },
+  { key: 'lto', label: 'Long-term orientation', desc: 'Future-focused pragmatism versus tradition and the present (Hofstede).', fmt: v => String(v) },
+  { key: 'ivr', label: 'Indulgence', desc: 'Free gratification of desires versus restraint (Hofstede).', fmt: v => String(v) },
+  { key: 'trust', label: 'Social trust', desc: 'Share who say most people can be trusted (World Values Survey era, mostly 2017 to 2022).', fmt: v => v.toFixed(0) + '%' },
+  { key: 'rel', label: 'Religion important', desc: 'Share who say religion is important in daily life (Gallup 2009).', fmt: v => v.toFixed(0) + '%' },
+];
+const MAXES = {};
+MEASURES.forEach(m => { MAXES[m.key] = Math.max(...C.map(c => c[m.key] ?? 0)); });
+
+let ia = 0, ib = C.findIndex(c => c.name === 'Japan');
+
+function el(svg, name, attrs) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  svg.appendChild(e);
+  return e;
+}
+
+/* ============ SIDE BY SIDE ============ */
+function renderCompare() {
+  const A = C[ia], B = C[ib];
+  document.getElementById('nameA').textContent = A.name;
+  document.getElementById('nameB').textContent = B.name;
+  const rows = document.getElementById('rows');
+  rows.innerHTML = '';
+  let bigGap = null;
+  MEASURES.forEach(m => {
+    const va = A[m.key], vb = B[m.key];
+    const row = document.createElement('div');
+    row.className = 'mrow';
+    const info = document.createElement('div');
+    info.innerHTML = '<div class="mlabel">' + m.label + '</div><div class="mdesc">' + m.desc + '</div>';
+    const bars = document.createElement('div');
+    bars.className = 'bars';
+    [[va, 'a', A.name], [vb, 'b', B.name]].forEach(([v, cls, nm]) => {
+      const line = document.createElement('div');
+      line.className = 'barline';
+      if (v == null) {
+        line.innerHTML = '<span class="barval ' + cls + '">·</span><span class="nodata">no published score for ' + nm + ' in the source used</span>';
+      } else {
+        const pct = Math.max(3, v / MAXES[m.key] * 100);
+        line.innerHTML = '<span class="barval ' + cls + '">' + m.fmt(v) + '</span><div class="btrack"><div class="bfill ' + cls + '" style="width:' + pct + '%"></div></div>';
+      }
+      bars.appendChild(line);
+    });
+    row.appendChild(info); row.appendChild(bars);
+    rows.appendChild(row);
+    if (va != null && vb != null) {
+      const relGap = Math.abs(va - vb) / MAXES[m.key];
+      if (!bigGap || relGap > bigGap.relGap) bigGap = { m, va, vb, relGap };
+    }
+  });
+  if (bigGap) {
+    document.getElementById('gapLine').innerHTML =
+      'Largest gap between these two, relative to each measure’s range: <strong>' + bigGap.m.label + '</strong> (' +
+      A.name + ' ' + bigGap.m.fmt(bigGap.va) + ', ' + B.name + ' ' + bigGap.m.fmt(bigGap.vb) +
+      '). Bars are scaled to the highest score among these 27 countries for each measure. The numbers are the published scores.';
+  }
+}
+
+/* ============ MAP ============ */
+let xKey = 'pdi', yKey = 'trust';
+function renderMap() {
+  const svg = document.getElementById('mapSvg');
+  svg.innerHTML = '';
+  const mx = MEASURES.find(m => m.key === xKey), my = MEASURES.find(m => m.key === yKey);
+  const pts = C.filter(c => c[xKey] != null && c[yKey] != null);
+  const missing = C.filter(c => c[xKey] == null || c[yKey] == null).map(c => c.name);
+  const CW = 960, CH = 560, m = { top: 24, right: 30, bottom: 52, left: 64 };
+  const iw = CW - m.left - m.right, ih = CH - m.top - m.bottom;
+  const xMax = Math.max(...pts.map(p => p[xKey])) * 1.06;
+  const yMax = Math.max(...pts.map(p => p[yKey])) * 1.08;
+  const xOf = v => m.left + v / xMax * iw;
+  const yOf = v => m.top + (1 - v / yMax) * ih;
+  for (let i = 0; i <= 4; i++) {
+    const vx = xMax * i / 4, vy = yMax * i / 4;
+    el(svg, 'line', { x1: xOf(vx), x2: xOf(vx), y1: m.top, y2: CH - m.bottom, class: 'gridline' });
+    el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: yOf(vy), y2: yOf(vy), class: 'gridline' });
+    el(svg, 'text', { x: xOf(vx), y: CH - m.bottom + 18, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = mx.fmt(vx);
+    el(svg, 'text', { x: m.left - 8, y: yOf(vy) + 4, 'text-anchor': 'end', class: 'ticklabel' }).textContent = my.fmt(vy);
+  }
+  el(svg, 'line', { x1: m.left, x2: m.left, y1: m.top, y2: CH - m.bottom, class: 'axisline' });
+  el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: CH - m.bottom, y2: CH - m.bottom, class: 'axisline' });
+  el(svg, 'text', { x: m.left + iw / 2, y: CH - 10, 'text-anchor': 'middle', class: 'axistitle' }).textContent = mx.label;
+  el(svg, 'text', { x: 16, y: m.top + ih / 2, class: 'axistitle', transform: 'rotate(-90 16 ' + (m.top + ih / 2) + ')', 'text-anchor': 'middle' }).textContent = my.label;
+  pts.forEach(p => {
+    const sel = p.name === C[ia].name ? 'a' : p.name === C[ib].name ? 'b' : null;
+    const cx = xOf(p[xKey]), cy = yOf(p[yKey]);
+    el(svg, 'circle', { cx, cy, r: sel ? 8 : 5, fill: sel === 'a' ? 'var(--a)' : sel === 'b' ? 'var(--b)' : 'var(--text-muted)', opacity: sel ? 1 : 0.55 });
+    el(svg, 'text', { x: cx + 9, y: cy + 4, class: 'dotlabel' + (sel ? ' sel' : ''), fill: sel === 'a' ? 'var(--a)' : sel === 'b' ? 'var(--b)' : 'var(--text-secondary)' }).textContent = p.name;
+  });
+  document.getElementById('mapMissing').textContent = missing.length
+    ? 'Not shown for lack of a published value on one of these measures: ' + missing.join(', ') + '.'
+    : '';
+}
+
+/* ============ TIGHT RANK ============ */
+function renderRank() {
+  const list = document.getElementById('rankList');
+  list.innerHTML = '';
+  const sorted = [...C].sort((a, b) => b.tight - a.tight);
+  const max = sorted[0].tight;
+  sorted.forEach(c => {
+    const sel = c.name === C[ia].name ? 'sela' : c.name === C[ib].name ? 'selb' : '';
+    const row = document.createElement('div');
+    row.className = 'rankrow';
+    row.innerHTML = '<span class="rankname' + (sel ? ' sel' : '') + '">' + c.name + '</span>' +
+      '<div class="ranktrack"><div class="rankfill ' + sel + '" style="width:' + (c.tight / max * 100) + '%"></div></div>' +
+      '<span class="rankval">' + c.tight.toFixed(1) + '</span>';
+    list.appendChild(row);
+  });
+}
+
+/* ============ TABLE ============ */
+function renderTable() {
+  let html = '<table><tr><th>Country</th>' + MEASURES.map(m => '<th>' + m.label + '</th>').join('') + '</tr>';
+  C.forEach(c => {
+    html += '<tr><td>' + c.name + '</td>' + MEASURES.map(m => '<td>' + (c[m.key] == null ? 'no data' : m.fmt(c[m.key])) + '</td>').join('') + '</tr>';
+  });
+  document.getElementById('tableBox').innerHTML = html + '</table>';
+}
+
+/* ============ WIRING ============ */
+const pickA = document.getElementById('pickA'), pickB = document.getElementById('pickB');
+C.forEach((c, i) => {
+  pickA.appendChild(new Option(c.name, i));
+  pickB.appendChild(new Option(c.name, i));
+});
+pickA.value = ia; pickB.value = ib;
+function renderAll() { renderCompare(); renderMap(); renderRank(); }
+pickA.addEventListener('change', () => { ia = Number(pickA.value); renderAll(); });
+pickB.addEventListener('change', () => { ib = Number(pickB.value); renderAll(); });
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const t = ia; ia = ib; ib = t;
+  pickA.value = ia; pickB.value = ib;
+  renderAll();
+});
+
+const xPick = document.getElementById('xPick'), yPick = document.getElementById('yPick');
+MEASURES.forEach(m => {
+  xPick.appendChild(new Option(m.label, m.key));
+  yPick.appendChild(new Option(m.label, m.key));
+});
+xPick.value = xKey; yPick.value = yKey;
+xPick.addEventListener('change', () => { xKey = xPick.value; renderMap(); });
+yPick.addEventListener('change', () => { yKey = yPick.value; renderMap(); });
+
+document.getElementById('tableBtn').addEventListener('click', () => document.getElementById('tableBox').classList.toggle('show'));
+
+const TABS = [
+  { id: 'sec-compare', label: 'Two countries' },
+  { id: 'sec-map', label: 'The map' },
+  { id: 'sec-tight', label: 'Tight and loose' },
+  { id: 'sec-read', label: 'Reading a country score' },
+];
+const tabsBox = document.getElementById('tabs');
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => {
+    tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(t.id).classList.add('active');
+  });
+  tabsBox.appendChild(b);
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+renderAll();
+renderTable();
+
+window.__S = { renderAll, get state() { return { ia, ib, xKey, yKey }; } };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{"pickA": "First country", "pickB": "Second country"}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

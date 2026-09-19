@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Fraud Triangle · White-Collar Crime · Crime Lab 3</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Fraud Triangle <span class="sub">White-Collar Crime · Crime Lab 3 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>In 1950 Donald Cressey interviewed 133 people imprisoned for violating a position of financial trust and asked what had to be true for each of them to do it.</strong> His answer became the most widely used model in fraud examination, and it is on the syllabus of every accounting program in the country under a name he never used: the fraud triangle. This lab puts six recent embezzlement cases in front of you, each drawn from a Department of Justice press release. For each one you will try to find the three elements Cressey said were necessary, using only what the record contains. You will find that one of the three is almost never there. Then you will decide whether the triangle explains these cases or only describes them after the fact, which is the question the opportunity perspective, this week's Meeting A reading, was built to answer. Work in pairs, but each of you submits your own response sheet at the end of class.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-model" type="button">Cressey and the revisions</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-cases" type="button">Six embezzlers</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-base" type="button">The base rate</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-opp" type="button">The side you can see</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: MODEL -->
+    <div class="section active" id="sec-model">
+      <div class="card">
+        <h2>Cressey's final hypothesis, in his words</h2>
+        <p class="lede">Cressey revised his hypothesis four times as interviews contradicted it. The version that survived every case reads as follows.</p>
+        <div class="def" style="margin:10px 0">
+          <div class="who">Cressey, 1950, p. 742</div>
+          <div class="quote">"Trusted persons become trust violators when they conceive of themselves as having a financial problem which is non-shareable, have the knowledge or awareness that this problem can be secretly resolved by violation of the position of financial trust, and are able to apply to their own conduct in that situation verbalizations which enable them to adjust their conceptions of themselves as trusted persons with their conceptions of themselves as users of the entrusted funds or property."</div>
+        </div>
+        <div class="defs">
+          <div class="def">
+            <div class="who">1. A non-shareable financial problem</div>
+            <div class="hinge">Not a financial problem, a non-shareable one. Cressey's subjects had debts, gambling losses, and expensive habits, but so did people who never stole. What set the violators apart was that they felt they could not tell anyone. His evidence was their language: they were "ashamed" to ask for help, or had "too much false pride." Later writers shortened this to <strong>pressure</strong>, and lost the point.</div>
+          </div>
+          <div class="def">
+            <div class="who">2. Awareness that the position offers a secret solution</div>
+            <div class="hinge">The person has to know that the entrusted funds can be used, and has to connect that general knowledge to their own problem. Cressey's subjects said "it occurred to me" or "it dawned on me." Later writers called this <strong>opportunity</strong>, which is close, but Cressey meant the perception of it, not the objective gap in controls.</div>
+          </div>
+          <div class="def">
+            <div class="who">3. Verbalizations that reconcile the act with the self</div>
+            <div class="hinge">The person applies to their own situation a phrase that their groups have applied to others: this is <strong>borrowing</strong>, not stealing; I am a special kind of businessman, not a thief. Cressey was explicit that this is the motivation, not an excuse invented afterward. Later writers called it <strong>rationalization</strong>. It is the element you will have the hardest time finding in a press release.</div>
+          </div>
+        </div>
+
+        <h2 style="margin-top:22px">What the revisions added</h2>
+        <p class="lede">Kassem and Higson (2012), your second Meeting B reading, review the models that followed and combine them. Each addition was a response to the same problem: two of Cressey's three sides cannot be observed from outside.</p>
+        <div class="defs">
+          <div class="def">
+            <div class="who">The fraud scale (Albrecht, Howe, and Romney, 1984)</div>
+            <div class="hinge">Replaces rationalization with <strong>personal integrity</strong>, on the argument that integrity can be observed in a person's decisions over time and rationalization cannot. Built from 212 frauds reported by internal auditors, with nine motivation types that map onto Cressey's non-shareable problems: living beyond one's means, high personal debt, feeling underpaid, a close association with customers, excessive gambling, and others.</div>
+          </div>
+          <div class="def">
+            <div class="who">The fraud diamond (Wolfe and Hermanson, 2004)</div>
+            <div class="hinge">Adds <strong>capability</strong>: the position, the intelligence, the ego, the ability to coerce others, the skill at lying, and the tolerance for stress that turn an opportunity into an act. Many frauds, they argued, would not have happened without the right person in the seat.</div>
+          </div>
+          <div class="def">
+            <div class="who">MICE (Kranacher and colleagues, 2010)</div>
+            <div class="hinge">Expands pressure into four motives: <strong>Money, Ideology, Coercion, and Ego</strong>. Ideology covers fraud committed for a perceived greater good. Coercion covers people pulled in unwillingly, who sometimes become whistleblowers. Ego covers the fear of losing status or position in front of others.</div>
+          </div>
+          <div class="def">
+            <div class="who">The new fraud triangle model (Kassem and Higson, 2012)</div>
+            <div class="hinge">Combines the four: <strong>motivation (as MICE), opportunity, integrity, and capability</strong>. Written for external auditors, whose problem is that they must assess fraud risk before any fraud is known. That is the same problem you will meet in the next two tabs.</div>
+          </div>
+        </div>
+        <div class="guessbox">
+          <p class="gq">Quick check. According to the literature Kassem and Higson review, which two sides of Cressey's triangle cannot be easily observed by someone outside the offender's head?</p>
+          <div class="pickrow">
+            <button class="pick" data-qc="po" type="button">Pressure and opportunity</button>
+            <button class="pick" data-qc="pr" type="button">Pressure and rationalization</button>
+            <button class="pick" data-qc="or" type="button">Opportunity and rationalization</button>
+          </div>
+          <p class="verdict" id="qcVerdict"></p>
+        </div>
+        <div class="veiled" id="qcReveal">
+          <p class="teach"><strong>Pressure and rationalization.</strong> Dorminey and colleagues, cited by Kassem and Higson, make the point directly: the model cannot solve the fraud problem alone because two of its three sides cannot be easily observed. Opportunity is the side an organization can see and change. Keep that in mind as you work through the six cases. You will be able to find the opportunity in every one of them. The other two will be harder, and the reason is not that the cases lack them. It is that the record was not written to capture them.</p>
+        </div>
+        <p class="srcnote">Sources: Cressey, D. R. (1950). The criminal violation of financial trust. American Sociological Review, 15(6), 738-743 (final hypothesis at p. 742; "ashamed" and "too much false pride" at p. 742, note 13; "it occurred to me" and "it dawned on me" at p. 743). Kassem, R., and Higson, A. (2012). The new fraud triangle model. Journal of Emerging Trends in Economics and Management Sciences, 3(3), 191-195 (fraud scale, fraud diamond, MICE, and the new model at pp. 193-194). Albrecht, W. S., Howe, K. R., and Romney, M. B. (1984). Deterring Fraud: The Internal Auditor's Perspective. Institute of Internal Auditors Research Foundation. Wolfe, D. T., and Hermanson, D. R. (2004). The fraud diamond: Considering the four elements of fraud. The CPA Journal, 74(12), 38-42.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: CASES -->
+    <div class="section" id="sec-cases">
+      <div class="card">
+        <h2>Six people who violated a position of financial trust</h2>
+        <p class="lede">Each case below is real and was sentenced between 2025 and 2026. The summary is built from the Department of Justice press release and, where noted, court reporting. For each case, make four calls: what the record shows about the non-shareable problem, what gave the person access, what the record contains by way of rationalization, and whether an employer could have seen the pressure before the money left. The reference answers use only what the record says. When the record is silent, the reference says so, because that silence is the point.</p>
+        <div id="cases"></div>
+        <p class="progress" id="caseProgress">0 of 6 cases completed.</p>
+        <div class="veiled" id="casesDone">
+          <div class="statrow">
+            <div class="stat warn"><div class="v" id="rzCount">0 of 6</div><div class="l">Cases where the record contains any rationalization at all</div></div>
+            <div class="stat ok"><div class="v">6 of 6</div><div class="l">Cases where the opportunity is fully described in the record</div></div>
+            <div class="stat"><div class="v" id="prCount">0 of 6</div><div class="l">Cases where the record shows a pressure that was visible before detection</div></div>
+          </div>
+          <p class="teach"><strong>Look at the shape of that.</strong> Every press release tells you how the money moved and what control was missing or bypassed, because that is what the charge requires the government to prove. Most tell you what the money was spent on, because it is evidence of intent. Almost none tell you what the person told themselves, because nothing in a wire fraud count depends on it. Cressey got his third element by sitting in a prison and asking. The official record is not built to hold it. When you apply the triangle to a case from documents alone, you are usually applying two sides of it and inferring the third.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: BASE RATE -->
+    <div class="section" id="sec-base">
+      <div class="card">
+        <h2>Does the triangle predict, or only describe?</h2>
+        <p class="lede">Cressey studied 133 people who had already been convicted. Every one of them had a non-shareable problem, an opportunity, and a verbalization, because he kept revising the hypothesis until every case fit. What he could not study was the people who had all three and did not steal. The Association of Certified Fraud Examiners collects the largest ongoing dataset of occupational fraud, and it lets you see the problem from the other direction.</p>
+        <div class="guessbox">
+          <p class="gq">In the ACFE's 2024 study of 1,921 occupational fraud cases in 138 countries, what share of the perpetrators had never before been charged with or convicted of a fraud-related offense?</p>
+          <div class="gr">
+            <input type="range" id="pcSlider" min="0" max="100" step="1" value="50">
+            <span class="gval" id="pcVal">50%</span>
+            <button class="gbtn" id="pcLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="pcVerdict"></p>
+        </div>
+        <div class="veiled" id="pcReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">87%</div><div class="l">Perpetrators with no prior fraud charge or conviction</div></div>
+            <div class="stat"><div class="v">12 mo.</div><div class="l">Median time a scheme ran before detection</div></div>
+            <div class="stat"><div class="v">43%</div><div class="l">Cases detected by a tip, the leading method; over half of tips came from employees</div></div>
+            <div class="stat ok"><div class="v">32%</div><div class="l">Cases where the primary weakness was a lack of internal controls; with management override, more than half</div></div>
+          </div>
+          <p class="teach"><strong>Eighty-seven percent were first-time offenders, as far as anyone knew.</strong> They had passed background checks. Most had been in their positions for years. The ACFE reports that at least one behavioral red flag was present in every case, and the most common are living beyond one's means and personal financial difficulty. But those flags describe a large share of the working population in any given year, and almost none of them steal. This is the base rate problem. A model whose elements are common in the population and are identified after the fact will fit every case and predict none.</p>
+          <p class="teach"><strong>The triangle is a description of a completed act, and that is not nothing.</strong> Describing accurately is the first job of a theory. The auditing profession responded by turning Cressey's model into a checklist for the one side it could act on, which is why the fraud examiner's toolkit is almost entirely about opportunity: segregation of duties, second signatures, surprise audits, mandatory vacations, tip lines. The 43 percent figure is the reason every large organization now has a hotline. Notice that the intervention does not require knowing anyone's pressure or rationalization at all.</p>
+          <p class="srcnote">Source: Association of Certified Fraud Examiners, Occupational Fraud 2024: A Report to the Nations (1,921 cases in 138 countries, January 2022 to September 2023; median loss $145,000; asset misappropriation in 89 percent of cases with a median loss of $120,000; median duration 12 months; 43 percent detected by tip, 52 percent of tips from employees; 87 percent of perpetrators never previously charged or convicted; lack of internal controls the primary weakness in 32 percent of cases). Retrieved September 2026.</p>
+        </div>
+        <div class="guessbox">
+          <p class="gq">Cressey's own view of "wine, women and wagering" as explanations of embezzlement was that they</p>
+          <div class="pickrow">
+            <button class="pick" data-ww="a" type="button">Explain most cases when combined</button>
+            <button class="pick" data-ww="b" type="button">Indicate a lack of understanding of the problem</button>
+            <button class="pick" data-ww="c" type="button">Apply only to violators with prior records</button>
+          </div>
+          <p class="verdict" id="wwVerdict"></p>
+        </div>
+        <div class="veiled" id="wwReveal">
+          <p class="teach"><strong>He said that using them as explanations "merely indicates lack of understanding of the problem."</strong> Gambling and expensive living appear constantly in embezzlement cases, including four of the six on the previous tab. Cressey's point was that they are not the cause. They become causal only when the debts they create are felt to be unshareable, and many people with the same habits share their problems, borrow legally, or absorb the loss. The press releases you read list the gambling because it proves intent and traces the money. They do not tell you why this person, out of the many who gambled, could not ask for help.</p>
+          <p class="srcnote">Source: Cressey (1950), p. 743.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: OPPORTUNITY -->
+    <div class="section" id="sec-opp">
+      <div class="card">
+        <h2>Opportunity, in the terms of Meeting A</h2>
+        <p class="lede">Benson and Simpson describe white-collar crime as depending on three properties of the situation: <strong>specialized access</strong> to the target through a legitimate role, <strong>superficial legitimacy</strong>, meaning the offense looks like ordinary business while it is happening, and <strong>spatial separation</strong> from the victim, so that no one is present to object. Benson, Madensen, and Eck (2009) apply the same logic through routine activity theory: a motivated offender, a suitable target, and the absence of a capable guardian. Match each property to the case that illustrates it most cleanly.</p>
+        <div id="oppq"></div>
+        <div class="veiled" id="oppDone">
+          <p class="teach"><strong>Every case had all three.</strong> That is what a position of financial trust is: a role that provides access, a set of routine transactions that any theft can be dressed as, and a victim, whether a company, a church, a school, or a government office, that is not standing at the counter. The opportunity perspective's argument is that because these properties are features of positions rather than of people, they can be redesigned. The pressure and the rationalization live in a person you cannot see. The second signature, the outside auditor, and the bank statement that someone other than the bookkeeper opens are things an organization can put in place tomorrow. Two of the six cases on this page ended because an outside auditor looked. None ended because someone noticed a non-shareable problem.</p>
+          <p class="srcnote">Sources: Benson, M. L., and Simpson, S. S. (2015). Understanding White-Collar Crime: An Opportunity Perspective (2nd ed.), ch. 4. Benson, M. L., Madensen, T. D., and Eck, J. E. (2009). White-collar crime from an opportunity perspective. In S. S. Simpson and D. Weisburd (Eds.), The Criminology of White-Collar Crime (pp. 175-193). Springer.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE SHEET -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 3 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your case calls into one block of text, and paste that text into the Lab 3 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq">
+          <div class="qt">Your name</div>
+          <input type="text" id="rName" placeholder="First and last name">
+        </div>
+        <div class="rq">
+          <div class="qt">1. Pick one of the six cases. Say what the record gives you for each of Cressey's three elements, and what you had to infer. Then say whether the triangle explained the case or only sorted its facts into three boxes.</div>
+          <div class="qh">Four to six sentences. Name the case.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. The base rate problem. Eighty-seven percent of ACFE perpetrators had no prior record, and the common red flags describe many people who never steal. Given that, what is the triangle good for? Answer with reference to the one side an organization can observe and change.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Kassem and Higson add capability, integrity, and the four MICE motives. Take one addition and one case, and say whether the addition tells you something the original triangle did not. Be specific about what in the record supports it.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Apply the three elements to the central individual in your case, using what you have found in the record so far. Say which element your documents actually contain and which you would need an interview, a sentencing memorandum, or testimony to get.</div>
+          <div class="qh">Three to five sentences. This is a first draft of one paragraph of Part 3.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap">
+          <textarea id="outText" readonly aria-label="Assembled submission text"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sources for the six cases</h2>
+      <p class="srcnote" id="srcList"></p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All cases are drawn from the agency releases and reporting cited above, retrieved September 2026. Your clicks and answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  // ---------- tab 1 quick check ----------
+  let qcPicked = null;
+  document.querySelectorAll('#sec-model .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (qcPicked) return; qcPicked = btn.dataset.qc; btn.classList.add('chosen');
+      document.querySelectorAll('#sec-model .pick').forEach(b => { b.disabled = true; if (b.dataset.qc === 'pr') b.classList.add('answer'); });
+      $('qcVerdict').textContent = qcPicked === 'pr' ? 'Right. Pressure and rationalization.' : 'The answer is pressure and rationalization. See the note below.';
+      $('qcReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- tab 2 cases ----------
+  const Q = {
+    pressure: { label: 'Non-shareable problem', opts: { g: 'A gambling problem the record documents', l: 'Living expenses and lifestyle, with no emergency in the record', s: 'Status display: luxury goods and image', n: 'No pressure identifiable in the record' } },
+    opp: { label: 'Opportunity', opts: { sole: 'Sole control of an account or the books, with no second check', auth: 'Signing or transfer authority plus the ability to relabel the transaction', bypass: 'A control existed and was defeated by forgery or false reports', open: 'Access with no concealment needed' } },
+    rat: { label: 'Rationalization in the record', opts: { addict: 'A recorded statement framing it as addiction or compulsion', borrow: 'A recorded statement framing it as borrowing or intending to repay', min: 'A partial admission or minimization when confronted', none: 'No rationalization anywhere in the record' } },
+    vis: { label: 'Was the pressure visible before the money left?', opts: { Y: 'Yes, the record shows it was observable', N: 'No, or the record does not say' } }
+  };
+  const CASES = [
+    { title: 'The bookkeeper who wired $9.8 million to her own firm',
+      text: 'A long-time bookkeeper for a South Florida company held signature authority over its bank accounts and also owned a separate bookkeeping and tax business. From April 2018 to April 2024 she sent unauthorized wire transfers from the company\'s accounts to her business account and covered them with false ledger entries, often under vendor names that resembled real ones. The total was about $9.8 million. She spent it gambling at local casinos and on online gaming platforms, and did not report it as income. Sentenced in September 2025 to 51 months.',
+      law: 'Wire fraud (18 U.S.C. 1343) and filing a false income tax return (26 U.S.C. 7206(1)); forfeiture and restitution ordered.',
+      src: 'U.S. Attorney\'s Office, Southern District of Florida, press release, September 18, 2025 (United States v. Austin).',
+      ref: { pressure: ['g', 'The release documents gambling at casinos and online platforms as where the money went. Whether it was non-shareable in Cressey\'s sense, the record does not say.'], opp: ['auth', 'Signature authority over the accounts, plus the bookkeeper\'s power to write the ledger entry that described each transfer. The concealment was inside her own job description.'], rat: ['none', 'The release contains nothing the defendant said about why. It contains what she did and where the money went.'], vis: ['N', 'Six years, $9.8 million, and no indication in the record that anyone at the company saw a problem before the scheme ended. The release does not say how it was detected.'] },
+      note: 'Cressey would want to know why a person who ran her own accounting business could not share a gambling debt. The record answers a different question: how the wires were labeled.' },
+    { title: 'The state analyst with the only key to the bank statements',
+      text: 'A management analyst at a Washington state agency created a fictitious company and three other fake businesses, then paid them from the agency credit card and routed the money to himself, about $861,000 over four years beginning in June 2019. He was the only employee with access to the bank statements, which let him hide the charges. He made at least six trips to Las Vegas and received casino comps. In court his lawyer said that addiction is compulsive by definition; he said he had called a gambling hotline and been told the wait was 13 weeks, and he apologized. A routine state audit found the payments in 2023. Sentenced in September 2025 to 18 months.',
+      law: 'Wire fraud (18 U.S.C. 1343) and filing a false tax return (26 U.S.C. 7206(1)); $1.1 million in restitution including unpaid taxes.',
+      src: 'U.S. Attorney\'s Office, Western District of Washington, September 2025; Washington State Standard, September 12, 2025 (United States v. Ping).',
+      ref: { pressure: ['g', 'The record is unusually specific: his account was overdrawn by May 2019 after casino withdrawals, and the fake companies began the next month. This is the closest any of the six comes to showing the problem before the act.'], opp: ['sole', 'He was the only employee who could see the bank statements. No second person ever looked at what the card was paying for.'], rat: ['addict', 'The hotline call and the 13-week wait, and the lawyer\'s framing of compulsion, are recorded because sentencing is where a defendant explains himself. This is the only case of the six with a statement that resembles a Cressey verbalization, and it came from a news account of the hearing, not from the government\'s release.'], vis: ['Y', 'An overdrawn account and casino withdrawals in May 2019 were visible to anyone with access to his finances. No one at the agency had that access, and no one was supposed to.'] },
+      note: 'The one case where the third element appears, and it appears only because a reporter sat in the courtroom. Note also the form it takes: not "borrowing" but "addiction," a vocabulary Cressey\'s 1950 subjects did not have.' },
+    { title: 'The federal budget analyst and the 63 checks',
+      text: 'A senior budget analyst in the State Department\'s Office of the Chief of Protocol had signature authority over a department checking account. From March 2022 to April 2024 she wrote 63 checks to herself and an associate, about $657,000, and covered them by changing the payee in the accounting software from her own name to a real department vendor. The money went to gambling. The day after she pleaded guilty she went to a casino, in violation of her release conditions, and returned a week later. Sentenced in September 2025 to 12 months and a day, with a ban on gambling.',
+      law: 'Theft of government property (18 U.S.C. 641); restitution of $657,347.50.',
+      src: 'U.S. Attorney\'s Office, District of Columbia, press release, September 18, 2025 (United States v. Ferrer).',
+      ref: { pressure: ['g', 'Gambling, documented by where the money went and by the casino visits after the plea. The record does not say what she owed or to whom.'], opp: ['auth', 'Check-signing authority and write access to the accounting system. Changing the payee after the fact is the superficial legitimacy Benson and Simpson describe: the ledger showed a real vendor.'], rat: ['none', 'Nothing in the release. The casino visit after the plea is the record\'s only window into her state of mind, and it is behavior, not a statement.'], vis: ['N', 'The release describes detection through investigation and gives no sign that the gambling was known to the office.'] },
+      note: 'A federal office with a checking account that one analyst could both sign on and record. The opportunity perspective would say the case is about the account, not the analyst.' },
+    { title: 'The pastor and the Hublot',
+      text: 'The pastor of a Huntsville, Alabama church diverted about $434,000 of church funds to himself between 2018 and 2020 and did not report it as income. The money went to an Audi and a GMC Yukon, Louis Vuitton goods, jewelry, a $29,900 watch, designer sneakers, and more than $268,000 in personal credit card payments. He told his tax preparer the extra income came from speaking engagements. Sentenced in February 2026 to 60 months.',
+      law: 'Wire fraud (18 U.S.C. 1343) and filing false tax returns (26 U.S.C. 7206(1)).',
+      src: 'U.S. Attorney\'s Office, Northern District of Alabama, press release, February 2026 (United States v. Davis).',
+      ref: { pressure: ['s', 'The spending is the record\'s only evidence of motive, and it is spending on display: vehicles, a luxury watch, designer goods. Kassem and Higson\'s MICE would file this under ego. Cressey would ask whether maintaining a position in the community had become a debt he could not disclose, and the record does not say.'], opp: ['open', 'A pastor with control of church accounts and no described oversight. The release mentions no forged document and no bypassed control, only the diversion itself.'], rat: ['none', 'The statement to the tax preparer about speaking engagements is a lie to a third party, not an account of the act to himself. Nothing else is recorded.'], vis: ['Y', 'The cars, the watch, and the clothes were visible to the congregation for three years. Living beyond one\'s means is the ACFE\'s most common red flag, and it was on display.'] },
+      note: 'Cressey noted that trusted persons carry obligations "to maintain an enviable position in the community," and that the cost of doing so can become the non-shareable problem. The record shows the position. It does not show the problem.' },
+    { title: 'Seventeen years of fictitious invoices',
+      text: 'The senior fiscal officer of a Brooklyn nonprofit that provides employment and education services created a sham company and, over nearly 17 years, submitted more than 500 fictitious invoices for training services that were never delivered, manipulating the accounting system to avoid detection. The total was about $2.34 million. It went to mortgage payments, credit cards, car payments, Amazon purchases, home remodeling, spa treatments, and landscaping. Sentenced in September 2025 to 21 months.',
+      law: 'Wire fraud (18 U.S.C. 1343); $2.3 million in restitution and forfeiture.',
+      src: 'U.S. Attorney\'s Office, Eastern District of New York, press release, September 11, 2025 (United States v. Joseph).',
+      ref: { pressure: ['l', 'The money went to an ordinary household budget: a mortgage, a car, credit cards, a kitchen. Nothing in the record suggests an emergency at the start or a habit that produced a debt. If there was a non-shareable problem, it lasted 17 years and left no trace.'], opp: ['auth', 'The power to approve and pay invoices, plus the ability to create the vendor that submitted them. Five hundred invoices passed through a system she controlled at both ends.'], rat: ['none', 'Nothing recorded.'], vis: ['N', 'Seventeen years is the argument against visibility. The record gives no red flag anyone noticed.'] },
+      note: 'This is the case that strains Cressey most. A steady, moderate theft funding a normal life for 17 years does not look like a person resolving a crisis in secret. It looks like a second salary. The fraud scale\'s "living beyond one\'s means" fits better than any non-shareable problem, and even that is inference.' },
+    { title: 'The school bookkeeper who admitted four withdrawals',
+      text: 'The bookkeeper of a private school in Nebraska took about $452,000 between March 2016 and May 2023 through cash withdrawals, unauthorized credit card charges, unauthorized purchases, and fraudulent checks, and concealed it with falsified accounting records. An outside auditor found inconsistencies in May 2023. When confronted, she admitted to four unauthorized $10,000 cash withdrawals; the FBI\'s investigation found the rest. Sentenced in September 2025 to nine months.',
+      law: 'Embezzlement from an organization receiving federal benefits (18 U.S.C. 666); restitution of $495,652.13.',
+      src: 'U.S. Attorney\'s Office, District of Nebraska, press release, September 24, 2025 (United States v. Kinney).',
+      ref: { pressure: ['n', 'The release says the money went to credit card payments, purchases, and cash, and nothing more. There is no gambling, no luxury display, no emergency. The record is silent on why.'], opp: ['sole', 'Seven years of cash, cards, checks, and altered records with no second set of eyes until an outside auditor arrived in 2023. Whatever the school\'s controls were on paper, in practice the bookkeeper was the control.'], rat: ['min', 'Admitting four $10,000 withdrawals when the total was $452,000 is a minimization, and minimization is a form of account. It is the only trace of how she framed the act.'], vis: ['N', 'Nothing in the record was visible until the audit.'] },
+      note: 'Two of Cressey\'s three elements are inferred here, and the third is a partial confession. The only element the record fully describes is the one an outside auditor could see: a bookkeeper nobody checked.' },
+  ];
+  const casesEl = $('cases');
+  const state = CASES.map(() => ({}));
+  const KEYS = ['pressure', 'opp', 'rat', 'vis'];
+  CASES.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    let rows = '';
+    KEYS.forEach(k => {
+      const q = Q[k];
+      rows += '<div class="drow" style="align-items:flex-start"><span class="dlabel" style="min-width:190px;padding-top:6px">' + q.label + '</span><div class="pickrow" style="margin:0;flex:1">' +
+        Object.entries(q.opts).map(([v, t]) => '<button class="pick" data-c="' + i + '" data-k="' + k + '" data-v="' + v + '" type="button">' + t + '</button>').join('') +
+        '</div></div><div class="ref" id="ref-' + i + '-' + k + '" style="margin-left:200px"></div>';
+    });
+    d.innerHTML = '<div class="evhead"><span class="evnum">CASE ' + (i + 1) + '</span><span class="evtitle">' + c.title + '</span></div><div class="evtext">' + c.text + '</div>' +
+      '<div class="evsrc">Source: ' + c.src + '</div><div class="evsrc"><strong>Charges:</strong> ' + c.law + '</div>' + rows + '<div class="evnote" id="note-' + i + '"></div>';
+    casesEl.appendChild(d);
+  });
+  function completed(){ return state.filter(s => KEYS.every(k => s[k])).length; }
+  casesEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-c]'); if (!b) return;
+    const i = Number(b.dataset.c), k = b.dataset.k, v = b.dataset.v;
+    if (state[i][k]) return;
+    state[i][k] = v;
+    casesEl.querySelectorAll('[data-c="' + i + '"][data-k="' + k + '"]').forEach(x => { x.disabled = true; if (x.dataset.v === v) x.classList.add('chosen'); if (x.dataset.v === CASES[i].ref[k][0]) x.classList.add('answer'); });
+    const [rv, why] = CASES[i].ref[k];
+    const el = $('ref-' + i + '-' + k);
+    el.innerHTML = '<span class="tag ' + (rv === state[i][k] ? 'yes' : 'arg') + '">' + (rv === state[i][k] ? 'you agreed' : 'reference: ' + Q[k].opts[rv].toLowerCase()) + '</span>' + why;
+    el.style.display = 'block';
+    if (KEYS.every(kk => state[i][kk])) { const n = $('note-' + i); n.innerHTML = '<strong>Why this case is here.</strong> ' + CASES[i].note; n.style.display = 'block'; }
+    const done = completed();
+    $('caseProgress').textContent = done + ' of 6 cases completed.' + (done === 6 ? ' Go to The base rate tab.' : '');
+    if (done === 6) {
+      $('rzCount').textContent = CASES.filter(c => c.ref.rat[0] !== 'none').length + ' of 6';
+      $('prCount').textContent = CASES.filter(c => c.ref.vis[0] === 'Y').length + ' of 6';
+      $('casesDone').style.display = 'block';
+    }
+  });
+
+  // ---------- tab 3 ----------
+  (function(){
+    const s = $('pcSlider'), v = $('pcVal'), l = $('pcLock');
+    s.addEventListener('input', () => { v.textContent = s.value + '%'; });
+    l.addEventListener('click', () => {
+      if (l.disabled) return; l.disabled = true; s.disabled = true;
+      const g = Number(s.value), a = 87;
+      $('pcVerdict').textContent = 'You guessed ' + g + ' percent. The ACFE found 87 percent. ' + (Math.abs(g - a) <= 5 ? 'Within five points.' : g > a ? 'You were ' + (g - a) + ' points high.' : 'You were ' + (a - g) + ' points low.');
+      $('pcReveal').style.display = 'block';
+    });
+  })();
+  let wwPicked = null;
+  document.querySelectorAll('#sec-base .pick[data-ww]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (wwPicked) return; wwPicked = btn.dataset.ww; btn.classList.add('chosen');
+      document.querySelectorAll('#sec-base .pick[data-ww]').forEach(b => { b.disabled = true; if (b.dataset.ww === 'b') b.classList.add('answer'); });
+      $('wwVerdict').textContent = wwPicked === 'b' ? 'Right.' : 'Cressey said the opposite. See the note below.';
+      $('wwReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- tab 4 ----------
+  const OPP = [
+    { q: 'Superficial legitimacy: the offense looked like ordinary business while it was happening. Which case shows this most cleanly?', a: 4, v: 'Case 5. Five hundred invoices from a vendor, approved and paid through the normal system for 17 years. Each one looked like the nonprofit buying training. Cases 1 and 3 have the same property (fake vendor names, a payee changed to a real vendor), but the invoice scheme is the purest form: the theft was the paperwork.' },
+    { q: 'Absence of a capable guardian: no second person was positioned to see the transaction. Which case names this most explicitly?', a: 1, v: 'Case 2. The release says he was the only employee with access to the bank statements. That is the guardian, removed by the design of the job. Case 6 shows the same thing over seven years, and it ended the moment a guardian, the outside auditor, appeared.' },
+    { q: 'Specialized access through a legitimate role, with the victim spatially separated from the act. Which case shows a victim that could not have been present?', a: 3, v: 'Case 4. A congregation cannot watch its own accounts; it delegates them to the pastor precisely so that it does not have to. Every case has a separated victim, but the church is the sharpest example because the trust is the point of the role.' },
+  ];
+  const oppEl = $('oppq'); const ostate = OPP.map(() => null);
+  OPP.forEach((o, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evtext" style="margin-top:0">' + o.q + '</div><div class="pickrow">' + CASES.map((c, j) => '<button class="pick" data-o="' + i + '" data-j="' + j + '" type="button">Case ' + (j + 1) + '</button>').join('') + '</div><div class="evnote" id="ov' + i + '"></div>';
+    oppEl.appendChild(d);
+  });
+  oppEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-o]'); if (!b) return;
+    const i = Number(b.dataset.o), j = Number(b.dataset.j); if (ostate[i] !== null) return;
+    ostate[i] = j;
+    oppEl.querySelectorAll('[data-o="' + i + '"]').forEach(x => { x.disabled = true; if (Number(x.dataset.j) === j) x.classList.add('chosen'); if (Number(x.dataset.j) === OPP[i].a) x.classList.add('answer'); });
+    const el = $('ov' + i); el.innerHTML = OPP[i].v + (j === OPP[i].a ? ' <strong>You agreed.</strong>' : ' <strong>You chose Case ' + (j + 1) + ', which is defensible if you can say which property it shows better.</strong>'); el.style.display = 'block';
+    if (ostate.every(x => x !== null)) $('oppDone').style.display = 'block';
+  });
+
+  // ---------- sources ----------
+  $('srcList').innerHTML = CASES.map((c, i) => '<strong>Case ' + (i + 1) + '.</strong> ' + c.src).join('<br>') +
+    '<br><strong>Charges.</strong> Offense names and statutes are as stated in the cited releases. Sentences are as reported at the time of the release and may have been modified on appeal.' +
+    '<br><strong>Models.</strong> Cressey (1950); Kassem and Higson (2012); Albrecht, Howe, and Romney (1984); Wolfe and Hermanson (2004); Kranacher, Riley, and Wells (2010), Forensic Accounting and Fraud Examination, as cited in Kassem and Higson; Association of Certified Fraud Examiners (2024), Occupational Fraud 2024: A Report to the Nations.';
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 3 · THE FRAUD TRIANGLE', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), '', 'CASE CALLS (non-shareable problem / opportunity / rationalization / pressure visible before)'];
+    CASES.forEach((c, i) => {
+      const s = state[i];
+      lines.push((i + 1) + '. ' + c.title + ': ' + KEYS.map(k => s[k] ? Q[k].opts[s[k]] : 'not answered').join(' / '));
+    });
+    lines.push('');
+    lines.push('OPPORTUNITY MATCHES'); OPP.forEach((o, i) => lines.push((i + 1) + '. ' + (ostate[i] === null ? 'not answered' : 'Case ' + (ostate[i] + 1))));
+    lines.push('');
+    lines.push('QUESTION 1 (one case, three elements)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (base rate)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (the revisions)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 3 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 3 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 3 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, state, ostate };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

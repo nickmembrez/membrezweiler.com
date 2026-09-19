@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Best Practices - SOC 1113</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #266cc1;
+    --series-2: #ae4d26;
+    --series-3: #137a55;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
+    --wash: rgba(42,120,214,0.06);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3c8ff3;
+    --series-2: #ef622a;
+    --series-3: #199e70;
+    --wash: rgba(57,135,229,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 18px; }
+  .frame { max-width: 880px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 13px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 12px; }
+  .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+  .big { font-size: 20px; font-weight: 800; line-height: 1.3; }
+  .body-text { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .body-text strong { color: var(--text-primary); }
+  .body-text + .body-text { margin-top: 8px; }
+
+  .meters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .meter { flex: 1; min-width: 118px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+  .meter .m-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; }
+  .meter .m-value { font-size: 18px; font-weight: 800; margin: 2px 0 6px; }
+  .meter .m-bar { height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; }
+  .meter .m-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease, background 0.6s ease; }
+  .meter.score .m-value { color: var(--series-1); }
+  .meter.humanity .m-value { color: var(--series-3); }
+
+  .event { border-left: 4px solid var(--status-warning); background: var(--wash); border-radius: 0 10px 10px 0; padding: 12px 14px; margin-top: 12px; }
+  .event.floor { border-left-color: var(--series-3); }
+  .event.prog { border-left-color: var(--series-1); }
+  .event .e-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+  .event .e-text { font-size: 14.5px; color: var(--text-secondary); line-height: 1.55; }
+  .event .e-text strong { color: var(--text-primary); }
+  .choice-opts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .choice-btn { font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; padding: 9px 14px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface-1); color: var(--text-primary); text-align: left; }
+  .choice-btn:hover:not([disabled]) { border-color: var(--series-1); }
+  .choice-btn[aria-pressed="true"] { border-color: var(--series-1); color: var(--series-1); }
+  .choice-btn[disabled] { cursor: default; opacity: 0.6; }
+
+  .tactics { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-top: 10px; }
+  .tactic { font: inherit; cursor: pointer; text-align: left; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; background: var(--surface-1); color: var(--text-primary); }
+  .tactic:hover:not(:disabled) { border-color: var(--series-1); }
+  .tactic:disabled { opacity: 0.45; cursor: not-allowed; }
+  .tactic .t-name { font-weight: 800; font-size: 14px; }
+  .tactic .t-desc { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.45; }
+  .tactic .t-kind { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .tactic .t-kind.k-rational { color: var(--series-2); }
+  .tactic .t-kind.k-human { color: var(--series-3); }
+  .tactic .t-kind.k-demo { color: var(--series-1); }
+  .tactic-note { font-size: 12.5px; color: var(--text-muted); margin-top: 10px; }
+  .board-label { font-size: 13px; font-weight: 700; margin-top: 14px; color: var(--text-primary); }
+
+  .decide { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+  .btn { font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; padding: 12px 22px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .btn.primary { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .outcome-good { border-left: 4px solid var(--status-good); }
+  .outcome-bad { border-left: 4px solid var(--status-critical); }
+  .outcome-warn { border-left: 4px solid var(--status-warning); }
+  .score-delta { font-size: 16px; font-weight: 800; margin-top: 8px; }
+  .score-delta.up { color: var(--status-good); }
+  .score-delta.down { color: var(--status-critical); }
+  .report-lines { margin-top: 8px; }
+  .report-lines li { list-style: none; font-size: 14.5px; line-height: 1.55; color: var(--text-secondary); padding: 6px 0; border-top: 1px solid var(--grid); }
+  .report-lines li:first-child { border-top: none; }
+  .report-lines strong { color: var(--text-primary); }
+
+  .log-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+  .log-table th, .log-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  .log-table th { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .final-score { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
+  .concept-tag { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--wash); color: var(--series-1); white-space: nowrap; }
+  :root[data-theme="dark"] .viz-root .concept-tag { color: #8ab8f0; }
+  .concepts li { font-size: 15px; line-height: 1.55; padding: 9px 0; border-top: 1px solid var(--grid); list-style: none; color: var(--text-secondary); }
+  .concepts li:first-child { border-top: none; }
+  .concepts strong { color: var(--text-primary); }
+
+  input[type="text"] { font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); width: 100%; max-width: 320px; }
+  .cause-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin: 12px 0; }
+  .cause-btn { font: inherit; cursor: pointer; text-align: left; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--surface-1); color: var(--text-primary); }
+  .cause-btn:hover { border-color: var(--series-1); }
+  .cause-btn[aria-pressed="true"] { border-color: var(--series-1); }
+  .cause-btn .c-name { font-weight: 800; font-size: 15px; }
+  .cause-btn .c-desc { font-size: 13px; color: var(--text-secondary); margin-top: 4px; line-height: 1.45; }
+  .rules-box { border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin: 12px 0; font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+  .rules-box strong { color: var(--text-primary); }
+
+  footer { color: var(--text-muted); font-size: 12.5px; line-height: 1.6; padding: 8px 2px 20px; }
+  .fade-in { animation: fadeIn 0.45s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Best Practices<span class="sub">SOC 1113 · The Rationalized Workplace</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div id="screen"></div>
+
+    <footer role="presentation">A fictional game built for SOC 1113, Introduction to Sociology, Midwestern State University.
+    Ideas in play: Max Weber on rationalization and the iron cage. George Ritzer, <em>The McDonaldization of Society</em>, including the irrationality of rationality.
+    Arlie Hochschild, <em>The Managed Heart</em>, on emotional labor. Harry Braverman on deskilling. Antonio Gramsci on hegemony and Michael Burawoy on manufactured consent.</footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const screen = $('screen');
+  const rnd = () => (window.__testRandom ? window.__testRandom() : Math.random());
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  const QUARTERS = 8;
+
+  /* ============ WORKPLACES + POLICIES ============
+     policy types: rational (standardize), human (protect people), demo (share power)
+     rational policies can be reverted later. conflicts block each other. */
+  const WORKPLACES = [
+    { id: 'coffee', company: 'Copper Kettle Coffee', tag: 'Customer-facing',
+      desc: 'A regional coffee chain. Forty stores, five hundred employees, a loyal following built on baristas who know their regulars. A national chain just opened across the street from six of your stores.',
+      workers: 'baristas', worker: 'barista', boss: 'the board',
+      veteran: 'Rosa, eleven years behind the same bar',
+      rival: 'BrewCo', resist: 0.8,
+      policies: [
+        { id: 'script', type: 'rational', name: 'Scripted greetings', desc: 'Every customer hears the same welcome, the same upsell, the same goodbye.', dE: 9, dH: -5, dM: -7, dP: 2, dD: -2, tag: 'Control' },
+        { id: 'timer', type: 'rational', name: 'Timed transactions', desc: 'A clock on every order. Ninety seconds to hand off a drink, tracked per barista, posted weekly.', dE: 12, dH: -7, dM: -8, dP: 3, dD: -2, tag: 'Calculability' },
+        { id: 'recipes', type: 'rational', name: 'Central recipes only', desc: 'No off-menu drinks, no personal touches. Every latte identical in every store.', dE: 10, dH: -4, dM: -9, dP: 2, dD: -2, tag: 'Predictability' },
+        { id: 'sched', type: 'rational', name: 'Scheduling algorithm', desc: 'Software builds the shifts from sales forecasts. Hours flex week to week.', dE: 11, dH: -9, dM: -6, dP: 4, dD: -3, conflicts: ['swaps'], tag: 'Efficiency' },
+        { id: 'shopper', type: 'rational', name: 'Mystery shoppers', desc: 'Paid strangers grade every store on a checklist. Scores go in personnel files.', dE: 7, dH: -6, dM: -8, dP: 1, dD: -2, tag: 'Control' },
+        { id: 'smile', type: 'rational', name: 'The smile standard', desc: 'Warmth is now a job requirement. Eye contact, upbeat tone, and a genuine smile, graded like everything else.', dE: 6, dH: -4, dM: -11, dP: 6, dD: -1, tag: 'Emotional labor' },
+        { id: 'kiosk', type: 'rational', name: 'Self-serve kiosks', desc: 'Screens take the orders. Fewer baristas per shift, and the ones left mostly run the machines.', dE: 13, dH: -3, dM: -6, dP: 7, dD: -1, tag: 'Efficiency' },
+        { id: 'menuvote', type: 'demo', name: 'Staff pick the specials', desc: 'Each month the baristas vote one of their own drinks onto the menu, by name.', dE: -2, dH: 4, dM: 6, dD: 4, conflicts: ['recipes'], tag: 'Workplace democracy' },
+        { id: 'leads', type: 'demo', name: 'Elected shift leads', desc: 'The crew elects its own shift leads. Corporate stops appointing them.', dE: -2, dH: 3, dM: 4, dD: 8, tag: 'Workplace democracy' },
+        { id: 'books', type: 'demo', name: 'Open books', desc: 'Store finances posted in the break room every month, real numbers included.', dH: 3, dD: 6, tag: 'Workplace democracy' },
+        { id: 'swaps', type: 'human', name: 'Crew-run schedule board', desc: 'Shifts get traded and covered by the crew on their own board, no permission needed.', dE: -3, dH: 6, dM: 3, dD: 5, conflicts: ['sched'], tag: 'Autonomy' },
+        { id: 'jury', type: 'demo', name: 'Grievances heard by coworkers', desc: 'Discipline disputes go to a panel of fellow workers, not just a manager.', dD: 7, dM: 3, tag: 'Workplace democracy' },
+        { id: 'profit', type: 'human', name: 'Real profit sharing', desc: 'A fixed slice of profit goes to the people who made it. Written down, not promised.', dP: -6, dH: 8, dD: 4, tag: 'Sharing the gains' }
+      ],
+      flavor: {
+        veteranScene: 'Rosa has been making a regular, an elderly widower, his own off-menu drink every morning for years. A district manager saw it happen. Other customers are asking for their own.',
+        gamingScene: 'Baristas found the trick: they hit the ninety second target by pre-ringing orders and remaking drinks off the clock. The numbers look great. The clock is a fiction.',
+        organizerScene: 'A barista named Dee has been collecting signatures on her days off. The word going around the stores is union.',
+        crunchScene: 'The holiday rush is coming, and BrewCo will run extended hours. Corporate wants every store open at 5 a.m. with no added headcount.',
+        viralScene: 'A clip is going around: one of your baristas, dead-eyed, reciting the greeting script word for word while a customer laughs at her. The caption calls your stores the robot cafe.',
+        revoltWord: 'The stores voted to unionize and walked out during the morning rush'
+      } },
+    { id: 'studio', company: 'Gray Harbor Games', tag: 'Knowledge work',
+      desc: 'A mid-size game studio. Sixty developers, two beloved titles, a culture built on craft and late-night arguments about what makes a game good. A giant publisher just announced a competing title with triple your budget.',
+      workers: 'developers', worker: 'developer', boss: 'the investors',
+      veteran: 'Sam, lead designer since the first game',
+      rival: 'Titanfall Interactive', resist: 1.3,
+      policies: [
+        { id: 'velocity', type: 'rational', name: 'Sprint velocity targets', desc: 'Every task gets a point value. Every developer gets a number. The number goes on a dashboard.', dE: 10, dH: -6, dM: -8, dP: 2, dD: -2, tag: 'Calculability' },
+        { id: 'engine', type: 'rational', name: 'One standard engine', desc: 'No more custom tools. Everyone builds on the same licensed engine, the same way, every project.', dE: 12, dH: -5, dM: -8, dP: 3, dD: -3, conflicts: ['tools'], tag: 'Predictability' },
+        { id: 'market', type: 'rational', name: 'Design by market testing', desc: 'Focus groups and player data decide the features. Designers execute what the numbers choose.', dE: 8, dH: -4, dM: -11, dP: 5, dD: -3, tag: 'Predictability' },
+        { id: 'track', type: 'rational', name: 'Time tracking software', desc: 'Every hour logged against a task code. Idle time flagged automatically.', dE: 9, dH: -8, dM: -7, dP: 2, dD: -2, tag: 'Control' },
+        { id: 'floorplan', type: 'rational', name: 'Open floor plan', desc: 'Walls come down. Everyone visible, everyone reachable, all the time.', dE: 6, dH: -7, dM: -5, dP: 4, dD: -1, tag: 'Control' },
+        { id: 'crunch', type: 'rational', name: 'Scheduled crunch', desc: 'Six-day weeks written into the milestone plan. Dinner catered, exits watched.', dE: 11, dH: -11, dM: -9, dP: 6, dD: -2, tag: 'Efficiency' },
+        { id: 'outsource', type: 'rational', name: 'Outsource the art pipeline', desc: 'Character art goes to a vendor overseas working from spec sheets. Your artists become reviewers.', dE: 12, dH: -6, dM: -8, dP: 8, dD: -2, tag: 'Efficiency' },
+        { id: 'sdtime', type: 'human', name: 'Self-directed project time', desc: 'Real hours each week for work the developers choose themselves.', dE: -3, dH: 4, dM: 7, dD: 3, tag: 'Autonomy' },
+        { id: 'leads', type: 'demo', name: 'Elected team leads', desc: 'The teams elect their own leads. The org chart stops being handed down.', dE: -2, dH: 3, dM: 4, dD: 8, tag: 'Workplace democracy' },
+        { id: 'books', type: 'demo', name: 'Open books', desc: 'Studio finances shared with everyone every month, real numbers included.', dH: 3, dD: 6, tag: 'Workplace democracy' },
+        { id: 'tools', type: 'demo', name: 'Teams choose their tools', desc: 'Each team picks its own tech and owns the consequences.', dE: -3, dM: 6, dD: 5, conflicts: ['engine'], tag: 'Workplace democracy' },
+        { id: 'credits', type: 'human', name: 'Credits guaranteed', desc: 'Everyone who worked on the game is in the credits. In the contract, not the culture.', dH: 4, dM: 5, dD: 3, tag: 'Recognition' },
+        { id: 'profit', type: 'human', name: 'Real profit sharing', desc: 'A fixed slice of profit goes to the people who made it. Written down, not promised.', dP: -6, dH: 8, dD: 4, tag: 'Sharing the gains' }
+      ],
+      flavor: {
+        veteranScene: 'Sam spent two weeks secretly building a small experimental level. Playtesters love it more than anything on the roadmap. It fits no sprint, no plan, no metric.',
+        gamingScene: 'The developers cracked the points system: they inflate task estimates, then beat them. Velocity is up forty percent. Actual output has not changed.',
+        organizerScene: 'A senior programmer named Marcus has been hosting off-site dinners. The word going around the studio is guild.',
+        crunchScene: 'The competing title just announced its release date, three weeks before yours. The investors want the gap closed.',
+        viralScene: 'A former developer posted a long thread about what it is like to work for you now. The phrase that is spreading: a feature factory that used to be a studio.',
+        revoltWord: 'The senior developers resigned as a group, taking the next game with them'
+      } }
+  ];
+
+  /* ============ BUY-IN PROGRAMS ============ */
+  const PROGRAMS_SHARED = [
+    { id: 'pizza', name: 'Party Fridays', desc: 'Food, music, a costume day. Morale by calendar.', dH: 6, dM: -2, dP: -1 },
+    { id: 'family', name: 'We are a family', desc: 'Posters, all-hands speeches, a mission statement on every wall.', dH: 5, dM: -4, dP: 0 },
+    { id: 'leaderboard', name: 'Gamified leaderboards', desc: 'Top performers get badges, streaks, and public rankings.', dH: 3, dM: -5, dP: 0, dE: 3 },
+    { id: 'wellness', name: 'Wellness program', desc: 'A meditation app subscription and an email about resilience.', dH: 4, dM: -2, dP: -2 },
+    { id: 'equity', name: 'Ownership talk', desc: 'A slideshow about profit sharing someday. People feel invested.', dH: 7, dM: -1, dP: -4 },
+    { id: 'input', name: 'Employee input', desc: 'Workers name the worst rule this quarter and management changes one thing for real.', dH: 5, dM: 4, dD: 3, dP: -3, genuine: true },
+    { id: 'nothing', name: 'No program this quarter', desc: 'Save the money. They are adults.', dH: -3, dP: 3 }
+  ];
+  const PROGRAMS_WP = {
+    coffee: { id: 'offscript', name: 'Scripts off in slow hours', desc: 'Afternoons belong to the baristas. Their own specials on the chalkboard, their own pace.', dH: 4, dM: 6, dP: -1, dE: -2, genuine: true },
+    studio: { id: 'restweek', name: 'A real rest week', desc: 'One week a quarter with no meetings, no milestones, and no one checking.', dH: 5, dM: 4, dP: -2, dE: -2, genuine: true }
+  };
+
+  /* ============ STATE ============ */
+  let S = null;
+
+  function newGame(teamName, wpIdx) {
+    S = {
+      team: teamName || 'The Management Team',
+      wp: WORKPLACES[wpIdx],
+      q: 1,
+      E: 30, C: 35, H: 60, M: 70, D: 20, R: 10, cash: 50,
+      score: 0, ledger: [], timeline: [], adopted: [],
+      darkUsed: [], firedOrganizer: false, organizerActive: false, coercionCount: 0,
+      usedEvents: [], warned: false, settled: false, over: false, ending: null,
+      roundPoints: 0
+    };
+    window.__S = S;
+  }
+
+  function addPoints(label, base, spread) {
+    const amt = Math.round((base + (rnd() - 0.5) * 2 * spread) / 5) * 5;
+    S.score += amt; S.roundPoints += amt;
+    S.ledger.push({ label, amount: amt });
+    return amt;
+  }
+
+  function logMoment(text, concept) {
+    S.timeline.push({ q: S.q, text, concept });
+  }
+
+  let reportLines = [];
+  function report(t) { if (t) reportLines.push(t); }
+
+  function has(id) { return S.adopted.includes(id); }
+
+  function coerce(rDelta) {
+    S.coercionCount += 1;
+    S.R = clamp(S.R + rDelta, 0, 100);
+  }
+
+  /* ============ EVENTS ============
+     kind: 'situation' (comes down from above) or 'floor' (comes up from the workers)
+     wp: limits to one workplace */
+  const EVENTS = [
+
+    /* ---- situations ---- */
+    { id: 'veteran', kind: 'situation', tag: 'Off the standard', once: true,
+      when: () => S.q >= 2 && S.adopted.some(id => S.wp.policies.find(p => p.id === id).type === 'rational'),
+      text: () => S.wp.flavor.veteranScene,
+      choices: () => [
+        { label: 'Let it stand. Some things beat the standard.', effect: () => { S.H += 5; S.M += 4; S.E -= 3; report('Word gets around that the standard has exceptions. People relax a little, and a little slack creeps in.'); logMoment('You let ' + S.wp.veteran.split(',')[0] + ' keep doing it the old way.', 'Ch. 9 · Predictability'); } },
+        { label: 'Write it up. The standard is the standard.', effect: () => { S.E += 4; S.H -= 6; S.M -= 6; S.D -= 2; report('The write-up lands. So does the message: what made this place different is now a violation.'); logMoment('You disciplined ' + S.wp.veteran.split(',')[0] + ' for going off the standard.', 'Ch. 9 · Predictability'); } },
+        { label: 'Turn it into a product. Standardize the exception.', effect: () => { S.E += 3; S.cash += 4; S.M -= 8; report('The personal touch is now a menu item with a spec sheet. It sells. It is no longer anyone’s own.'); logMoment('You standardized the human exception and sold it.', 'Ch. 9 · McDonaldization'); } }
+      ] },
+
+    { id: 'organizer', kind: 'situation', tag: 'Somebody is organizing', once: true,
+      when: () => S.q >= 3 && S.H < 55,
+      text: () => S.wp.flavor.organizerScene,
+      choices: () => [
+        { label: 'Meet with them. Hear the whole list.', effect: () => { S.H += 6; S.M += 3; S.E -= 2; S.organizerActive = true; report('The meeting is long and uncomfortable and useful. The list is real. So is the warning.'); logMoment('An organizer emerged. You sat down and listened.', 'Ch. 14 · Worker power'); } },
+        { label: 'Ignore it. It will burn out.', effect: () => { S.organizerActive = true; S.H -= 3; report('The signatures keep moving. Quietly.'); logMoment('An organizer emerged. You waited it out.', 'Ch. 14 · Worker power'); } },
+        { label: 'Put a manager on every shift they work.', effect: () => { S.organizerActive = true; S.H -= 5; S.M -= 3; S.D -= 4; S.darkUsed.push('Shadowed the organizer'); coerce(-4); report('The message is received by everyone. The signatures move faster.'); logMoment('An organizer emerged. You had them watched.', 'Ch. 9 · Control'); } },
+        { label: 'Find a reason to let them go.', effect: () => {
+            S.firedOrganizer = true; S.darkUsed.push('Fired the organizer'); S.M -= 8; S.H -= 5; S.D -= 6; coerce(-12);
+            if (rnd() < 0.45) { S.cash -= 12; S.H -= 5; report('The termination paperwork was clean. The story that got out was not. A labor board complaint and a news cycle follow.'); }
+            else { report('The paperwork holds. The organizing goes quiet, and so does everything else. People watch what they say near you now.'); }
+            logMoment('An organizer emerged. You fired them.', 'Ch. 8 · Who gets labeled a problem');
+          } }
+      ] },
+
+    { id: 'viral', kind: 'situation', tag: 'It got out', once: true,
+      when: () => S.q >= 4 && S.M < 55,
+      text: () => S.wp.flavor.viralScene,
+      choices: () => [
+        { label: 'Apologize and loosen one policy publicly.', effect: () => { S.cash -= 4; S.H += 4; S.M += 3; S.E -= 3; report('You name the policy and end it. The story turns into a shrug within a week.'); logMoment('A viral story hit. You gave a policy back.', 'Ch. 3 · Whose story wins'); } },
+        { label: 'Put out a statement about your values.', effect: () => { S.H -= 2; report('The statement uses the word family twice and changes nothing. The clip keeps circulating.'); logMoment('A viral story hit. You issued a statement.', 'Ch. 3 · Whose story wins'); } },
+        { label: 'Find out who leaked it.', effect: () => { S.darkUsed.push('Hunted the leaker'); S.H -= 7; S.M -= 4; S.D -= 5; coerce(-3); report('The hunt becomes an open secret. Now there are two stories going around, and the second one is about the hunt.'); logMoment('A viral story hit. You went after the source.', 'Ch. 9 · Control'); } }
+      ] },
+
+    { id: 'consultant', kind: 'situation', tag: 'The consultants', once: true,
+      when: () => S.q >= 3,
+      text: () => 'A consulting firm that optimized ' + S.wp.rival + ' offers you the full package: process maps, performance management, a reduction plan. They promise fifteen percent efficiency in two quarters.',
+      choices: () => [
+        { label: 'Sign them.', effect: () => { S.E += 12; S.H -= 9; S.M -= 9; S.cash -= 8; S.D -= 4; S.darkUsed.push('Brought in the optimization consultants'); report('Badged strangers with clipboards walk the floor for six weeks. The processes get faster. People start eating lunch in their cars.'); logMoment('You brought in the consultants.', 'Ch. 9 · Rationalization'); } },
+        { label: 'Decline.', effect: () => { report('You pass. ' + S.wp.rival + ' does not.'); S.C += 3; logMoment('You turned the consultants away. Your competitor did not.', 'Ch. 9 · Rationalization'); } }
+      ] },
+
+    { id: 'surveil', kind: 'situation', tag: 'An offer from IT', once: true,
+      when: () => S.q >= 4 && S.adopted.length >= 2,
+      text: () => 'IT can turn on message monitoring. Every complaint, every joke about management, every whisper about organizing, searchable. Nobody would know.',
+      choices: () => [
+        { label: 'Turn it on.', effect: () => { S.darkUsed.push('Monitored private messages'); S.M -= 7; S.D -= 5; S.E += 3; coerce(-4);
+            if (rnd() < 0.35) { S.H -= 12; S.cash -= 8; report('It leaks. Of course it leaks. Now every screen in the building might as well have your name watching from the corner of it.'); }
+            else { report('The reports are informative. You know who is unhappy now. Knowing changes how you look at them.'); }
+            logMoment('You turned on message monitoring.', 'Ch. 9 · Control'); } },
+        { label: 'Leave it off.', effect: () => { S.M += 2; report('Some things stay unread. It costs you nothing you can measure.'); logMoment('You declined to monitor private messages.', 'Ch. 9 · Control'); } }
+      ] },
+
+    { id: 'crunchtime', kind: 'situation', tag: 'The squeeze', once: true,
+      when: () => S.q >= 4,
+      text: () => S.wp.flavor.crunchScene,
+      choices: () => [
+        { label: 'Mandatory extra hours. Everyone.', effect: () => { S.E += 6; S.cash += 8; S.H -= 10; S.M -= 6; S.D -= 3; S.darkUsed.push('Mandatory overtime'); coerce(3); report('The hours get worked. The building empties the second the mandate lifts, and some people never quite come back even when they do.'); logMoment('You mandated the extra hours.', 'Ch. 9 · Efficiency'); } },
+        { label: 'Ask for volunteers, pay them properly.', effect: () => { S.E += 3; S.cash -= 4; S.H += 2; report('Enough hands go up. It costs real money and buys real goodwill.'); logMoment('You paid for volunteers instead of mandating hours.', 'Ch. 9 · Efficiency'); } },
+        { label: 'Let the workers decide how to cover it.', effect: () => { S.E += 2; S.D += 5; S.H += 3; S.cash -= 2; report('You hand the problem to the floor. They solve it in a way no manager proposed, and they own the solution.'); logMoment('You let the workers plan the surge themselves.', 'Ch. 9 · Workplace democracy'); } },
+        { label: 'Hold the line. You lose some ground.', effect: () => { S.C += 3; S.cash -= 5; S.M += 3; report('You give up the ground. The people notice who protected their time.'); logMoment('You refused the squeeze and gave up ground.', 'Ch. 9 · Efficiency'); } }
+      ] },
+
+    { id: 'poach', kind: 'situation', tag: 'The offer letters', once: true,
+      when: () => S.q >= 5 && S.H < 50,
+      text: () => S.wp.rival + ' is recruiting your best people directly. Three of them are deciding this month.',
+      choices: () => [
+        { label: 'Counter with money.', effect: () => { S.cash -= 8; S.H += 3; report('Two stay for the raise. What kept them here before was not on the table.'); logMoment('You paid to keep people who used to stay for free.', 'Ch. 9 · What holds a workplace'); } },
+        { label: 'Counter with change. Kill one hated policy.', effect: () => { S.E -= 4; S.H += 6; S.M += 5; report('You end the policy they hated most. All three stay, and they tell people why.'); logMoment('You gave up a standard to keep your people.', 'Ch. 9 · What holds a workplace'); } },
+        { label: 'Let them go. Everyone is replaceable now.', effect: () => { S.E += 2; S.H -= 6; S.M -= 6; report('The systems you built mean their replacements need two weeks of training instead of two years. That was the point. It is also the problem.'); logMoment('You let your best people leave. The system no longer needs them.', 'Ch. 9 · Deskilling'); } }
+      ] },
+
+    { id: 'award', kind: 'situation', tag: 'Recognition', once: true,
+      when: () => S.q >= 5 && S.E >= 55,
+      auto: () => {
+        S.cash += 6;
+        logMoment('An industry group gave you an efficiency award.', 'Ch. 9 · Rationalization');
+        return 'An industry association names you a leader in operational excellence. There is a trophy, a write-up, and a bump in business. The write-up does not mention any people by name.';
+      } },
+
+    { id: 'layoff', kind: 'situation', tag: 'The reduction', once: true,
+      when: () => S.q >= 5 && S.cash < 35,
+      text: () => 'Cash is tight and ' + S.wp.boss + ' wants a reduction. Last quarter’s all-hands called this workplace a family.',
+      choices: () => [
+        { label: 'Do the layoff. Ten percent.', effect: () => { S.cash += 15; S.E += 2; S.H -= 12; S.M -= 5; S.D -= 3; report('The meetings take four minutes each. The word family does not appear in the script, and nobody uses it in the building again.'); logMoment('You called it a family, then did a layoff.', 'Ch. 9 · Manufactured consent'); } },
+        { label: 'Open the books and ask the floor for a plan.', effect: () => { S.cash += 8; S.D += 6; S.H -= 3; report('Shown the real numbers, the workers propose cuts nobody upstairs had thought of, including some of their own hours. It is slower and smaller than a layoff. Everyone is still here.'); logMoment('You opened the books and let the workers plan the cuts.', 'Ch. 9 · Workplace democracy'); } },
+        { label: 'Cut everything else first.', effect: () => { S.cash += 5; S.H += 4; report('Travel, perks, your own bonus. People notice whose budget bled first.'); logMoment('You cut everything except people.', 'Ch. 9 · Manufactured consent'); } }
+      ] },
+
+    { id: 'tippool', kind: 'situation', wp: 'coffee', tag: 'A memo from corporate', once: true,
+      when: () => S.q >= 2,
+      text: () => 'Corporate accounting wants all tips pooled and counted against a portion of wages. It is legal here. It would save real money.',
+      choices: () => [
+        { label: 'Implement it.', effect: () => { S.cash += 6; S.H -= 9; S.M -= 4; S.D -= 3; S.darkUsed.push('Took a cut of the tip pool'); report('The math works. The baristas do their own math on their own paychecks, and they talk about it constantly.'); logMoment('You counted tips against wages.', 'Ch. 9 · Who the gains go to'); } },
+        { label: 'Refuse it.', effect: () => { S.cash -= 3; S.H += 4; report('The tips stay where customers meant them to go. Corporate notes your store margins.'); logMoment('You refused to touch the tips.', 'Ch. 9 · Who the gains go to'); } },
+        { label: 'Let the baristas vote on it.', effect: () => { S.D += 6; S.H += 3; if (rnd() < 0.8) { S.cash -= 2; report('They vote it down, overwhelmingly. The vote itself changes something: the paycheck was decided in the open.'); } else { S.cash += 4; report('To your surprise they vote for a version of it, with the savings split into a repair fund they control.'); } logMoment('You put the tip question to a vote.', 'Ch. 9 · Workplace democracy'); } }
+      ] },
+
+    { id: 'uniform', kind: 'situation', wp: 'coffee', tag: 'The image consultant', once: true,
+      when: () => S.q >= 3,
+      text: () => 'A brand consultant recommends a strict appearance code: standard aprons, covered tattoos, natural hair colors, no visible piercings. Consistency across all forty stores.',
+      choices: () => [
+        { label: 'Adopt the code.', effect: () => { S.E += 3; S.H -= 6; S.M -= 5; report('The stores look identical now. So do the people in them.'); logMoment('You standardized how your workers look.', 'Ch. 9 · Predictability'); } },
+        { label: 'Skip it.', effect: () => { report('The stores keep looking like the neighborhoods they are in.'); logMoment('You declined the appearance code.', 'Ch. 9 · Predictability'); } },
+        { label: 'Let each store decide its own look.', effect: () => { S.D += 5; S.H += 3; S.M += 2; S.E -= 1; report('Forty stores make forty different calls. Customers seem to like knowing which one is theirs.'); logMoment('You let each store set its own look.', 'Ch. 9 · Workplace democracy'); } }
+      ] },
+
+    { id: 'aiart', kind: 'situation', wp: 'studio', tag: 'The vendor demo', once: true,
+      when: () => S.q >= 3,
+      text: () => 'A vendor demos an image generation pipeline that could replace most of your junior art team. The output is close. The price is a fraction.',
+      choices: () => [
+        { label: 'Adopt it fully. Restructure the art team.', effect: () => { S.E += 10; S.cash += 8; S.M -= 10; S.H -= 6; S.D -= 3; S.darkUsed.push('Replaced junior artists with the pipeline'); report('The pipeline ships assets on schedule. The remaining artists describe their job as cleanup.'); logMoment('You replaced junior artists with the generation pipeline.', 'Ch. 9 · Deskilling'); } },
+        { label: 'Adopt it as a tool, with the artists steering.', effect: () => { S.E += 4; S.D += 3; S.M -= 2; report('The artists set the rules for the tool instead of the other way around. Output rises. Nobody is cleanup.'); logMoment('You gave the artists control of the new tool.', 'Ch. 9 · Who controls the tools'); } },
+        { label: 'Decline it.', effect: () => { S.C += 2; report('You pass. The vendor’s next demo is at ' + S.wp.rival + '.'); logMoment('You declined the generation pipeline.', 'Ch. 9 · Who controls the tools'); } }
+      ] },
+
+    { id: 'sidegame', kind: 'situation', wp: 'studio', tag: 'The side project', once: true,
+      when: () => S.q >= 4,
+      text: () => 'A developer’s weekend game just blew up online. Legal points out that under the standard contract, the studio owns it.',
+      choices: () => [
+        { label: 'Claim it. The contract is the contract.', effect: () => { S.cash += 10; S.M -= 9; S.H -= 7; S.D -= 4; S.darkUsed.push('Claimed a worker’s side project'); report('The game is yours now. So is the story about how you got it, told at every game industry meetup in the state.'); logMoment('You claimed a developer’s side project.', 'Ch. 9 · Who owns the work'); } },
+        { label: 'Release the claim publicly.', effect: () => { S.M += 7; S.D += 4; S.H += 4; report('You tear up the clause on stage at the all-hands. Three developers mention it in interviews as the reason they stay.'); logMoment('You gave up the claim to workers’ own projects.', 'Ch. 9 · Who owns the work'); } },
+        { label: 'Negotiate a publishing deal instead.', effect: () => { S.cash += 4; S.M += 2; report('The studio publishes, the developer owns. Both names go on it.'); logMoment('You partnered on the side project instead of claiming it.', 'Ch. 9 · Who owns the work'); } }
+      ] },
+
+    { id: 'timestudy', kind: 'situation', tag: 'The stopwatch proposal', once: true,
+      when: () => S.R >= 38 && S.adopted.length >= 2,
+      text: () => 'An operations manager lays out the pattern: output is short everywhere, by about the same amount, at the same steady pace. Not one rule broken. The proposal on the table is stopwatch time studies to find the true pace of every task and set the standard to it.',
+      choices: () => [
+        { label: 'Run the time studies.', effect: () => { S.E += 5; S.H -= 8; S.M -= 5; S.darkUsed.push('Ran stopwatch time studies'); coerce(6); report('The stopwatch men walk the floor. The standards tighten. So does everything else. This exact fight is over a century old, and it has never once ended.'); logMoment('Output was being held back. You brought in the stopwatches.', 'Ch. 9 · Soldiering'); } },
+        { label: 'Ask the floor what the honest pace is.', effect: () => { S.D += 5; S.R = clamp(S.R - 10, 0, 100); S.E += 2; report('The answer is a number nobody upstairs would have believed, with reasons attached. The standard gets set where the work actually is.'); logMoment('Output was being held back. You asked the workers to set the pace.', 'Ch. 9 · Soldiering'); } },
+        { label: 'Accept the pace. The floor has spoken.', effect: () => { S.E -= 2; S.R = clamp(S.R - 5, 0, 100); S.M += 2; report('The shortfall becomes the number. The floor notices that pushing worked.'); logMoment('Output was being held back. You accepted the workers’ pace.', 'Ch. 9 · Soldiering'); } }
+      ] },
+
+    /* ---- from the floor ---- */
+    { id: 'hoard', kind: 'floor', tag: 'The missing know-how', once: true,
+      when: () => S.R >= 45 || S.adopted.some(id => ['recipes', 'kiosk', 'outsource', 'market'].includes(id)),
+      text: () => 'Two new hires washed out this month. The procedures they followed were complete and correct and not nearly enough. The veterans who know the real tricks of the job have quietly stopped passing them on. The system that was built to not need them still needs them.',
+      choices: () => [
+        { label: 'Pay for the knowledge. Make training a real paid role.', effect: () => { S.cash -= 5; S.M += 4; S.R = clamp(S.R - 8, 0, 100); report('Made visible and paid, the teaching starts again. The manual stays incomplete. The people stop pretending it was ever the job.'); logMoment('The veterans stopped teaching. You made their knowledge a paid role.', 'Ch. 9 · Deskilling'); } },
+        { label: 'Order them to document everything they know.', effect: () => { S.H -= 6; S.M -= 4; S.R = clamp(S.R + 6, 0, 100); report('The documents arrive, complete and correct and not nearly enough. What made the work work is not the kind of thing that types up.'); logMoment('The veterans stopped teaching. You ordered their knowledge written down.', 'Ch. 9 · Deskilling'); } },
+        { label: 'Replace the veterans before they get more expensive.', effect: () => { S.E -= 4; S.H -= 7; S.M -= 6; S.cash -= 4; S.darkUsed.push('Pushed out the veterans'); coerce(4); report('The veterans leave, taking with them the ten thousand small things the system runs on. The dashboards take three quarters to show what walked out the door.'); logMoment('You pushed out the people who knew how the work really worked.', 'Ch. 9 · Deskilling'); } }
+      ] },
+
+    { id: 'gaming', kind: 'floor', tag: 'The numbers are lying', once: true,
+      when: () => S.q >= 3 && S.adopted.length >= 2,
+      text: () => S.wp.flavor.gamingScene,
+      choices: () => [
+        { label: 'Crack down. Audit everyone.', effect: () => { S.E += 2; S.H -= 8; S.M -= 5; S.D -= 3; report('The audits find everything and forgive nothing. The workaround dies, and so does whatever goodwill was left around the metric.'); logMoment('Workers gamed the metrics. You audited them.', 'Ch. 9 · Manufactured consent'); } },
+        { label: 'Redesign the metric with the workers.', effect: () => { S.E += 5; S.H += 3; S.M += 3; S.D += 4; S.cash -= 3; report('The people who beat the system help rebuild it. The new numbers mean something, and it cost you a quarter of meetings.'); logMoment('Workers gamed the metrics. You rebuilt the metric with them.', 'Ch. 9 · Manufactured consent'); } },
+        { label: 'Look away. The dashboard looks great.', effect: () => { S.M -= 4; report('Everyone now knows the numbers are theater, and everyone performs them. The game becomes the job.'); logMoment('Workers gamed the metrics. You let the theater run.', 'Ch. 9 · Manufactured consent'); } }
+      ] },
+
+    { id: 'irrational1', kind: 'floor', wp: 'coffee', tag: 'From the floor', once: true,
+      when: () => has('timer'),
+      text: () => 'Three baristas bring you their own data. Since the transaction timer went in, rush hour is slower. Everyone makes the easy drinks first to protect their times, and the real orders stack up. The system built for speed is producing lines.',
+      choices: () => [
+        { label: 'They are right. Fix the system with them.', effect: () => { S.E += 4; S.M += 4; S.D += 5; addPoints('The crew caught the system failing', 70, 20); report('The timer gets rebuilt around the rush, by the people who work it. Service gets faster than it was before the timer existed.'); logMoment('The baristas showed you the timer was slowing service. You rebuilt it with them.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'The standard stands. Work the system as written.', effect: () => { S.H -= 6; S.M -= 4; S.E -= 3; report('The lines stay. The baristas stop bringing you data.'); logMoment('The baristas showed you the timer was failing. You kept it anyway.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'Write up the three for going around their manager.', effect: () => { S.H -= 9; S.M -= 6; S.D -= 6; S.darkUsed.push('Disciplined workers for reporting a problem'); coerce(4); report('The write-ups land. From now on, problems will reach you only after they become expensive.'); logMoment('Workers flagged a failing system. You disciplined them for it.', 'Ch. 9 · Control'); } }
+      ] },
+
+    { id: 'irrational2', kind: 'floor', wp: 'coffee', tag: 'From the floor', once: true,
+      when: () => has('kiosk') || has('recipes'),
+      text: () => 'A shift lead shows you the store numbers she has been keeping in a notebook: the regulars are disappearing. The kiosks and the fixed menu are efficient, and the people who came for a person who knew their order have stopped coming.',
+      choices: () => [
+        { label: 'Give the counter back. Kiosks for the rush only.', effect: () => { S.E -= 3; S.cash += 3; S.M += 4; S.D += 3; addPoints('The crew caught the system failing', 70, 20); report('The regulars trickle back. The notebook becomes a monthly report you actually read.'); logMoment('A shift lead proved the machines were costing customers. You listened.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'The numbers will recover. Stay the course.', effect: () => { S.cash -= 5; S.M -= 3; report('The numbers do not recover. Efficient stores keep serving fewer people.'); logMoment('The machines were driving off regulars. You stayed the course.', 'Ch. 9 · Irrationality of rationality'); } }
+      ] },
+
+    { id: 'irrational1s', kind: 'floor', wp: 'studio', tag: 'From the floor', once: true,
+      when: () => has('velocity'),
+      text: () => 'Two engineers walk you through the sprint dashboard. Since velocity targets went in, everyone ships small safe tasks and nobody touches the hard problems. Velocity is up. The bug backlog has doubled. The system built for output is producing busywork.',
+      choices: () => [
+        { label: 'They are right. Fix the system with them.', effect: () => { S.E += 4; S.M += 4; S.D += 5; addPoints('The crew caught the system failing', 70, 20); report('The teams rebuild the targets around finished features instead of points. The backlog starts shrinking for the first time all year.'); logMoment('The developers showed you velocity was producing busywork. You rebuilt it with them.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'The standard stands. Hit the targets.', effect: () => { S.H -= 6; S.M -= 4; S.E -= 3; report('The targets get hit. The hard problems wait for someone brave or foolish.'); logMoment('The developers showed you the metric was failing. You kept it anyway.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'Reassign the two to separate teams.', effect: () => { S.H -= 8; S.M -= 5; S.D -= 6; S.darkUsed.push('Split up workers who reported a problem'); coerce(4); report('The reassignment is understood perfectly by everyone. The dashboard stays green.'); logMoment('Workers flagged a failing system. You split them up.', 'Ch. 9 · Control'); } }
+      ] },
+
+    { id: 'irrational2s', kind: 'floor', wp: 'studio', tag: 'From the floor', once: true,
+      when: () => has('outsource') || has('market'),
+      text: () => 'The art director lays printouts across your desk. Reviews of the last update all say the same thing: it looks like every other game now. The pipeline is efficient. The thing it produces is what players are starting to leave over.',
+      choices: () => [
+        { label: 'Bring key art back in house.', effect: () => { S.E -= 3; S.cash -= 3; S.M += 5; S.D += 3; addPoints('The crew caught the system failing', 70, 20); report('The next update has a look again. A reviewer calls it a return to form, which is a polite way of saying you stopped.'); logMoment('The art director proved the pipeline was costing players. You reversed course.', 'Ch. 9 · Irrationality of rationality'); } },
+        { label: 'Players will adjust. Stay the course.', effect: () => { S.cash -= 5; S.M -= 3; report('Players do not adjust. They have other games that look like this one, cheaper.'); logMoment('The pipeline was flattening the game. You stayed the course.', 'Ch. 9 · Irrationality of rationality'); } }
+      ] },
+
+    { id: 'petition', kind: 'floor', tag: 'The petition', once: true,
+      when: () => S.q >= 3 && S.H < 52 && S.adopted.some(id => S.wp.policies.find(p => p.id === id).type === 'rational'),
+      text: () => {
+        const rat = S.adopted.map(id => S.wp.policies.find(p => p.id === id)).filter(p => p.type === 'rational');
+        S._petitionTarget = rat[rat.length - 1];
+        return 'A petition lands on your desk with most of the ' + S.wp.workers + '’ names on it. It asks for one thing: end ' + S._petitionTarget.name.toLowerCase() + '.';
+      },
+      choices: () => [
+        { label: 'Repeal it. They made their case.', effect: () => {
+            const p = S._petitionTarget;
+            S.adopted = S.adopted.filter(id => id !== p.id);
+            S.E = clamp(S.E - Math.round(p.dE * 0.6), 0, 100);
+            S.H = clamp(S.H + Math.round(Math.abs(p.dH) * 0.7) + 4, 0, 100);
+            S.M = clamp(S.M + Math.round(Math.abs(p.dM) * 0.6), 0, 100);
+            S.D += 6;
+            report('The policy comes down the same week. Something shifts in how people talk about this office: apparently it listens.');
+            logMoment('The workers petitioned against ' + p.name.toLowerCase() + ' and you repealed it.', 'Ch. 9 · Workplace democracy'); } },
+        { label: 'Promise a review next year.', effect: () => { S.H -= 4; if (S.D < 40) S.D -= 2; report('Everyone knows what a review next year means.'); logMoment('The workers petitioned. You promised a review.', 'Ch. 9 · Manufactured consent'); } },
+        { label: 'Post a warning about circulating petitions on shift.', effect: () => { S.H -= 8; S.M -= 4; S.D -= 7; S.darkUsed.push('Threatened petition signers'); coerce(-6); report('The notice goes up in every break room. It is read as exactly what it is.'); logMoment('The workers petitioned. You threatened the signers.', 'Ch. 9 · Control'); } }
+      ] },
+
+    { id: 'council', kind: 'floor', tag: 'The request', once: true,
+      when: () => S.q >= 3 && S.D < 50,
+      text: () => 'A delegation of ' + S.wp.workers + ' asks for something specific: an elected council with a real vote on policies that affect the floor. Not a suggestion box. A vote.',
+      choices: () => [
+        { label: 'Grant it, with a real vote.', effect: () => { S.D += 10; S.E -= 3; S.H += 4; report('The first council meeting runs long and changes two policies. Management leaves the room knowing less got decided about the workers and more got decided with them.'); logMoment('You granted an elected council with a real vote.', 'Ch. 9 · Workplace democracy'); } },
+        { label: 'Grant it as advisory only.', effect: () => { S.D += 2; if (S.H < 50) { S.H -= 3; report('The council meets, advises, and watches its advice evaporate. People learn the lesson faster than any memo could teach it.'); } else { report('The council meets and advises. For now, being heard is enough. For now.'); } logMoment('You granted a council without a vote.', 'Ch. 9 · Manufactured consent'); } },
+        { label: 'Refuse. Management manages.', effect: () => { S.H -= 5; S.D -= 3; report('The delegation files out. The question does not leave with them.'); logMoment('You refused the council.', 'Ch. 9 · Workplace democracy'); } }
+      ] },
+
+    { id: 'slowdown', kind: 'floor', tag: 'Working to rule', once: true,
+      when: () => S.q >= 4 && S.H < 45,
+      text: () => 'No strike, no statement. The ' + S.wp.workers + ' have simply started doing exactly what the rules require and not one thing more. Output is dropping in a way no policy can name.',
+      choices: () => [
+        { label: 'Meet them. Ask what it would take.', effect: () => { S.H += 6; S.D += 4; S.E -= 2; report('The answer turns out to be specific and cheaper than the slowdown. Work resumes, at the price of admitting the rules were not the whole job.'); logMoment('A slowdown hit. You asked what it would take.', 'Ch. 14 · Worker power'); } },
+        { label: 'Bring in temporary workers.', effect: () => { S.cash -= 5; S.H -= 6; S.M -= 4; S.D -= 4; S.darkUsed.push('Brought in temps to break a slowdown'); coerce(6); report('The temps need the exact training the rules replaced. The slowdown gets slower and angrier.'); logMoment('A slowdown hit. You brought in temps.', 'Ch. 14 · Worker power'); } },
+        { label: 'Wait it out.', effect: () => { S.E -= 4; S.cash -= 4; report('It does not burn out. It becomes the culture.'); logMoment('A slowdown hit. You waited.', 'Ch. 14 · Worker power'); } }
+      ] },
+
+    { id: 'abuse', kind: 'floor', wp: 'coffee', tag: 'From the floor', once: true,
+      when: () => S.q >= 2,
+      text: () => 'A regular berated a barista to tears this morning over a remade drink, loudly, in front of the line. The store manager wants to know the policy. The barista is scheduled again tomorrow.',
+      choices: () => [
+        { label: 'Back the barista. Ban the customer.', effect: () => { S.M += 6; S.H += 6; S.cash -= 3; report('Word travels through all forty stores by closing. The message received: the people matter more than any single register.'); logMoment('A customer abused a barista. You banned the customer.', 'Ch. 6 · Emotional labor'); } },
+        { label: 'Comp the customer. The customer is the business.', effect: () => { S.M -= 8; S.H -= 6; S.cash += 2; report('The customer returns, satisfied. So does the lesson: the smile is required and the abuse is part of the counter.'); logMoment('A customer abused a barista. You comped the customer.', 'Ch. 6 · Emotional labor'); } },
+        { label: 'Move the barista to another store.', effect: () => { S.M -= 5; S.H -= 4; S.D -= 2; report('The problem is relocated. Every barista in the chain understands whose comfort got protected.'); logMoment('A customer abused a barista. You moved the barista.', 'Ch. 6 · Emotional labor'); } }
+      ] },
+
+    { id: 'crediting', kind: 'floor', wp: 'studio', tag: 'From the floor', once: true,
+      when: () => S.q >= 2,
+      text: () => 'The trailer for your next game just dropped. Marketing credited the studio and two executives by name. The developers who built the featured level found out from the comments.',
+      choices: () => [
+        { label: 'Recut the trailer with the team credited.', effect: () => { S.M += 5; S.H += 5; S.cash -= 2; report('The recut costs a week and a vendor fee. Screenshots of the credits screen circulate with some pride.'); logMoment('You put the makers’ names on the work.', 'Ch. 9 · Recognition'); } },
+        { label: 'Leave it. Trailers sell games, not names.', effect: () => { S.M -= 5; S.H -= 4; report('The trailer performs fine. Something small goes out of the people whose work it was.'); logMoment('You left the makers’ names off the work.', 'Ch. 9 · Recognition'); } }
+      ] }
+  ];
+
+  /* ============ QUARTER MECHANICS ============ */
+  function applyProgram(p) {
+    S.H = clamp(S.H + (p.dH || 0), 0, 100);
+    S.M = clamp(S.M + (p.dM || 0), 0, 100);
+    S.D = clamp(S.D + (p.dD || 0), 0, 100);
+    S.cash += (p.dP || 0);
+    S.E = clamp(S.E + (p.dE || 0), 0, 100);
+    if (p.genuine) report('The ' + p.name.toLowerCase() + ' program gives something real back. It shows up nowhere in the quarterly numbers.');
+    else if (p.id === 'nothing') report('No program this quarter. The break room notices.');
+    else { report('The ' + p.name.toLowerCase() + ' program runs. People smile more. What that smile is made of is harder to say.'); if ((p.dM || 0) < -2) logMoment('You ran ' + p.name.toLowerCase() + ' while the standards tightened.', 'Ch. 9 · Hegemony'); }
+  }
+
+  function applyPolicy(pol) {
+    S.adopted.push(pol.id);
+    if (pol.type === 'rational') {
+      const resistFactor = S.wp.resist * (S.M / 70);
+      let eGain = pol.dE;
+      if (S.R >= 55) {
+        eGain = Math.round(eGain * 0.5);
+        report('The rollout depends on know-how the veterans are no longer sharing. It limps.');
+      }
+      if (rnd() < 0.35 * resistFactor && S.M > 40 && S.D < 50) {
+        eGain = Math.round(eGain * 0.55);
+        report('The ' + S.wp.workers + ' drag their feet on the rollout. The gain lands smaller than the plan promised.');
+      }
+      if (S.D >= 50) report('The council was consulted first. The rollout goes in clean, and a little less bitter.');
+      S.E = clamp(S.E + eGain, 0, 100);
+    } else {
+      S.E = clamp(S.E + (pol.dE || 0), 0, 100);
+    }
+    S.H = clamp(S.H + (pol.dH || 0), 0, 100);
+    S.M = clamp(S.M + (pol.dM || 0), 0, 100);
+    S.D = clamp(S.D + (pol.dD || 0), 0, 100);
+    S.cash += (pol.dP || 0);
+    report('New policy in place: ' + pol.name.toLowerCase() + '.');
+    logMoment('You adopted ' + pol.name.toLowerCase() + '.', 'Ch. 9 · ' + pol.tag);
+  }
+
+  function revertPolicy(pol) {
+    S.adopted = S.adopted.filter(id => id !== pol.id);
+    if (pol.type === 'rational') {
+      S.E = clamp(S.E - Math.round(pol.dE * 0.7), 0, 100);
+      S.H = clamp(S.H + Math.round(Math.abs(pol.dH) * 0.6), 0, 100);
+      S.M = clamp(S.M + Math.round(Math.abs(pol.dM) * 0.6), 0, 100);
+      S.D += 3;
+      S.cash -= 3;
+      report('You take ' + pol.name.toLowerCase() + ' back out. Some of what it squeezed comes back. Not all of it.');
+      logMoment('You repealed ' + pol.name.toLowerCase() + '.', 'Ch. 9 · Reversibility');
+    } else {
+      S.E = clamp(S.E - (pol.dE || 0), 0, 100);
+      S.H = clamp(S.H - (pol.dH || 0) - 4, 0, 100);
+      S.M = clamp(S.M - (pol.dM || 0) - 3, 0, 100);
+      S.D = clamp(S.D - (pol.dD || 0) - 4, 0, 100);
+      S.cash -= (pol.dP || 0);
+      S.darkUsed.push('Took back ' + pol.name.toLowerCase());
+      report('You take back ' + pol.name.toLowerCase() + '. Giving something and removing it lands harder than never giving it.');
+      logMoment('You revoked ' + pol.name.toLowerCase() + '.', 'Ch. 9 · Control');
+    }
+  }
+
+  function quarterClose() {
+    S.C += 4 + Math.round(rnd() * 3);
+    // resistance moves
+    const ratCount = S.adopted.filter(id => S.wp.policies.find(p => p.id === id).type === 'rational').length;
+    const organized = S.organizerActive && !S.firedOrganizer;
+    let growth = ratCount * 0.8 + S.coercionCount * 0.8;
+    if (S.H < 55) growth += (55 - S.H) * 0.24;
+    growth *= (0.5 + 0.5 * S.M / 70);
+    if (organized) growth += 3.5;
+    let relief = (S.D >= 50 ? 5 : 0) + (S.H >= 62 ? 4 : 0) + (S.chosenProgram && S.chosenProgram.genuine ? 2 : 0);
+    S.R = clamp(S.R + clamp(growth - relief, -6, 10), 0, 100);
+    // resistance acts
+    let Eeff = S.E;
+    if (S.R >= 35) {
+      Eeff = Math.max(0, S.E - (S.R - 25) * 0.3);
+      report('Output keeps landing just under the standard. Everywhere. At the same pace. Nobody is breaking a rule.');
+    }
+    if (S.R >= 45) { S.cash -= 4; report('Call-outs spiked again. Shifts go uncovered, and nobody can point to a policy being broken there either.'); }
+    if (S.R >= 55) { S.E = clamp(S.E - 2, 0, 100); report('The replacements keep failing out. The training manual is complete. The things that make the job actually work are not in it, and nobody is teaching them.'); }
+    if (S.wp.id === 'coffee' && has('smile') && S.R >= 40) { S.cash -= 5; report('The smiles have gone flat in a way customers can feel. The standard is being met to the letter.'); }
+    const gap = Eeff - S.C;
+    const profit = Math.round(8 + gap * 0.45 + (rnd() - 0.5) * 6);
+    S.cash += profit;
+    if (profit > 0) {
+      addPoints('Q' + S.q + ' results at ' + S.wp.company, 40 + profit * 2.5, 15);
+      report('The quarter closes ' + (gap >= 0 ? 'ahead of' : 'behind') + ' ' + S.wp.rival + '. The books show a profit.');
+    } else {
+      addPoints('Q' + S.q + ' losses', -30 + profit * 2, 15);
+      report('The quarter closes behind ' + S.wp.rival + '. The books show a loss, and ' + S.wp.boss + ' notices.');
+    }
+    [[50, 'Operations reached the industry standard'], [65, 'Operations passed the industry standard'], [80, 'Operations became the industry standard']].forEach(ms => {
+      if (S.E >= ms[0] && !S.usedEvents.includes('ms' + ms[0])) {
+        S.usedEvents.push('ms' + ms[0]);
+        addPoints(ms[1], 90 + ms[0], 30);
+      }
+    });
+    [[50, 'The workplace became partly self-governing'], [70, 'The workers now share real control']].forEach(ms => {
+      if (S.D >= ms[0] && !S.usedEvents.includes('dm' + ms[0])) {
+        S.usedEvents.push('dm' + ms[0]);
+        addPoints(ms[1], 80 + ms[0], 25);
+        report(ms[1] + '.');
+      }
+    });
+    // democracy pays in ways the books only half capture
+    if (S.D >= 50) {
+      S.H = clamp(S.H + 2, 0, 100);
+      S.E = clamp(S.E + 1.5, 0, 100);
+      if (rnd() < 0.5) { S.cash += 6; report('The floor keeps finding improvements nobody ordered, and flagging problems before they cost real money.'); }
+      if (S.D >= 65) S.M = clamp(S.M + 1, 0, 100);
+    }
+    if (S.adopted.filter(id => S.wp.policies.find(p => p.id === id).type === 'rational').length >= 3) S.H = clamp(S.H - 2, 0, 100);
+    if (S.H >= 55 && S.M < 40 && !S.usedEvents.includes('hegemony')) {
+      S.usedEvents.push('hegemony');
+      report('Engagement scores hit a record high this quarter. So did the number of people who describe their job the same way, in the same words.');
+      logMoment('Happiness stayed high while the humanity meter kept falling.', 'Ch. 9 · Hegemony');
+    }
+    // conflict boils over, unless democracy gives it somewhere to go
+    if (S.D >= 50 && S.R >= 55 && !S.settled) {
+      S.settled = true;
+      S.R = clamp(S.R - 25, 0, 100);
+      S.E = clamp(S.E - 6, 0, 100); S.H = clamp(S.H + 8, 0, 100); S.D += 5;
+      report('It nearly boiled over this quarter. Instead it went to the council, which forced a settlement you would not have offered. The place holds.');
+      logMoment('The council channeled a near revolt into a settlement.', 'Ch. 9 · Workplace democracy');
+    } else if (S.D < 50) {
+      if (S.R >= 36 && !S.warned) {
+        S.warned = true;
+        report('Something is building. People are angry, and they are talking to each other.');
+      } else if (S.warned && S.R >= 50) {
+        S.ending = 'revolt';
+      }
+    }
+    if (S.cash <= 0) S.ending = 'broke';
+  }
+
+  /* ============ RENDER ============ */
+  function meterColor(v) {
+    if (v > 60) return 'var(--status-good)';
+    if (v > 35) return 'var(--status-warning)';
+    if (v > 15) return 'var(--status-serious)';
+    return 'var(--status-critical)';
+  }
+
+  function metersHTML() {
+    return '<div class="meters fade-in">' +
+      '<div class="meter score"><div class="m-label">Score</div><div class="m-value">' + S.score + '</div><div class="m-bar"><div class="m-fill" style="width:' + clamp(S.score / 25, 0, 100) + '%;background:var(--series-1)"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Efficiency</div><div class="m-value">' + Math.round(S.E) + ' <span style="font-size:11px;color:var(--text-muted);font-weight:600">vs ' + Math.round(S.C) + '</span></div><div class="m-bar"><div class="m-fill" style="width:' + S.E + '%;background:var(--series-2)"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Cash</div><div class="m-value">' + Math.max(0, Math.round(S.cash)) + '</div><div class="m-bar"><div class="m-fill" style="width:' + clamp(S.cash, 0, 100) + '%;background:' + meterColor(S.cash) + '"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Happiness</div><div class="m-value">' + Math.round(S.H) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.H + '%;background:' + meterColor(S.H) + '"></div></div></div>' +
+      '<div class="meter humanity"><div class="m-label">Humanity</div><div class="m-value">' + Math.round(S.M) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.M + '%;background:' + meterColor(S.M) + '"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Democracy</div><div class="m-value">' + Math.round(S.D) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.D + '%;background:var(--series-1)"></div></div></div>' +
+      '<div class="meter"><div class="m-label">Resistance</div><div class="m-value">' + Math.round(S.R) + '</div><div class="m-bar"><div class="m-fill" style="width:' + S.R + '%;background:' + meterColor(100 - S.R) + '"></div></div></div>' +
+      '</div>';
+  }
+
+  /* ============ SCREENS ============ */
+  function showSetup() {
+    screen.innerHTML =
+      '<div class="card fade-in">' +
+      '<div class="kicker">Chapter 9 · Organizations</div>' +
+      '<div class="big">Can you run a company without hollowing out the people in it?</div>' +
+      '<p class="body-text" style="margin-top:8px">Your team is management for two business years, eight quarters. Each quarter brings situations from above, pushback from the floor, a program to keep people on board, and a policy decision. Policies can be adopted, and later repealed. A bigger, faster, cheaper competitor is coming for your customers the whole time.</p>' +
+      '<p class="body-text">Watch three meters closely. <strong>Happiness</strong> is how your people feel. <strong>Humanity</strong> is how much of themselves they still bring to work: their judgment, their craft, their own way of doing things. <strong>Democracy</strong> is how much real say they have in how the place runs. And <strong>Resistance</strong> is what the floor does when feeling has nowhere official to go: the pace slows, the call-outs spike, the tricks of the trade stop getting taught. The meters can come apart in every direction.</p>' +
+      '<div class="rules-box"><strong>Scoring</strong><br>' +
+      'Some choices will cost you points and some will win you points. Use what you know about how organizations actually work. Highest score in the class wins the prize.</div>' +
+      '<p class="body-text"><strong>Pick your company.</strong></p>' +
+      '<div class="cause-grid">' + WORKPLACES.map((w, i) =>
+        '<button class="cause-btn" data-ci="' + i + '" aria-pressed="false"><div class="c-name">' + w.company + ' <span style="font-weight:600;font-size:12px;color:var(--text-muted)">(' + w.tag + ')</span></div><div class="c-desc">' + w.desc + '</div></button>').join('') + '</div>' +
+      '<div class="kicker" style="margin-top:6px">Team name for the record</div>' +
+      '<input type="text" id="teamName" maxlength="40" placeholder="e.g., Group 3, New Management">' +
+      '<div class="decide"><button class="btn primary" id="startBtn" disabled>Take over the company</button></div>' +
+      '</div>';
+    let chosen = null;
+    document.querySelectorAll('.cause-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.cause-btn').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      chosen = parseInt(b.dataset.ci, 10);
+      $('startBtn').disabled = false;
+    }));
+    $('startBtn').addEventListener('click', () => {
+      newGame($('teamName').value.trim(), chosen);
+      showQuarter();
+    });
+  }
+
+  function pickEvents() {
+    const avail = EVENTS.filter(e => !S.usedEvents.includes(e.id) && (!e.wp || e.wp === S.wp.id) && e.when());
+    const sits = avail.filter(e => e.kind === 'situation');
+    const floors = avail.filter(e => e.kind === 'floor');
+    let sit = (sits.length && rnd() < 0.75) ? pick(sits) : null;
+    let flo = (floors.length && rnd() < 0.75) ? pick(floors) : null;
+    if (!sit && !flo && avail.length) {
+      const e = pick(avail);
+      if (e.kind === 'floor') flo = e; else sit = e;
+    }
+    if (sit) S.usedEvents.push(sit.id);
+    if (flo) S.usedEvents.push(flo.id);
+    return [sit, flo].filter(Boolean);
+  }
+
+  function eventBlockHTML(ev, idx) {
+    const cls = ev.kind === 'floor' ? 'event floor' : 'event';
+    const tag = ev.kind === 'floor' ? 'From the floor · ' + ev.tag : ev.tag;
+    if (ev.choices) {
+      return '<div class="' + cls + '" data-ev="' + idx + '"><div class="e-tag">' + tag + '</div><div class="e-text">' + ev.text() + '</div>' +
+        '<div class="choice-opts">' + ev.choices().map((c, i) =>
+          '<button class="choice-btn" data-ev="' + idx + '" data-choice="' + i + '">' + c.label + '</button>').join('') + '</div></div>';
+    }
+    return '<div class="' + cls + '"><div class="e-tag">' + tag + '</div><div class="e-text">' + ev.auto() + '</div></div>';
+  }
+
+  function showQuarter() {
+    if (S.q > QUARTERS) { endGame(); return; }
+    S.roundPoints = 0;
+    reportLines = [];
+    const evs = pickEvents();
+    S.currentEvents = evs;
+    S.pendingChoices = evs.filter(e => e.choices).length;
+    S.chosenProgram = null;
+
+    const evHTML = evs.map((e, i) => eventBlockHTML(e, i)).join('');
+
+    // programs: shared pool + workplace genuine program, 3 shown, usually one genuine
+    const pool = PROGRAMS_SHARED.concat([PROGRAMS_WP[S.wp.id]]);
+    const opts = [];
+    if (rnd() < 0.7) {
+      const genuine = pool.filter(p => p.genuine);
+      const g = pick(genuine);
+      opts.push(g); pool.splice(pool.indexOf(g), 1);
+    }
+    while (opts.length < 3) {
+      const p = pool.splice(Math.floor(rnd() * pool.length), 1)[0];
+      if (!opts.includes(p)) opts.push(p);
+    }
+    S.programOptions = opts;
+    const progHTML = '<div class="event prog"><div class="e-tag">This quarter’s program for the ' + S.wp.workers + '</div>' +
+      '<div class="e-text">How do you keep people on board this quarter?</div>' +
+      '<div class="choice-opts">' + opts.map((p, i) =>
+        '<button class="choice-btn frame-btn" data-frame="' + i + '"><strong>' + p.name + '</strong><br><span style="font-weight:500;font-size:12.5px;color:var(--text-muted)">' + p.desc + '</span></button>').join('') + '</div></div>';
+
+    // policy board
+    const kindWord = { rational: 'Standardize', human: 'Protect', demo: 'Share power' };
+    const available = S.wp.policies.filter(p => !has(p.id));
+    const boardHTML =
+      '<div class="board-label">The policy board. Adopt one, repeal one, or hold.</div>' +
+      '<div class="tactics">' +
+      available.map(p => {
+        const blocked = (p.conflicts || []).some(c => has(c));
+        const blocker = blocked ? S.wp.policies.find(x => x.id === (p.conflicts || []).find(c => has(c))) : null;
+        return '<button class="tactic" data-t="' + p.id + '"' + (blocked ? ' disabled' : '') + '>' +
+          '<div class="t-kind k-' + p.type + '">' + kindWord[p.type] + '</div>' +
+          '<div class="t-name">' + p.name + '</div><div class="t-desc">' + p.desc + (blocked ? ' Conflicts with ' + blocker.name.toLowerCase() + ', now in place.' : '') + '</div></button>';
+      }).join('') +
+      S.adopted.map(id => {
+        const p = S.wp.policies.find(x => x.id === id);
+        return '<button class="tactic" data-r="' + p.id + '">' +
+          '<div class="t-kind k-' + p.type + '">Repeal</div>' +
+          '<div class="t-name">' + p.name + '</div><div class="t-desc">In place now. Spend the quarter taking it back out.</div></button>';
+      }).join('') +
+      '<button class="tactic" data-t="none"><div class="t-kind">Hold</div><div class="t-name">No policy change</div><div class="t-desc">The floor gets some room, and the competitor gets some ground.</div></button>' +
+      '</div>';
+
+    screen.innerHTML = metersHTML() +
+      '<div class="card fade-in">' +
+      '<div class="kicker">Quarter ' + S.q + ' of ' + QUARTERS + ' · ' + S.wp.company + '</div>' +
+      '<div class="big">' + (S.E < S.C ? S.wp.rival + ' is running leaner than you.' : 'You are running leaner than ' + S.wp.rival + ', for now.') + '</div>' +
+      evHTML + progHTML + boardHTML +
+      '<div class="tactic-note" id="tacticNote">' + (S.pendingChoices ? 'Answer what is in front of you, pick a program, then make the policy call.' : 'Pick a program, then make the policy call.') + '</div>' +
+      '</div>';
+
+    // event choice handlers
+    evs.forEach((ev, idx) => {
+      if (!ev.choices) return;
+      const choices = ev.choices();
+      document.querySelectorAll('.choice-btn[data-ev="' + idx + '"]').forEach(b => b.addEventListener('click', () => {
+        if (b.disabled) return;
+        document.querySelectorAll('.choice-btn[data-ev="' + idx + '"]').forEach(x => { x.setAttribute('aria-pressed', 'false'); x.disabled = true; });
+        b.setAttribute('aria-pressed', 'true');
+        choices[parseInt(b.dataset.choice, 10)].effect();
+        S.pendingChoices -= 1;
+        if (S.ending) { endGame(); return; }
+        $('tacticNote').textContent = S.pendingChoices ? 'One more to answer above.' : (S.chosenProgram ? 'Now make the policy call.' : 'Now pick a program, then make the policy call.');
+      }));
+    });
+
+    document.querySelectorAll('.frame-btn').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('.frame-btn').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+      S.chosenProgram = S.programOptions[parseInt(b.dataset.frame, 10)];
+      if (!S.pendingChoices) $('tacticNote').textContent = 'Program picked. Now make the policy call.';
+    }));
+
+    document.querySelectorAll('.tactic').forEach(b => b.addEventListener('click', () => {
+      if (S.pendingChoices) { $('tacticNote').textContent = 'The situations above need answers first.'; return; }
+      if (!S.chosenProgram) { $('tacticNote').textContent = 'Pick this quarter’s program first.'; return; }
+      resolveQuarter(b.dataset.t || null, b.dataset.r || null);
+    }));
+  }
+
+  function resolveQuarter(implementId, revertId) {
+    applyProgram(S.chosenProgram);
+    let title;
+    if (revertId) {
+      revertPolicy(S.wp.policies.find(p => p.id === revertId));
+      title = 'A policy came back out.';
+    } else if (implementId && implementId !== 'none') {
+      applyPolicy(S.wp.policies.find(p => p.id === implementId));
+      title = 'A new policy is in place.';
+    } else {
+      S.E = clamp(S.E - 2, 0, 100);
+      S.H = clamp(S.H + 2, 0, 100);
+      report('No policy change this quarter. The floor breathes. ' + S.wp.rival + ' does not.');
+      title = 'No policy change this quarter.';
+    }
+    quarterClose();
+
+    if (S.ending) { endGame(); return; }
+
+    const delta = S.roundPoints;
+    const deltaHTML = delta === 0 ? '' :
+      '<div class="score-delta ' + (delta > 0 ? 'up' : 'down') + '">' + (delta > 0 ? '+' : '−') + Math.abs(delta) + ' points</div>';
+
+    const qLabel = 'Quarter ' + S.q;
+    S.q += 1;
+    screen.innerHTML = metersHTML() +
+      '<div class="card ' + (delta < 0 ? 'outcome-warn' : 'outcome-good') + ' fade-in">' +
+      '<div class="kicker">' + qLabel + ' · the quarter in review</div>' +
+      '<div class="big">' + title + '</div>' +
+      deltaHTML +
+      '<ul class="report-lines">' + reportLines.map(l => '<li>' + l + '</li>').join('') + '</ul>' +
+      '<div class="decide"><button class="btn primary" id="nextBtn">' + (S.q > QUARTERS ? 'See the final review' : 'Next quarter') + ' →</button></div>' +
+      '</div>';
+    $('nextBtn').addEventListener('click', showQuarter);
+  }
+
+  /* ============ ENDGAME ============ */
+  function computeEnding() {
+    if (S.ending === 'revolt') return 'revolt';
+    if (S.ending === 'broke') return 'broke';
+    if (S.D >= 55 && S.M >= 50 && S.cash >= 30) return 'demos';
+    if (S.M < 30 && S.E >= 65 && (S.coercionCount >= 1 || S.H >= 55 || S.darkUsed.length >= 2) && S.R < 55) return 'cage';
+    if (S.M >= 55 && S.cash >= 45) return 'humane';
+    return 'middle';
+  }
+
+  function endGame() {
+    const ending = computeEnding();
+    S.over = true;
+    const posSum = S.ledger.filter(e => e.amount > 0).reduce((a, e) => a + e.amount, 0);
+    if (S.M >= 55) addPoints('The humanity settlement: your people stayed whole', 150 + S.M, 40);
+    else {
+      const frac = ((55 - S.M) / 55) * 0.5;
+      addPoints(S.M >= 30 ? 'The humanity settlement: something was lost' : 'The humanity settlement: what was hollowed out', -(Math.round(posSum * frac) + 30), 40);
+    }
+    if (S.D >= 55) addPoints('The democracy dividend: they run it with you', 150 + 2 * S.D, 40);
+    else if (S.D >= 40) addPoints('The democracy dividend: they had some say', 60, 20);
+    if (ending === 'cage') addPoints('The machine runs on its own now', 180, 40);
+    if (ending === 'humane') addPoints('Still profitable, still human', 180, 40);
+    if (ending === 'demos') addPoints('A company its workers help govern', 300, 50);
+    if (ending === 'broke') addPoints('The company went under', -250, 50);
+    if (ending === 'revolt') addPoints('The workforce walked', -200, 50);
+    showEnding(ending);
+  }
+
+  function showEnding(ending) {
+    let headline, lede;
+    const w = S.wp;
+    if (ending === 'cage') {
+      headline = 'The machine works';
+      lede = 'Efficiency ' + Math.round(S.E) + '. ' + w.rival + ' is matching your prices instead of the other way around. Happiness sits at ' + Math.round(S.H) + ' and the humanity meter sits at ' + Math.round(S.M) + '. The ' + w.workers + ' hit their numbers, say the right things in surveys, and go home. ' + (S.coercionCount >= 2 && S.H < 55 ? 'They comply because the cost of not complying was made clear. Sociologists call that a despotic regime.' : 'They comply because they mostly feel fine about it. Sociologists call that a hegemonic regime, and it is the more durable of the two.') + ' The company you were hired to save is gone. The company that replaced it is doing fine. Was this winning?';
+    } else if (ending === 'demos') {
+      headline = 'A different kind of company';
+      lede = 'You made it through both years with democracy at ' + Math.round(S.D) + ' and humanity at ' + Math.round(S.M) + '. The ' + w.workers + ' vote on policies that affect them, see the real numbers, and catch problems before the dashboards do. It is slower some quarters and louder in every meeting. Almost no company is run this way. After two years inside one, why do you think that is?';
+    } else if (ending === 'humane') {
+      headline = 'Still standing, still human';
+      lede = 'You made it through both years against ' + w.rival + ' with the humanity meter at ' + Math.round(S.M) + '. It cost you efficiency, some quarters it cost you money, and every quarter it cost you the easier option. The ' + w.workers + ' still argue with you, still do things their own way, and still stay. What did you refuse to standardize, and why those things?';
+    } else if (ending === 'broke') {
+      headline = 'Out of business';
+      lede = 'The money ran out. ' + w.rival + ' takes the customers, and some of your ' + w.workers + ' too. They will be trained on the standard system in two weeks. The market did not ask how your workplace felt. Was there a version of this company that stays human and stays open?';
+    } else if (ending === 'revolt') {
+      headline = 'They walked';
+      lede = w.flavor.revoltWord + '. ' + (S.M >= 35
+        ? 'It happened because your people were miserable and still had enough of themselves left to do something about it. That second part is worth sitting with.'
+        : 'It happened because your people were miserable and someone had kept them organized enough to act together, even after the work stopped asking for their selves.')
+        + ' What would this ending have looked like two years further down the road you were on?';
+    } else {
+      headline = 'Still standing';
+      lede = 'Two years done. Efficiency ' + Math.round(S.E) + ' against ' + w.rival + ' at ' + Math.round(S.C) + ', happiness at ' + Math.round(S.H) + ', humanity at ' + Math.round(S.M) + ', democracy at ' + Math.round(S.D) + '. Not the machine, not the humane survivor, something in between. Which direction were you drifting, and would another two years have settled it?';
+    }
+
+    let ledgerRows = '';
+    S.ledger.forEach(en => {
+      const pos = en.amount >= 0;
+      ledgerRows += '<tr><td>' + en.label + '</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:' + (pos ? 'var(--status-good)' : 'var(--status-critical)') + '">' + (pos ? '+' : '−') + Math.abs(en.amount) + '</td></tr>';
+    });
+
+    let timelineRows = '';
+    S.timeline.forEach(t => {
+      timelineRows += '<tr><td style="white-space:nowrap">Q' + t.q + '</td><td>' + t.text + '</td><td>' + (t.concept ? '<span class="concept-tag">' + t.concept + '</span>' : '') + '</td></tr>';
+    });
+
+    const darkRows = S.darkUsed.length
+      ? '<p class="body-text" style="margin-top:10px"><strong>From the record:</strong> ' + S.darkUsed.join('. ') + '.</p>'
+      : '';
+
+    const gapNote = (S.H - S.M >= 20)
+      ? '<p class="body-text" style="margin-top:10px"><strong>The gap.</strong> Happiness finished at ' + Math.round(S.H) + ' and humanity finished at ' + Math.round(S.M) + '. Your people felt fine about work that asked less and less of who they are. Sociologists have names for that arrangement. Gramsci called the broad version hegemony, consent manufactured so well that nobody needs to be forced. What would it take for someone inside it to notice?</p>'
+      : '';
+
+    screen.innerHTML =
+      '<div class="card fade-in ' + (ending === 'humane' || ending === 'demos' ? 'outcome-good' : ending === 'cage' || ending === 'middle' ? 'outcome-warn' : 'outcome-bad') + '">' +
+      '<div class="kicker">The final review · ' + w.company + '</div>' +
+      '<div class="big">' + headline + '</div>' +
+      '<p class="body-text" style="margin-top:8px">' + lede + '</p>' +
+      darkRows +
+      '<div class="kicker" style="margin-top:12px">On the record: ' + S.team + '</div>' +
+      '<div class="kicker" style="margin-top:12px">The accounting</div>' +
+      '<table class="log-table"><thead><tr><th>What happened</th><th style="text-align:right">Points</th></tr></thead><tbody>' + ledgerRows + '</tbody></table>' +
+      '<div class="kicker" style="margin-top:14px">Final score</div><div class="final-score">' + S.score + ' points</div>' +
+      '<p class="body-text" style="font-size:13.5px">Report this number for the class board.</p>' +
+      '</div>' +
+      '<div class="card fade-in">' +
+      '<div class="kicker">Two years, quarter by quarter</div>' +
+      '<table class="log-table"><tbody>' + timelineRows + '</tbody></table>' +
+      gapNote +
+      '</div>' +
+      '<div class="card fade-in"><div class="kicker">Talk about it</div><ul class="concepts">' +
+      '<li>Where is the line between a happy workplace and a compliant one? How would a person inside tell the difference?</li>' +
+      '<li>Every standard you adopted was reasonable on its own. At what point did the sum become something none of you would have chosen at the start?</li>' +
+      '<li>Your workers could see problems your dashboards could not. What does that say about who should have a say in how work is organized?</li>' +
+      '<li>When does a job stop asking for your work and start asking for your self? Who pays more of that cost, the ' + WORKPLACES[0].workers + ' or the ' + WORKPLACES[1].workers + '?</li>' +
+      '<li>Some of your programs made people happier while making them less free. If they would have chosen those programs themselves, is that consent?</li>' +
+      '<li>Your workers slowed the pace together, covered for each other, and stopped teaching the system their tricks. Taylor was fighting the same tactics in 1900. Why does resistance like this never go away?</li>' +
+      '<li>What made sharing power feel risky? Who was it actually risky for?</li>' +
+      '<li>Ritzer argues the fast-food formula is spreading through everything. Where has it reached in your own life, and what did it replace?</li>' +
+      '</ul>' +
+      '<div class="decide"><button class="btn primary" id="againBtn">Run the other company</button></div>' +
+      '</div>';
+    $('againBtn').addEventListener('click', showSetup);
+  }
+
+  /* ============ THEME + BOOT ============ */
+  const themeBtn = $('themeBtn');
+  function applyTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+  }
+  let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(isDark);
+  themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+  showSetup();
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

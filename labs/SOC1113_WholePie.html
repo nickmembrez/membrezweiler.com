@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Whole Pie, Guessed First · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 190px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 8ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 6ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .pickbtn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .pickbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+  .pickbtn:disabled { opacity: 0.55; cursor: default; }
+  .pickbtn.picked { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+  .picktag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warn); color: #fff; margin-left: 8px; vertical-align: 2px; }
+
+  .mythblock { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+  .mythblock:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Whole Pie, Guessed First <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Labeling theory makes a testable prediction: who ends up counted as a criminal is patterned by power, not just by acts.</strong> This page holds the American incarceration data behind that test, from the Prison Policy Initiative's Whole Pie report and the Bureau of Justice Statistics. The numbers are hidden until you commit a guess, because the gap between what you assume and what is measured is the day's lesson. Most people's picture of this system comes from television. The data disagree with television on almost every count.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ THE COUNT ============ -->
+    <div class="section active" id="sec-count">
+      <div class="card">
+        <h2>How many people are locked up in the United States?</h2>
+        <p class="lede">On any given day, counting every kind of confinement: state and federal prisons, local jails, youth facilities, immigration detention, and involuntary commitment.</p>
+        <div class="guessbox" id="countBox">
+          <div class="gq">Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="countSlider" min="100000" max="4000000" value="1000000" step="50000">
+            <span class="gval" id="countSliderVal">1.0M</span>
+            <button class="gbtn" id="countLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="countVerdict"></div>
+        </div>
+        <div class="veiled" id="countReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">1.9M+</div><div class="l">people incarcerated on a given day (Prison Policy Initiative, Whole Pie 2025)</div></div>
+            <div class="stat"><div class="v">7M+</div><div class="l">times people went to jail in 2022. Admissions, not unique people: the door revolves.</div></div>
+            <div class="stat"><div class="v">2.9M / 671K</div><div class="l">on probation / on parole, supervised but not confined</div></div>
+          </div>
+          <div class="teach"><strong>Scale check:</strong> 1.9 million is roughly the population of Nebraska held in confinement on an ordinary Tuesday. Add probation and parole and the total under correctional control passes five million, which is arithmetic on the figures above, not a separate measurement. No other democracy is close to this scale per person. Whatever theory of deviance you hold has to explain this number first.</div>
+          <p class="srcnote">Sources: Prison Policy Initiative, Mass Incarceration: The Whole Pie 2025 (March 2025). Jail admissions and probation and parole figures as reported there.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ WHERE ============ -->
+    <div class="section" id="sec-where">
+      <div class="card">
+        <h2>Where are they held?</h2>
+        <p class="lede">Crime shows are about federal agents and federal prison. Before the chart appears, make a call: which system actually holds the most people? The options are alphabetical.</p>
+        <div class="guessbox" id="whereBox">
+          <div class="gq">Which system holds the most people?</div>
+          <div class="pickrow" id="whereRow"></div>
+          <div class="verdict" id="whereVerdict"></div>
+        </div>
+        <div class="veiled" id="whereReveal">
+          <h3 style="margin-top:14px">People held, by system</h3>
+          <div class="bars" id="whereBars"></div>
+          <div class="statrow">
+            <div class="stat"><div class="v">3,116</div><div class="l">local jails in the United States, against 98 federal prisons</div></div>
+            <div class="stat ok"><div class="v">state + local</div><div class="l">is where mass incarceration actually lives. The federal system everyone watches on television holds roughly 1 in 12 of the total, which is arithmetic on the rows above.</div></div>
+          </div>
+          <div class="teach"><strong>Why this matters for labeling:</strong> the labels are mostly applied close to home, by state legislatures, county prosecutors, and local police, not by the FBI. If you want to know who gets labeled in America, watch a county courthouse, not a federal courtroom drama.</div>
+          <p class="srcnote">Sources: state prisons 1,097,597 and federal prisons 156,627 at yearend 2023 (Bureau of Justice Statistics, Prisoners in 2023). Local jails 664,200 at midyear 2023 (BJS, Jail Inmates in 2023). ICE detention 44,000, confined youth 34,200, involuntary commitment 25,000 (Prison Policy Initiative, Whole Pie 2025). Reference dates differ by source and the pie has smaller slices not shown here, so the rows are close counts, not one synchronized census.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THREE MYTHS ============ -->
+    <div class="section" id="sec-myths">
+      <div class="card">
+        <h2>Three numbers most people get wrong</h2>
+        <p class="lede">Guess each one before it shows. These three carry most of the myths about the system.</p>
+
+        <div class="mythblock">
+          <h3>What share of incarcerated people are held in private, for-profit prisons?</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="privSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="privSliderVal">50%</span>
+              <button class="gbtn" id="privLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="privVerdict"></div>
+          </div>
+          <div class="veiled" id="privReveal">
+            <div class="bars">
+              <div class="brow"><span class="blabel">held in private prisons</span><div class="btrack"><div class="bfill warn" style="width:8%"></div></div><span class="bval">8%</span></div>
+              <div class="brow"><span class="blabel">held in public facilities</span><div class="btrack"><div class="bfill" style="width:92%"></div></div><span class="bval">92%</span></div>
+              <div class="brow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="privGuessFill" style="width:0%"></div></div><span class="bval" id="privGuessVal"></span></div>
+            </div>
+            <div class="teach">The system is overwhelmingly public. Abolishing every private prison tomorrow would leave 92% of mass incarceration untouched. Whatever drives the scale, it is not primarily corporate profit from owning prisons.</div>
+          </div>
+        </div>
+
+        <div class="mythblock">
+          <h3>What share are locked up for drug offenses?</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="drugSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="drugSliderVal">50%</span>
+              <button class="gbtn" id="drugLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="drugVerdict"></div>
+          </div>
+          <div class="veiled" id="drugReveal">
+            <div class="bars">
+              <div class="brow"><span class="blabel">drug offenses</span><div class="btrack"><div class="bfill warn" style="width:20%"></div></div><span class="bval">~1 in 5</span></div>
+              <div class="brow"><span class="blabel">everything else</span><div class="btrack"><div class="bfill" style="width:80%"></div></div><span class="bval">~4 in 5</span></div>
+              <div class="brow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="drugGuessFill" style="width:0%"></div></div><span class="bval" id="drugGuessVal"></span></div>
+            </div>
+            <div class="teach">Over 360,000 people, roughly one in five. Large enough that the drug war matters, small enough that ending it alone would not end mass incarceration. The system is bigger than any one label.</div>
+          </div>
+        </div>
+
+        <div class="mythblock">
+          <h3>What share of people in local jails have not been convicted of the charge they are held on?</h3>
+          <div class="guessbox">
+            <div class="gr">
+              <input type="range" id="pretrialSlider" min="0" max="100" value="50" step="1">
+              <span class="gval" id="pretrialSliderVal">50%</span>
+              <button class="gbtn" id="pretrialLock" type="button">Lock it in</button>
+            </div>
+            <div class="verdict" id="pretrialVerdict"></div>
+          </div>
+          <div class="veiled" id="pretrialReveal">
+            <div class="bars">
+              <div class="brow"><span class="blabel">unconvicted</span><div class="btrack"><div class="bfill warn" style="width:70%"></div></div><span class="bval">70%</span></div>
+              <div class="brow"><span class="blabel">convicted</span><div class="btrack"><div class="bfill" style="width:30%"></div></div><span class="bval">30%</span></div>
+              <div class="brow"><span class="blabel">your guess</span><div class="btrack"><div class="bfill ghost" id="pretrialGuessFill" style="width:0%"></div></div><span class="bval" id="pretrialGuessVal"></span></div>
+            </div>
+            <div class="teach">467,600 people, mostly held because they cannot pay bail, and all of the net growth in jail populations since 1997 has come from this unconvicted group. Labeling theory in one number: jail time arrives before any verdict does, which means the label does not wait for the act to be proven.</div>
+          </div>
+        </div>
+        <p class="srcnote">Sources: private prisons 8% and drug offenses over 360,000 (Prison Policy Initiative, Whole Pie 2025). Jail unconvicted share 70% (467,600) at midyear 2023 (BJS, Jail Inmates in 2023).</p>
+      </div>
+    </div>
+
+    <!-- ============ WHO GETS LABELED ============ -->
+    <div class="section" id="sec-who">
+      <div class="card">
+        <h2>Who gets labeled</h2>
+        <p class="lede">Here is the test the whole page has been building to. If deviance were only about acts, the people behind bars would roughly resemble the country. Labeling theory predicts they will not, because the power to label is not evenly distributed. This one is not a guessing game. When you are ready, show the data.</p>
+        <div class="guessbox">
+          <div class="gr">
+            <button class="gbtn" id="whoShow" type="button">Show the data</button>
+          </div>
+        </div>
+        <div class="veiled" id="whoReveal">
+          <h3 style="margin-top:14px">Black Americans as a share of...</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">all U.S. residents</span><div class="btrack"><div class="bfill" style="width:14%"></div></div><span class="bval">14%</span></div>
+            <div class="brow"><span class="blabel">the prison and jail population</span><div class="btrack"><div class="bfill warn" style="width:41%"></div></div><span class="bval">41%</span></div>
+          </div>
+          <div class="teach"><strong>Reading the gap sociologically:</strong> a three-fold overrepresentation is not explained by differences in behavior. Decades of research find the gap opens at every discretionary step: who gets stopped, searched, charged, offered a plea, and sentenced to what. Each step is a labeling decision made by someone with the power to make it. Compare the other direction too: corporate fraud costs far more than street theft and almost never produces a prison label or a master status. The system does not just punish deviance. It selects which deviance, and whose, will count.</div>
+          <div class="teach"><strong>Keep the claim precise.</strong> This is a structural claim about how a system sorts, not a claim about any individual case, officer, or judge. That is exactly the kind of claim sociology exists to test, and the data above are how you test it.</div>
+          <p class="srcnote">Source: Prison Policy Initiative, Mass Incarceration: The Whole Pie 2025: Black Americans are 41% of the prison and jail population and 14% of U.S. residents. The white-collar comparison is Sutherland's, developed in the readings.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS ============ -->
+    <div class="section" id="sec-questions">
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Which of your guesses missed by the most, and in which direction? What had put that wrong number in your head?</li>
+          <li>Most incarceration is state and local, yet most crime stories on screen are federal. What does that gap do to the public's picture of who the deviants are?</li>
+          <li>70% of people in jail are unconvicted. Run that fact through labeling theory: what does pretrial detention do to a person's job, housing, family, and plea decision before any trial happens?</li>
+          <li>Use Merton, Sutherland, Hirschi, and Becker on the 41% versus 14% gap. Which theories can explain it, which cannot, and what does that tell you about the theories?</li>
+          <li>If private prisons hold 8% and drug offenses are one in five, two popular one-cause stories of mass incarceration are too small to carry it. What would a sociological explanation have to include instead?</li>
+          <li>Name one number from this page you want to see for your own county, and where you would look for it.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Prison Policy Initiative, Mass Incarceration: The Whole Pie 2025 (March 2025): total incarcerated more than 1.9 million, jail admissions over 7 million in 2022, probation 2.9 million and parole 671,000, private prisons 8%, drug offenses over 360,000, ICE detention 44,000, confined youth 34,200, involuntary commitment 25,000, facility counts, and the 41% / 14% figures. Bureau of Justice Statistics: Prisoners in 2023 (state 1,097,597, federal 156,627 at yearend 2023) and Jail Inmates in 2023 (local jails 664,200 at midyear 2023, 70% unconvicted). Reference dates differ across sources and rows are labeled accordingly. The five-million figure is stated arithmetic on published numbers. Your guesses stay on this page and are not recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TABS = [
+  { id: 'sec-count', label: 'The count' },
+  { id: 'sec-where', label: 'Where' },
+  { id: 'sec-myths', label: 'Three myths' },
+  { id: 'sec-who', label: 'Who gets labeled' },
+  { id: 'sec-questions', label: 'Questions' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// ---- The count: guess the total. ----
+const countSlider = document.getElementById('countSlider');
+const countSliderVal = document.getElementById('countSliderVal');
+const countLockBtn = document.getElementById('countLock');
+const fmtM = v => (v / 1000000).toFixed(1).replace(/\.0$/, '') + (v >= 1000000 ? 'M' : 'M');
+function fmtCount(v) {
+  if (v >= 1000000) return (v / 1000000).toFixed(1).replace(/\.0M?$/, '') + ' million';
+  return Math.round(v / 1000) + ',000';
+}
+countSlider.addEventListener('input', () => { countSliderVal.textContent = (countSlider.value / 1000000).toFixed(2).replace(/0$/, '') + 'M'; });
+function lockCount(valOverride) {
+  if (countLockBtn.disabled) return;
+  const guess = valOverride == null ? +countSlider.value : valOverride;
+  countLockBtn.disabled = true;
+  countSlider.disabled = true;
+  const ACTUAL = 1900000;
+  let msg;
+  const diff = guess - ACTUAL;
+  if (Math.abs(diff) <= 100000) msg = 'You guessed ' + fmtCount(guess) + '. The published figure is more than 1.9 million. Very close.';
+  else if (diff > 0) msg = 'You guessed ' + fmtCount(guess) + '. The published figure is more than 1.9 million. You were about ' + fmtCount(Math.abs(diff)) + ' high.';
+  else msg = 'You guessed ' + fmtCount(guess) + '. The published figure is more than 1.9 million. You were about ' + fmtCount(Math.abs(diff)) + ' low.';
+  document.getElementById('countVerdict').textContent = msg;
+  document.getElementById('countReveal').classList.remove('veiled');
+}
+countLockBtn.addEventListener('click', () => lockCount());
+
+// ---- Where: pick the biggest system. Bars scaled to the largest. ----
+const SYSTEMS = [
+  { name: 'State prisons', n: 1097597, disp: '1,097,597' },
+  { name: 'Local jails', n: 664200, disp: '664,200' },
+  { name: 'Federal prisons', n: 156627, disp: '156,627' },
+  { name: 'Immigration detention', n: 44000, disp: '44,000' },
+  { name: 'Youth facilities', n: 34200, disp: '34,200' },
+  { name: 'Involuntary commitment', n: 25000, disp: '25,000' },
+];
+const PICKABLE = ['Federal prisons', 'Immigration detention', 'Local jails', 'State prisons', 'Youth facilities'];
+const whereRow = document.getElementById('whereRow');
+let wherePicked = null;
+PICKABLE.forEach(name => {
+  const b = document.createElement('button');
+  b.className = 'pickbtn'; b.type = 'button';
+  b.textContent = name;
+  b.addEventListener('click', () => pickWhere(name));
+  whereRow.appendChild(b);
+});
+function pickWhere(name) {
+  if (wherePicked) return;
+  wherePicked = name;
+  whereRow.querySelectorAll('.pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === name) b.classList.add('picked');
+  });
+  const bars = document.getElementById('whereBars');
+  const max = SYSTEMS[0].n;
+  SYSTEMS.forEach(sys => {
+    const row = document.createElement('div');
+    row.className = 'brow';
+    const w = Math.max(0.6, sys.n / max * 100);
+    const tag = sys.name === name ? '<span class="picktag">your pick</span>' : '';
+    row.innerHTML = '<span class="blabel">' + sys.name + '</span><div class="btrack"><div class="bfill' + (sys.name === 'State prisons' ? ' warn' : '') + '" style="width:' + w.toFixed(1) + '%"></div></div><span class="bval">' + sys.disp + '</span>' + (tag ? '<span style="flex-shrink:0">' + tag + '</span>' : '');
+    bars.appendChild(row);
+  });
+  const verdict = document.getElementById('whereVerdict');
+  verdict.textContent = name === 'State prisons'
+    ? 'Right. State prisons hold the most by far, about 1.1 million people.'
+    : 'You picked ' + name.toLowerCase() + '. State prisons hold the most by far, about 1.1 million people.';
+  document.getElementById('whereReveal').classList.remove('veiled');
+}
+
+// ---- Three myths: three independent guess sliders. ----
+function setupMyth(cfg) {
+  const slider = document.getElementById(cfg.slider);
+  const sliderVal = document.getElementById(cfg.sliderVal);
+  const lockBtn = document.getElementById(cfg.lock);
+  slider.addEventListener('input', () => { sliderVal.textContent = slider.value + '%'; });
+  function lock(valOverride) {
+    if (lockBtn.disabled) return;
+    const guess = valOverride == null ? +slider.value : valOverride;
+    lockBtn.disabled = true;
+    slider.disabled = true;
+    sliderVal.textContent = guess + '%';
+    document.getElementById(cfg.guessFill).style.width = guess + '%';
+    document.getElementById(cfg.guessVal).textContent = guess + '%';
+    const diff = guess - cfg.actual;
+    let msg;
+    if (diff === 0) msg = 'Exactly right: ' + cfg.actualText + '.';
+    else msg = 'You guessed ' + guess + '%. The published figure is ' + cfg.actualText + '. You were ' + Math.abs(diff) + ' ' + (Math.abs(diff) === 1 ? 'point' : 'points') + ' ' + (diff > 0 ? 'high' : 'low') + '.';
+    document.getElementById(cfg.verdict).textContent = msg;
+    document.getElementById(cfg.reveal).classList.remove('veiled');
+  }
+  lockBtn.addEventListener('click', () => lock());
+  return lock;
+}
+const lockPrivate = setupMyth({
+  slider: 'privSlider', sliderVal: 'privSliderVal', lock: 'privLock',
+  guessFill: 'privGuessFill', guessVal: 'privGuessVal', verdict: 'privVerdict',
+  reveal: 'privReveal', actual: 8, actualText: '8%',
+});
+const lockDrugs = setupMyth({
+  slider: 'drugSlider', sliderVal: 'drugSliderVal', lock: 'drugLock',
+  guessFill: 'drugGuessFill', guessVal: 'drugGuessVal', verdict: 'drugVerdict',
+  reveal: 'drugReveal', actual: 20, actualText: 'about 1 in 5 (20%)',
+});
+const lockPretrial = setupMyth({
+  slider: 'pretrialSlider', sliderVal: 'pretrialSliderVal', lock: 'pretrialLock',
+  guessFill: 'pretrialGuessFill', guessVal: 'pretrialGuessVal', verdict: 'pretrialVerdict',
+  reveal: 'pretrialReveal', actual: 70, actualText: '70%',
+});
+
+// ---- Who gets labeled: deliberate show, not a game. ----
+function showWho() {
+  document.getElementById('whoShow').disabled = true;
+  document.getElementById('whoReveal').classList.remove('veiled');
+}
+document.getElementById('whoShow').addEventListener('click', showWho);
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, lockCount, pickWhere, lockPrivate, lockDrugs, lockPretrial, showWho };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

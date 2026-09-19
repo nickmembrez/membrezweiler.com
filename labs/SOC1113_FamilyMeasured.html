@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Family, Measured · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 200px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.ghost { background: transparent; border: 2px dashed var(--text-muted); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 6ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 5.5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .pickbtn { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); cursor: pointer; }
+  .pickbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-primary); }
+  .pickbtn:disabled { opacity: 0.55; cursor: default; }
+  .pickbtn.picked { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+  .picktag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--warn); color: #fff; margin-left: 8px; vertical-align: 2px; }
+
+  .step { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+  .step .sh { display: flex; align-items: center; gap: 10px; }
+  .step .snum { width: 26px; height: 26px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step .stitle { font-size: 15px; font-weight: 700; }
+  .step .sbody { margin-top: 10px; }
+  .step.locked { opacity: 0.5; }
+  .step.locked .sbody { display: none; }
+  .openbtn { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; margin-left: auto; }
+  .openbtn:hover { filter: brightness(1.1); }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Family, Measured <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>The most personal institution in your life is also the most measured.</strong> Marriage, divorce, who meets whom, who scrubs the pan, and what family structure does or does not do to children: all of it has published numbers, and most of what people confidently believe about those numbers is wrong. Every figure here is hidden until you commit a guess or a prediction. The last tab performs an autopsy on the most politically charged family claim in America, using the method this course has been building since Chapter 2.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ THE CHANGE ============ -->
+    <div class="section active" id="sec-change">
+      <div class="card">
+        <h2>The family since 1960</h2>
+        <p class="lede">In 1960 the median first-time bride was 20 years old. Start with a guess about now.</p>
+        <div class="guessbox" id="ageBox">
+          <div class="gq">What is the median age at first marriage for American women today? Drag your guess, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="ageSlider" min="18" max="40" value="24" step="0.1">
+            <span class="gval" id="ageSliderVal">24.0</span>
+            <button class="gbtn" id="ageLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="ageVerdict"></div>
+        </div>
+        <div class="veiled" id="ageReveal">
+          <h3 style="margin-top:14px">Median age at first marriage</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Women, 1960</span><div class="btrack"><div class="bfill then" style="width:63%"></div></div><span class="bval">20.3</span></div>
+            <div class="brow"><span class="blabel">Women, 2024</span><div class="btrack"><div class="bfill" style="width:89%"></div></div><span class="bval">28.6</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">Men, 1960</span><div class="btrack"><div class="bfill then" style="width:71%"></div></div><span class="bval">22.8</span></div>
+            <div class="brow"><span class="blabel">Men, 2024</span><div class="btrack"><div class="bfill" style="width:94%"></div></div><span class="bval">30.2</span></div>
+          </div>
+          <div class="guessbox" id="divBox">
+            <div class="gq">Second call. Compared with 1980, is the U.S. divorce rate today higher, about the same, or lower?</div>
+            <div class="pickrow">
+              <button class="pickbtn" data-div="higher" type="button">Higher</button>
+              <button class="pickbtn" data-div="same" type="button">About the same</button>
+              <button class="pickbtn" data-div="lower" type="button">Lower</button>
+            </div>
+            <div class="verdict" id="divVerdict"></div>
+          </div>
+        </div>
+        <div class="veiled" id="changeReveal">
+          <h3 style="margin-top:14px">Divorces per 1,000 people</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">1979, the record year</span><div class="btrack"><div class="bfill warn" style="width:100%"></div></div><span class="bval">5.3</span></div>
+            <div class="brow"><span class="blabel">2023</span><div class="btrack"><div class="bfill" style="width:45%"></div></div><span class="bval">2.4</span></div>
+          </div>
+          <div class="statrow">
+            <div class="stat"><div class="v">72% → 51%</div><div class="l">of adults married, 1960 to 2010, and it has hovered near half since</div></div>
+            <div class="stat warn"><div class="v">18% → 40%</div><div class="l">of births to unmarried mothers, 1980 to 2023</div></div>
+            <div class="stat"><div class="v">13% → 28%</div><div class="l">of households that are one person, 1960 to 2021</div></div>
+            <div class="stat ok"><div class="v">18%</div><div class="l">of Americans live in multigenerational households, more than double the 1971 share</div></div>
+          </div>
+          <div class="teach"><strong>Read the direction carefully.</strong> Marriage is later and rarer, divorce has fallen by more than half from its peak, and household forms have multiplied. The family is not disappearing. It is diversifying, and each form fits an economy, exactly as the nuclear family fit the 1950s. The divorce miss is the one to remember: most rooms guess higher, and the myth that half of marriages end has outlived the data by decades.</div>
+          <p class="srcnote">Sources: Census Bureau, Table MS-2, median age at first marriage (1960 and 2024). Pew Research Center, Barely Half of U.S. Adults Are Married (2011), and Census data since. CDC/NCHS: divorce record 5.3 per 1,000 (1979), 2.4 per 1,000 in provisional 2023 data. NCHS: births to unmarried women 18.4% (1980), 40.0% (2023). Census: one-person households 13% (1960), 28% (2021). Pew: multigenerational households 18% of the population (2021).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ HOW COUPLES MEET ============ -->
+    <div class="section" id="sec-meet">
+      <div class="card">
+        <h2>How couples actually meet</h2>
+        <p class="lede">Stanford's How Couples Meet and Stay Together survey has asked American couples the same question for years: how did you two meet? Before the chart appears, make a call about the most recent data. The options are alphabetical.</p>
+        <div class="guessbox" id="meetBox">
+          <div class="gq">By 2017, what was the number one way heterosexual couples met?</div>
+          <div class="pickrow" id="meetRow"></div>
+          <div class="verdict" id="meetVerdict"></div>
+        </div>
+        <div class="veiled" id="meetReveal">
+          <h3 style="margin-top:14px">Share of couples who met each way, 1995 and 2017</h3>
+          <div class="bars" id="meetBars"></div>
+          <p class="srcnote" style="margin-top:4px">Couples can name more than one way, so the columns do not sum to 100.</p>
+          <div class="teach"><strong>Every traditional matchmaker is in decline.</strong> Friends, family, church, school, and the workplace all introduced fewer couples in 2017 than in 1995, and one channel replaced them. Sociologists call the old pattern intermediation: your network vetted your partners before you met them. The apps removed the intermediaries. Here is the part worth sitting with: homogamy survived. People on the apps still overwhelmingly match with people of similar education and class. The matchmaker changed. The marriage market's rules mostly did not.</div>
+          <p class="srcnote">Source: Rosenfeld, Thomas, and Hausen, Disintermediating your friends (PNAS 2019), Table S3, heterosexual couples. Bar or restaurant figures include couples who first connected elsewhere, including online, before meeting there.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE DISHES ============ -->
+    <div class="section" id="sec-dishes">
+      <div class="card">
+        <h2>Who does the dishes</h2>
+        <p class="lede">Arlie Hochschild named the second shift in 1989: the unpaid workday that starts when the paid one ends. The Bureau of Labor Statistics measures it every year by having Americans keep time diaries. On days when women do household activities, they average 2.8 hours.</p>
+        <div class="guessbox" id="dishBox">
+          <div class="gq">On days when men do household activities, what do they average? Drag your guess in hours, then lock it in.</div>
+          <div class="gr">
+            <input type="range" id="dishSlider" min="0" max="5" value="2.5" step="0.1">
+            <span class="gval" id="dishSliderVal">2.5 h</span>
+            <button class="gbtn" id="dishLock" type="button">Lock in my guess</button>
+          </div>
+          <div class="verdict" id="dishVerdict"></div>
+        </div>
+        <div class="veiled" id="dishReveal">
+          <h3 style="margin-top:14px">Time diaries, average day, 2024</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Did any household activities: women</span><div class="btrack"><div class="bfill" style="width:87%"></div></div><span class="bval">87%</span></div>
+            <div class="brow"><span class="blabel">same: men</span><div class="btrack"><div class="bfill then" style="width:75%"></div></div><span class="bval">75%</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">Housework hours: women</span><div class="btrack"><div class="bfill warn" style="width:81%"></div></div><span class="bval">0.81</span></div>
+            <div class="brow"><span class="blabel">same: men</span><div class="btrack"><div class="bfill then" style="width:30%"></div></div><span class="bval">0.30</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">Cooking and cleanup: women</span><div class="btrack"><div class="bfill warn" style="width:91%"></div></div><span class="bval">0.91</span></div>
+            <div class="brow"><span class="blabel">same: men</span><div class="btrack"><div class="bfill then" style="width:51%"></div></div><span class="bval">0.51</span></div>
+            <div class="brow" style="margin-top:6px"><span class="blabel">Childcare, kids under 6: women</span><div class="btrack"><div class="bfill warn" style="width:93%"></div></div><span class="bval">2.8</span></div>
+            <div class="brow"><span class="blabel">same: men</span><div class="btrack"><div class="bfill then" style="width:57%"></div></div><span class="bval">1.7</span></div>
+          </div>
+          <div class="teach"><strong>The home is a workplace with a division of labor.</strong> These are national time diaries, not opinions, and every row splits the same direction. The family does not sit outside society's power structures. It reproduces them, hour by hour, at the kitchen sink. Hold this tab in mind for the class and gender chapters: both start exactly here.</div>
+          <p class="srcnote">Source: Bureau of Labor Statistics, American Time Use Survey, 2024 results (released June 2025). Hours are per day: housework and cooking rows are averages across all adults, the 2.8 and 2.1 figures are averages on days the person did household activities, and childcare rows are adults living with children under 6.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THE AUTOPSY ============ -->
+    <div class="section" id="sec-autopsy">
+      <div class="card">
+        <h2>The autopsy: family structure and crime</h2>
+        <p class="lede">You have heard the claim. Kids from single-parent homes turn to crime, so family breakdown explains the crime rate. It is one of the most repeated family claims in American politics, and it is exactly the kind of claim this course taught you to cut open in Chapter 2. Work the steps in order. No skipping ahead.</p>
+
+        <div class="guessbox" id="autopsyBox">
+          <div class="gq">First, predict: when researchers compare adolescents from single-parent and two-parent families, is there a raw statistical association with criminal involvement?</div>
+          <div class="pickrow">
+            <button class="pickbtn" data-assoc="yes" type="button">Yes, there is an association</button>
+            <button class="pickbtn" data-assoc="no" type="button">No, that part is myth too</button>
+          </div>
+          <div class="verdict" id="assocVerdict"></div>
+        </div>
+
+        <div class="veiled" id="autopsySteps">
+          <div class="step" id="step1">
+            <div class="sh"><span class="snum">1</span><span class="stitle">The association is real</span></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">A systematic review of 48 studies (Kroese and colleagues, 2021) finds that growing up in a single-parent family is associated with an elevated risk of criminal involvement in adolescence. Honest sociology does not deny an inconvenient correlation. It asks the next question.</p>
+            </div>
+          </div>
+          <div class="step locked" id="step2">
+            <div class="sh"><span class="snum">2</span><span class="stitle">What else differs between these families?</span><button class="openbtn" id="open2" type="button">Open step 2</button></div>
+            <div class="sbody">
+              <div class="bars">
+                <div class="brow"><span class="blabel">Poverty rate, single-mother families</span><div class="btrack"><div class="bfill warn" style="width:21%"></div></div><span class="bval">21%</span></div>
+                <div class="brow"><span class="blabel">Poverty rate, married-couple families</span><div class="btrack"><div class="bfill" style="width:4.2%"></div></div><span class="bval">~4%</span></div>
+              </div>
+              <p class="lede" style="font-size:14px; margin-top:8px">A roughly five-fold poverty gap (Census, 2024), before you count neighborhood, school quality, parental time, and the conflict that usually precedes a divorce. Comparing single-parent and married-couple households is never a comparison of family structure alone. Chapter 2 vocabulary: the claim is loaded with confounders, and families are not randomly assigned to their structures. That is a selection effect.</p>
+            </div>
+          </div>
+          <div class="step locked" id="step3">
+            <div class="sh"><span class="snum">3</span><span class="stitle">Control for what parents actually do, and watch the gap move</span><button class="openbtn" id="open3" type="button">Open step 3</button></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">Demuth and Brown (2004) tested this on a national adolescent sample. Delinquency is higher in single-parent families, but the differences shrink once you account for family processes: closeness, involvement, supervision, and monitoring. And the difference between single-father and single-mother families disappears entirely once processes are controlled. What predicts delinquency is what parents do and what their circumstances let them do, far more than how many adults are on the lease.</p>
+            </div>
+          </div>
+          <div class="step locked" id="step4">
+            <div class="sh"><span class="snum">4</span><span class="stitle">The verdict</span><button class="openbtn" id="open4" type="button">Open step 4</button></div>
+            <div class="sbody">
+              <p class="lede" style="font-size:14px">The correlation is real and modest. The causal story told on cable news is not established: the Kroese review itself concludes that more research is needed to separate the effects of divorce, parental death, and being born to a single parent. Family structure in these studies stands in for money, time, conflict, neighborhood, and stress. Blaming the structure lets everything it stands in for off the hook.</p>
+              <div class="teach"><strong>And one Chapter 8 question to carry out the door:</strong> which families get labeled as the crime problem, and which confounders, poverty, neighborhood, policing, never make it into the headline? A charged correlation plus a ready-made villain is how moral entrepreneurs work. Now you can take one apart.</div>
+            </div>
+          </div>
+          <p class="srcnote">Sources: Kroese, Bernasco, Liefbroer, and Rouwendal, Growing up in single-parent families and the criminal involvement of adolescents: a systematic review (Psychology, Crime and Law, 2021, 48 studies). Demuth and Brown, Family Structure, Family Processes, and Adolescent Delinquency (Journal of Research in Crime and Delinquency, 2004). Poverty rates by family type from Census Bureau data as published for 2024. This tab presents published findings and does not report any new analysis.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUESTIONS ============ -->
+    <div class="section" id="sec-questions">
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>Which guess did you miss by the most across the tabs, and in which direction? Most rooms miss divorce high and men's housework high. What keeps those myths alive?</li>
+          <li>Marriage at 28 instead of 20 changes what a marriage is for. Name two things a 1960 marriage provided that people now assemble before marrying, and what that does to the institution.</li>
+          <li>The apps removed friends, family, and church from matchmaking, yet homogamy survived. What does that tell you about where the marriage market's rules actually live?</li>
+          <li>Run the second shift through Chapter 5: which agents of socialization teach children who does the dishes, and how would you expect the 2054 time diaries to look?</li>
+          <li>Reproduce the autopsy from memory in four sentences: association, confounders, controls, verdict. This is the exam skill, and it works on any charged correlation.</li>
+          <li>Find one claim about families in your own feed this week and name the step of the autopsy it skips.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: Census Bureau, Historical Marital Status Tables, Table MS-2 (median age at first marriage: 1960 men 22.8 and women 20.3, 2024 men 30.2 and women 28.6). Pew Research Center, Barely Half of U.S. Adults Are Married, 2011 (72% in 1960, 51% in 2010). CDC/NCHS: record divorce rate 5.3 per 1,000 population in 1979, provisional 2.4 in 2023. NCHS: births to unmarried women 18.4% in 1980 and 40.0% in 2023. Census: one-person households 13% in 1960 and 28% in 2021. Pew: 18% of the U.S. population in multigenerational households in 2021. Rosenfeld, Thomas, and Hausen, Disintermediating your friends, PNAS 2019, Table S3. BLS American Time Use Survey, 2024 results. Kroese et al. 2021, Psychology, Crime and Law. Demuth and Brown 2004, Journal of Research in Crime and Delinquency. All values as published, reference years as labeled. Your guesses stay on this page and are not recorded anywhere.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+const TABS = [
+  { id: 'sec-change', label: 'The change' },
+  { id: 'sec-meet', label: 'How couples meet' },
+  { id: 'sec-dishes', label: 'The dishes' },
+  { id: 'sec-autopsy', label: 'The autopsy' },
+  { id: 'sec-questions', label: 'Questions' },
+];
+const tabsBox = document.getElementById('tabs');
+function activate(id) {
+  tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x.dataset.id === id ? 'true' : 'false'));
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.dataset.id = t.id;
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => activate(t.id));
+  tabsBox.appendChild(b);
+});
+
+// ---- The change: marriage-age guess, then divorce direction pick. ----
+const ageSlider = document.getElementById('ageSlider');
+const ageSliderVal = document.getElementById('ageSliderVal');
+const ageLockBtn = document.getElementById('ageLock');
+ageSlider.addEventListener('input', () => { ageSliderVal.textContent = (+ageSlider.value).toFixed(1); });
+function lockAge(valOverride) {
+  if (ageLockBtn.disabled) return;
+  const guess = valOverride == null ? +ageSlider.value : valOverride;
+  ageLockBtn.disabled = true;
+  ageSlider.disabled = true;
+  ageSliderVal.textContent = guess.toFixed(1);
+  const ACTUAL = 28.6;
+  const diff = guess - ACTUAL;
+  let msg;
+  if (Math.abs(diff) < 0.05) msg = 'You guessed it exactly. The 2024 figure is 28.6.';
+  else msg = 'You guessed ' + guess.toFixed(1) + '. The 2024 figure is 28.6, so you were ' + Math.abs(diff).toFixed(1) + ' years ' + (diff > 0 ? 'high' : 'low') + '. In 1960 it was 20.3.';
+  document.getElementById('ageVerdict').textContent = msg;
+  document.getElementById('ageReveal').classList.remove('veiled');
+}
+ageLockBtn.addEventListener('click', () => lockAge());
+
+let divPicked = null;
+document.querySelectorAll('#divBox .pickbtn').forEach(btn => {
+  btn.addEventListener('click', () => pickDivorce(btn.dataset.div));
+});
+function pickDivorce(ans) {
+  if (divPicked) return;
+  divPicked = ans;
+  document.querySelectorAll('#divBox .pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.div === ans) b.classList.add('picked');
+  });
+  const v = document.getElementById('divVerdict');
+  if (ans === 'lower') v.textContent = 'Right, and by a lot. The rate has fallen by more than half from the 1979 record.';
+  else v.textContent = 'The common guess, and wrong: the divorce rate has fallen by more than half since its 1979 record.';
+  document.getElementById('changeReveal').classList.remove('veiled');
+}
+
+// ---- How couples meet. ----
+const MEET = [
+  { name: 'Online', then: 2, now: 39 },
+  { name: 'Bar or restaurant', then: 19, now: 27 },
+  { name: 'Through friends', then: 33, now: 20 },
+  { name: 'Through or as coworkers', then: 19, now: 11 },
+  { name: 'Through family', then: 15, now: 7 },
+  { name: 'Primary or secondary school', then: 10, now: 5 },
+  { name: 'In college', then: 9, now: 4 },
+  { name: 'In church', then: 7, now: 4 },
+];
+const MEET_PICKS = ['Bar or restaurant', 'In church', 'In college', 'Online', 'Through family', 'Through friends', 'Through or as coworkers'];
+const meetRow = document.getElementById('meetRow');
+let meetPicked = null;
+MEET_PICKS.forEach(name => {
+  const b = document.createElement('button');
+  b.className = 'pickbtn'; b.type = 'button';
+  b.textContent = name;
+  b.addEventListener('click', () => pickMeet(name));
+  meetRow.appendChild(b);
+});
+function pickMeet(name) {
+  if (meetPicked) return;
+  meetPicked = name;
+  meetRow.querySelectorAll('.pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === name) b.classList.add('picked');
+  });
+  const bars = document.getElementById('meetBars');
+  MEET.forEach(m => {
+    const wrap = document.createElement('div');
+    const tag = m.name === name ? '<span class="picktag">your pick</span>' : '';
+    wrap.innerHTML =
+      '<div class="brow"><span class="blabel">' + m.name + ', 1995</span><div class="btrack"><div class="bfill then" style="width:' + m.then + '%"></div></div><span class="bval">' + m.then + '%</span></div>' +
+      '<div class="brow" style="margin-bottom:6px"><span class="blabel">same, 2017</span><div class="btrack"><div class="bfill' + (m.name === 'Online' ? ' warn' : '') + '" style="width:' + m.now + '%"></div></div><span class="bval">' + m.now + '%</span>' + (tag ? '<span style="flex-shrink:0">' + tag + '</span>' : '') + '</div>';
+    bars.appendChild(wrap);
+  });
+  const v = document.getElementById('meetVerdict');
+  v.textContent = name === 'Online'
+    ? 'Right. Online was the number one way by 2017, at 39%, up from 2% in 1995.'
+    : 'You picked ' + name.toLowerCase() + '. The number one way by 2017 was online, at 39%, up from 2% in 1995.';
+  document.getElementById('meetReveal').classList.remove('veiled');
+}
+
+// ---- The dishes. ----
+const dishSlider = document.getElementById('dishSlider');
+const dishSliderVal = document.getElementById('dishSliderVal');
+const dishLockBtn = document.getElementById('dishLock');
+dishSlider.addEventListener('input', () => { dishSliderVal.textContent = (+dishSlider.value).toFixed(1) + ' h'; });
+function lockDishes(valOverride) {
+  if (dishLockBtn.disabled) return;
+  const guess = valOverride == null ? +dishSlider.value : valOverride;
+  dishLockBtn.disabled = true;
+  dishSlider.disabled = true;
+  dishSliderVal.textContent = guess.toFixed(1) + ' h';
+  const ACTUAL = 2.1;
+  const diff = guess - ACTUAL;
+  let msg;
+  if (Math.abs(diff) < 0.05) msg = 'You guessed it exactly: 2.1 hours, against 2.8 for women.';
+  else msg = 'You guessed ' + guess.toFixed(1) + ' hours. The measured figure is 2.1, so you were ' + Math.abs(diff).toFixed(1) + ' hours ' + (diff > 0 ? 'high' : 'low') + '. The full split is below.';
+  document.getElementById('dishVerdict').textContent = msg;
+  document.getElementById('dishReveal').classList.remove('veiled');
+}
+dishLockBtn.addEventListener('click', () => lockDishes());
+
+// ---- The autopsy: predict, then stepwise reveal. ----
+let assocPicked = null;
+document.querySelectorAll('#autopsyBox .pickbtn').forEach(btn => {
+  btn.addEventListener('click', () => pickAssoc(btn.dataset.assoc));
+});
+function pickAssoc(ans) {
+  if (assocPicked) return;
+  assocPicked = ans;
+  document.querySelectorAll('#autopsyBox .pickbtn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.assoc === ans) b.classList.add('picked');
+  });
+  const v = document.getElementById('assocVerdict');
+  v.textContent = ans === 'yes'
+    ? 'Correct. The association is real, which is exactly why the claim needs an autopsy rather than a denial.'
+    : 'The association is real. Denying an inconvenient correlation is as unscientific as overselling one. The autopsy starts from the real number.';
+  document.getElementById('autopsySteps').classList.remove('veiled');
+}
+function openStep(n) {
+  const el = document.getElementById('step' + n);
+  el.classList.remove('locked');
+  const btn = document.getElementById('open' + n);
+  if (btn) btn.remove();
+}
+[2, 3, 4].forEach(n => {
+  document.getElementById('open' + n).addEventListener('click', () => openStep(n));
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+window.__S = { activate, lockAge, pickDivorce, pickMeet, lockDishes, pickAssoc, openStep };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

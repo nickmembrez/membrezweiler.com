@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Deal · White-Collar Crime · Crime Lab 12</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .codes .ynb { font-size: 12.5px; padding: 5px 10px; }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .tablewrap { overflow-x: auto; }
+  .runlog { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .runlog th, .runlog td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+  .runlog th { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .drow { align-items: flex-start; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Deal <span class="sub">White-Collar Crime · Crime Lab 12 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Most corporate crime in the United States is resolved by contract. The company and the government agree on a charge, a payment, a term of years, and a set of promises, and a judge sees the agreement only to sign it, if at all.</strong> In 2025 the Justice Department reached 74 such resolutions, worth $4.4 billion, imposed no independent monitor in any of them, and published a policy setting out exactly what a company gets for disclosing, cooperating, and remediating. This lab puts you in the prosecutor's chair with a fixed set of facts. You will build a resolution from the choices prosecutors actually have, see it scored against the guidelines, the department's own policy, and the four readings of this unit, and then set it beside the deal the department made with Boeing. The question the course has been asking since Lab 1 is whether the harm that costs the most is punished the least. This is where you decide how much of that is a choice.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-menu" type="button">The menu</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-build" type="button">Build the deal</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-record" type="button">The record, 2025 to 2026</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-works" type="button">What works</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: MENU -->
+    <div class="section active" id="sec-menu">
+      <div class="card">
+        <h2>Five forms of resolution and what each costs</h2>
+        <div class="defs">
+          <div class="def"><div class="who">Declination</div><div class="hinge">No charge. Under the Criminal Division's policy, the presumptive outcome for a company that voluntarily self-discloses before an imminent threat of exposure, fully cooperates, and remediates, with no aggravating circumstances. The company may still disgorge its gain. Nothing is filed in court.</div></div>
+          <div class="def"><div class="who">Non-prosecution agreement</div><div class="hinge">A letter agreement: the company admits facts, pays, and promises; the government agrees not to charge. Nothing is filed; no judge reviews it. The 2025 policy offers an NPA of under three years, a 75 percent reduction from the bottom of the guideline fine range, and no monitor to companies whose disclosure was a "near miss" or that have aggravating factors but cooperate and remediate.</div></div>
+          <div class="def"><div class="who">Deferred prosecution agreement</div><div class="hinge">A charge is filed and then held; if the company keeps its promises for the term, the charge is dismissed. A judge must accept the dismissal, which is how Judge O'Connor came to rule on Boeing. Terms in 2025 policy are capped at three years absent special reasons.</div></div>
+          <div class="def"><div class="who">Guilty plea</div><div class="hinge">A conviction, with the collateral consequences that follow (debarment from government contracts, loss of licenses, exclusion from Medicare for a health care company). A judge must accept the plea and can reject its terms, as Judge O'Connor did with Boeing's in December 2024. Companies that do not qualify for the other paths can still receive up to 50 percent off the low end of the range.</div></div>
+          <div class="def"><div class="who">Trial</div><div class="hinge">Rare for corporations: the government has tried a handful of companies in the last two decades. The fact that a conviction can be fatal to the firm (Arthur Andersen, 2002) is the reason the other four forms exist.</div></div>
+        </div>
+        <p class="teach"><strong>How the fine is computed.</strong> The Sentencing Guidelines for organizations (chapter 8) start from a base fine, the greatest of a table amount keyed to the offense level, the company's pecuniary gain, or the pecuniary loss it caused knowingly. A culpability score then sets a multiplier range: it starts at 5, rises with the size of the organization and the seniority of the people involved (up to +5 for a firm of 5,000 or more whose high-level personnel participated), rises for prior offenses and obstruction, and falls for self-reporting before the threat of disclosure (−5), cooperation and acceptance of responsibility (−2), and an effective compliance program (−3). A score of 8 gives multipliers from 1.6 to 3.2; a score of 3 gives 0.6 to 1.2. The range is the starting point for the discounts on the menu above. The policy discounts are taken from the low end.</p>
+        <p class="teach"><strong>The two other terms that matter.</strong> Individuals: since the 2015 Yates memorandum the department's stated policy has been that a company gets cooperation credit only by identifying the individuals involved, and the May 2025 memorandum says "it is individuals" who commit these crimes and the Division must focus on them; in practice, whether any individual is charged is the prosecutor's separate decision. Monitors: an independent monitor is an outside firm, paid by the company, that reports to the government on compliance for the term; the 2025 policy directs prosecutors to scale back monitors and limit their terms, and the Division imposed none in 2025.</p>
+        <div class="guessbox">
+          <p class="gq">In the 74 corporate criminal resolutions the Justice Department reached in 2025, how many included an independent compliance monitor?</p>
+          <div class="pickrow">
+            <button class="pick" data-m="0" type="button">None</button>
+            <button class="pick" data-m="5" type="button">About 5</button>
+            <button class="pick" data-m="15" type="button">About 15</button>
+            <button class="pick" data-m="30" type="button">About 30</button>
+          </div>
+          <p class="verdict" id="mVerdict"></p>
+        </div>
+        <div class="veiled" id="mReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">0</div><div class="l">monitorships imposed by the Criminal Division in 2025; several existing ones ended early</div></div>
+            <div class="stat"><div class="v">74</div><div class="l">corporate resolutions in 2025, down from 104 in 2024 and 83 in 2023</div></div>
+            <div class="stat"><div class="v">$4.4B</div><div class="l">in 2025, down from about $8.5 billion in 2024</div></div>
+            <div class="stat"><div class="v">8 · 6</div><div class="l">deferred and non-prosecution agreements in 2025; the rest guilty pleas and declinations with disgorgement</div></div>
+          </div>
+          <p class="srcnote">Sources: U.S. Sentencing Guidelines Manual, ch. 8, parts C (8C2.4 through 8C2.7); U.S. Department of Justice, Criminal Division, Corporate Enforcement and Voluntary Self-Disclosure Policy as revised May 12, 2025, and the Galeotti memorandum of the same date, as summarized by Herbert Smith Freehills Kramer; Gibson Dunn, Corporate Resolutions 2025 Year-End Update, February 4, 2026.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BUILD -->
+    <div class="section" id="sec-build">
+      <div class="card">
+        <h2>The facts</h2>
+        <p class="lede">Meridian Aero Components is a constructed company; no part of this fact pattern describes a real firm. Meridian makes hydraulic actuators for commercial aircraft. It has 6,000 employees and $2.1 billion in revenue. For four years, three quality engineers and a plant manager at its Kansas plant signed off inspection records for actuators that had failed pressure tests, and the records went to the Federal Aviation Administration, which relied on them to certify the parts. In the second year the vice president for quality learned of the practice from an internal audit and told the plant to "handle it," which it did by continuing. No part failed in service. When the practice came out, airlines pulled and replaced the parts at a cost of $600 million. Meridian avoided about $150 million in rework and scrap over the four years. Meridian disclosed the matter to the department two weeks after learning that a former engineer had filed a whistleblower complaint, cooperated fully once it did, fired the four plant employees and the vice president, and rebuilt its quality system. It has no prior record.</p>
+        <div class="statrow">
+          <div class="stat"><div class="v">$600M</div><div class="l">base fine: the loss caused knowingly, larger than the $150 million gain</div></div>
+          <div class="stat"><div class="v">8</div><div class="l">culpability score: 5, plus 5 for a 5,000-employee firm with high-level participation, minus 2 for cooperation and acceptance; no self-report credit, since the disclosure came after the threat of exposure</div></div>
+          <div class="stat warn"><div class="v">$960M to $1.92B</div><div class="l">guideline fine range, multipliers 1.6 to 3.2</div></div>
+          <div class="stat"><div class="v">Near miss</div><div class="l">the policy's category for a disclosure that came too late to be voluntary: NPA path, up to 75 percent off the low end, $240 million</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Your resolution</h2>
+        <p class="lede">Choose each term. The scoring below updates as you choose, against the department's policy, the guidelines, and the four readings. When you are satisfied, lock the deal; it is recorded for your submission and compared with Boeing's.</p>
+        <div id="builder"></div>
+        <div class="pickrow" style="margin-top:12px"><button class="gbtn" id="lockBtn" type="button">Lock the deal</button><span class="progress" id="lockNote" style="margin:0"></span></div>
+        <h3 style="margin-top:16px">How it scores</h3>
+        <div id="scores"></div>
+        <div class="veiled" id="cmp">
+          <h3 style="margin-top:16px">Your deal beside Boeing's</h3>
+          <div id="cmpTable"></div>
+          <p class="teach"><strong>The Boeing record.</strong> The charge was one count of conspiracy to defraud the FAA's Aircraft Evaluation Group about the MCAS flight-control software; 346 people died in the two crashes. The January 2021 deferred prosecution agreement ($243.6 million criminal penalty, $1.77 billion to airline customers, $500 million to families, three years, no monitor) attributed the deception to two technical pilots; one was tried and acquitted in 2022. When the department found in 2024 that Boeing had breached the agreement, Boeing agreed to plead guilty, and Judge O'Connor rejected the plea in December 2024 over the terms for selecting a monitor. In May 2025 the department agreed not to prosecute at all: a $487.2 million fine with the $243.6 million already paid credited, $444.5 million for the families, $455 million on compliance and safety, an independent compliance consultant chosen by Boeing rather than a monitor, and a two-year term. The judge dismissed the case on November 6, 2025, and wrote that the agreement "fails to secure the necessary accountability."</p>
+          <p class="srcnote">Sources: United States v. The Boeing Company, N.D. Tex., deferred prosecution agreement of January 7, 2021, order of December 5, 2024, non-prosecution agreement of May 2025, and order of November 6, 2025, as reported by NPR and CNBC; Gibson Dunn (2026) for the $688.1 million figure (fine net of credit plus the family fund).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: RECORD -->
+    <div class="section" id="sec-record">
+      <div class="card">
+        <h2>What the department did in 2025, and what the President undid</h2>
+        <p class="lede">Two records bear on any deal you build. The first is the department's: fewer resolutions, less money, no monitors, and a policy that says so in advance. The second is the pardon power, which in 2025 and 2026 was used for fraud defendants at a rate with no precedent, and which removes the last term of any deal, the sentence, along with the restitution attached to it. Guess before the reveal.</p>
+        <div class="guessbox">
+          <p class="gq">Trevor Milton, the Nikola founder from Lab 5, was pardoned in March 2025 before serving his sentence. How much restitution had the government asked the court to order him to pay?</p>
+          <div class="pickrow">
+            <button class="pick" data-r="7" type="button">About $7 million</button>
+            <button class="pick" data-r="70" type="button">About $70 million</button>
+            <button class="pick" data-r="675" type="button">About $675 million</button>
+            <button class="pick" data-r="2000" type="button">About $2 billion</button>
+          </div>
+          <p class="verdict" id="rVerdict"></p>
+        </div>
+        <div class="veiled" id="rReveal">
+          <div class="defs">
+            <div class="def"><div class="who">Resolutions, 2025</div><div class="hinge">74 corporate criminal resolutions for about $4.4 billion (104 and $8.5 billion in 2024). Eight deferred prosecution agreements, six non-prosecution agreements, the rest pleas and declinations with disgorgement. The largest: Hino Motors, a guilty plea for more than $1.6 billion over falsified emissions data; Boeing, an NPA the analysts value at $688.1 million; OKX, a $504.8 million plea for operating an unlicensed money transmitter; American Express, a $199 million NPA. No monitor in any of them, and monitorships at Glencore and NatWest ended early.</div></div>
+            <div class="def"><div class="who">The policy, May 12, 2025</div><div class="hinge">Ten priorities led by health care and procurement fraud, trade and tariff evasion, and fraud on U.S. investors; "individuals first"; a declination path for self-disclosure; an NPA path with 75 percent off and no monitor for near misses; up to 50 percent off for everyone else; terms capped at three years; monitors scaled back. The department describes this as fairness and efficiency; Davies and Malik's editorial gives the two readings of it that the field divides on.</div></div>
+            <div class="def"><div class="who">Pardons, 2025 to 2026</div><div class="hinge">Milton (securities and wire fraud; the government had sought about $675 million in restitution); Carlos Watson of Ozy Media (commuted; $36.8 million); Lawrence Duran (Medicare fraud; $87.5 million); Jason Galanis ($84.8 million) and Devon Archer ($43.4 million), for defrauding a tribal nation; Todd and Julie Chrisley (bank fraud and tax evasion; $22 million between them); Paul Manafort ($31.7 million plus an $11 million forfeiture); Changpeng Zhao of Binance, whose company had pleaded guilty and paid $4.3 billion in 2023. The California governor's office tallied nearly $2 billion in restitution and forfeiture erased; NBC News put the figure in the hundreds of millions for the financial cases alone.</div></div>
+          </div>
+          <p class="teach"><strong>What this does to the deal.</strong> Every term on the previous tab assumed that the sentence is the end of the process. In a system where the individual sentence can be removed after the fact, the one term Paternoster and Simpson's respondents said they feared most, the personal cost to the manager, is no longer certain even when a prosecutor secures it. The corporate terms survive a pardon; the individual ones may not. Put that next to a policy that says "individuals first."</p>
+          <p class="srcnote">Sources: Gibson Dunn, Corporate Resolutions 2025 Year-End Update (February 4, 2026); Office of the Governor of California, "Trump pardons wipe nearly $2 billion in victim repayment," March 5, 2026 (a political office's tally; the individual restitution figures are from the court records it cites); NBC News on the financial-crime pardons; Department of Justice, Criminal Division, memorandum of May 12, 2025.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: WORKS -->
+    <div class="section" id="sec-works">
+      <div class="card">
+        <h2>Ayres and Braithwaite: the benign big gun</h2>
+        <p class="lede">Responsive regulation's claim is that a regulator gets the most compliance by speaking softly while visibly carrying a big stick: an enforcement pyramid in which most encounters are persuasion at the base, escalating through warnings, civil penalties, criminal penalties, and license suspension to revocation at the peak, with the willingness to escalate credible at every step. The firm that cooperates is met with cooperation; the firm that defects meets the next rung. Two conditions make it work: the regulator must be able to escalate, and the firm must believe it will. Place the five sanctions on the pyramid, base to peak.</p>
+        <div id="pyrList"></div>
+        <p class="verdict" id="pyrVerdict"></p>
+        <div class="veiled" id="pyrDone">
+          <p class="teach"><strong>Base to peak: persuasion, warning letter, civil penalty, criminal penalty, license suspension, then revocation.</strong> The 2025 policy is a pyramid drawn as a menu: cooperate and you get the base, defect and the next rung is available. What responsive regulation requires, and what the year's record puts in doubt, is that the top of the pyramid stays visible. A regulator that has not tried a corporation in years, has stopped imposing monitors, and cannot be sure a sentence it wins will be served, is speaking softly without the stick. Ayres and Braithwaite would predict what follows: the base of the pyramid stops working, because the reason to cooperate was the credible threat of escalation.</p>
+          <p class="srcnote">Source: Ayres, I., and Braithwaite, J. (1992). Responsive Regulation: Transcending the Deregulation Debate. Oxford University Press, ch. 2, The Benign Big Gun (library; the enforcement pyramid and the pyramid of regulatory strategies are the chapter's two figures).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Heese, Krishnan, and Moers: who gets leniency</h2>
+        <p class="lede">Regulators, like companies, can adopt a policy and decouple it from practice, and they can do it selectively. Heese, Krishnan, and Moers study Medicare's enforcement against hospital "upcoding," billing a more expensive diagnosis than the patient had, in California from 1996 to 2007. Their argument: a regulator under conflicting pressures, to be tough on fraud and to keep unprofitable services available, will enforce less against the organizations that supply the second good. Guess the finding.</p>
+        <div class="guessbox">
+          <p class="gq">Which hospitals were less likely to be subject to a False Claims Act settlement for upcoding, and upcoded more?</p>
+          <div class="pickrow">
+            <button class="pick" data-h="large" type="button">The largest hospitals</button>
+            <button class="pick" data-h="ben" type="button">Hospitals providing more charity care and medical education</button>
+            <button class="pick" data-h="profit" type="button">For-profit chain hospitals</button>
+            <button class="pick" data-h="rural" type="button">Rural hospitals</button>
+          </div>
+          <p class="verdict" id="hVerdict"></p>
+        </div>
+        <div class="veiled" id="hReveal">
+          <p class="teach"><strong>The "beneficent" hospitals.</strong> Hospitals that provided more charity care and more medical education were less likely to face an upcoding settlement, and, knowing it, upcoded more, financing the unprofitable services the regulator wanted from them with the mispricing the regulator was supposed to stop. The authors call the first half selective regulator decoupling and the second half the organizations' strategic response, and note that the hospitals used nonmarket strategies, political relationships and the visibility of their good works, to keep their favorable status (pp. 2178-2180). The application to this lab is direct. A company that supplies something a government wants, aircraft, jobs in a district, cooperation in other cases, a promise of investment, is dealing with a regulator under conflicting pressures, and the terms it gets will reflect the second pressure as well as the first. Meridian's file will not say so. Neither did Boeing's.</p>
+          <p class="srcnote">Source: Heese, J., Krishnan, R., and Moers, F. (2016). Selective regulator decoupling and organizations' strategic responses. Academy of Management Journal, 59(6), 2178-2204 (abstract and framework, pp. 2178-2190; hypotheses on leniency and on upcoding as stated in the assigned pages).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Davies and Malik: two camps</h2>
+        <p class="lede">The editorial that opens your Meeting B reading describes a discipline divided. On one side, regulation and governance scholarship in Braithwaite's line, which argues "against excessive criminalization" and for a mix of strategies, and which reads the deferred prosecution agreement as "restorative justice in action," combining a penalty with behavioral remedies while avoiding overcriminalization (pp. 3-4). On the other, critical corporate criminology, for which regulatory strategies "serve to maintain existing power relations," compliance and self-regulation are a "crime (un)control industry," and corporate harm "occurs not because the law and regulation is disobeyed, but rather because it is obeyed" (p. 3). The editors say the journal embraces both, and that in the absence of structural reform, incremental changes can still disrupt harmful practice (p. 3). The deal you built belongs to one camp or the other. The response sheet asks which.</p>
+        <p class="srcnote">Source: Davies, J., and Malik, H. M. (2022). Challenging existing regulatory approaches for white-collar and corporate crimes. Journal of White Collar and Corporate Crime, 3(1), 3-6, at the pages cited.</p>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 12 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your locked deal into one block of text, and paste that text into the Lab 12 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your deal. State its terms and defend the two you found hardest: the form and the individuals. Say what you gave up to get what you wanted, and which of the four readings your choice relies on.</div>
+          <div class="qh">Four to six sentences. Use the scores.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Boeing. Compare your Meridian deal with the May 2025 Boeing agreement term by term. Where Boeing's terms are weaker than yours, say what in the record explains the difference (the policy, the company's position, the judge's limits, Heese's selective decoupling), and whether Judge O'Connor's "accountability" would be satisfied by yours.</div>
+          <div class="qh">Four to six sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. The camps. Davies and Malik describe two positions on what a deal like yours is: restorative justice that avoids overcriminalization, or a crime (un)control industry that lets harm proceed by obeying the law. Say which describes your deal, and what evidence over the term of the agreement would let you tell.</div>
+          <div class="qh">Three to five sentences. Cite the editorial by page.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. How was your case resolved (trial, plea, DPA, NPA, civil settlement, declination, nothing), what were its terms, and which rung of the pyramid was it? Say what a resolution built on your Meridian principles would have looked like in your case, and why the actual one differed.</div>
+          <div class="qh">Four to six sentences. This is the core of Part 4.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the fact pattern and the figures</h2>
+      <p class="srcnote">Meridian Aero Components and every fact about it are constructed for the lab; the culpability score and fine range are computed under the Sentencing Guidelines' organizational provisions as simplified on the first tab, and the policy discounts are those in the Criminal Division's May 12, 2025 policy. The scoring on the second tab is the lab's reading of the four assigned works and of Judge O'Connor's order, not a legal standard. The 2025 resolution figures are from Gibson Dunn's year-end update; the pardon figures are from the sources cited on the third tab, one of which is a political office. The Boeing terms are from the agreements and orders as reported.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function guess(sel, key, right, verdictId, revealId, yes, no){
+    let picked = null;
+    document.querySelectorAll(sel).forEach(btn => btn.addEventListener('click', () => {
+      if (picked) return; picked = btn.dataset[key]; btn.classList.add('chosen');
+      document.querySelectorAll(sel).forEach(b => { b.disabled = true; if (b.dataset[key] === right) b.classList.add('answer'); });
+      $(verdictId).textContent = picked === right ? yes : no;
+      $(revealId).style.display = 'block';
+    }));
+    return () => picked;
+  }
+  const gM = guess('#sec-menu .pick[data-m]', 'm', '0', 'mVerdict', 'mReveal', 'Right. None.', 'None. The Criminal Division imposed no monitorship in any 2025 resolution. See below.');
+  const gR = guess('#sec-record .pick[data-r]', 'r', '675', 'rVerdict', 'rReveal', 'Right. About $675 million.', 'About $675 million, for Nikola shareholders and one other victim. See below.');
+  const gH = guess('#sec-works .pick[data-h]', 'h', 'ben', 'hVerdict', 'hReveal', 'Right. The hospitals providing more charity care and medical education.', 'The hospitals providing more charity care and medical education, the ones the regulator needed most. See below.');
+
+  // ---------- builder ----------
+  const TERMS = [
+    { k: 'form', label: 'Form of resolution', opts: [['DECL', 'Declination'], ['NPA', 'Non-prosecution agreement'], ['DPA', 'Deferred prosecution agreement'], ['PLEA', 'Guilty plea']], def: 'NPA' },
+    { k: 'fine', label: 'Criminal fine', opts: [['0', 'None (disgorge the $150M gain only)'], ['240', '$240M (75% off the low end, the near-miss path)'], ['480', '$480M (50% off the low end)'], ['960', '$960M (the low end of the range)'], ['1920', '$1.92B (the top of the range)']], def: '240' },
+    { k: 'ind', label: 'Individuals charged', opts: [['none', 'No one'], ['plant', 'The three engineers and the plant manager'], ['vp', 'The four plant employees and the vice president']], def: 'none' },
+    { k: 'mon', label: 'Oversight', opts: [['none', 'None; the company certifies its own compliance'], ['cons', 'A compliance consultant chosen by the company'], ['mon', 'An independent monitor chosen by the government']], def: 'none' },
+    { k: 'term', label: 'Term', opts: [['1', 'One year'], ['2', 'Two years'], ['3', 'Three years'], ['5', 'Five years']], def: '3' },
+    { k: 'fund', label: 'Compensation to the airlines and their customers', opts: [['0', 'None; leave them to civil suits'], ['150', '$150M, a quarter of the loss'], ['600', '$600M, the full loss']], def: '0' },
+    { k: 'adm', label: 'Admission', opts: [['yes', 'A detailed statement of facts the company admits'], ['no', 'No admission of wrongdoing']], def: 'yes' },
+  ];
+  const deal = {}; TERMS.forEach(t => deal[t.k] = t.def);
+  let locked = false;
+  const bEl = $('builder');
+  bEl.innerHTML = TERMS.map(t => '<div class="drow" style="margin-top:10px"><span class="dlabel" style="min-width:220px">' + esc(t.label) + '</span><div class="codes">' + t.opts.map(o => '<button class="ynb' + (o[0] === t.def ? ' sel' : '') + '" data-k="' + t.k + '" data-v="' + o[0] + '" type="button">' + esc(o[1]) + '</button>').join('') + '</div></div>').join('');
+  bEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-k]'); if (!b || locked) return;
+    deal[b.dataset.k] = b.dataset.v; bEl.querySelectorAll('[data-k="' + b.dataset.k + '"]').forEach(x => x.classList.toggle('sel', x === b)); score();
+  });
+  function label(k){ const t = TERMS.find(x => x.k === k); return t.opts.find(o => o[0] === deal[k])[1]; }
+  function score(){
+    const d = deal; const fine = Number(d.fine); const out = [];
+    // policy fit
+    let pol, polN;
+    if (d.form === 'DECL') { pol = 'Off the policy. A declination is reserved for voluntary self-disclosure before an imminent threat of exposure; Meridian disclosed two weeks after learning of the whistleblower complaint, which the policy calls a near miss. A prosecutor could still decline, but not under the policy\'s terms, and the file would have to say why.'; polN = 0; }
+    else if (d.form === 'NPA' && fine <= 240 && d.mon !== 'mon' && Number(d.term) <= 3) { pol = 'Exactly the near-miss path: an NPA of three years or less, 75 percent off the low end, no independent monitor. This is the deal the policy says Meridian has earned by cooperating and remediating after a late disclosure.'; polN = 3; }
+    else if (d.form === 'NPA' || d.form === 'DPA') { pol = 'Within the policy\'s discretion but harsher than its near-miss path' + (fine > 240 ? ', on the fine' : '') + (d.mon === 'mon' ? ', on the monitor, which the policy directs prosecutors to scale back' : '') + (Number(d.term) > 3 ? ', on the term, which the policy caps at three years absent special reasons' : '') + '. You would need to document aggravating circumstances; the vice president\'s knowledge is one.'; polN = 2; }
+    else { pol = 'A plea is available for a company that does not qualify for the other paths, with up to 50 percent off the low end. Meridian arguably does qualify, so a plea reads as a decision that a fraud on a safety regulator with executive knowledge should carry a conviction whatever the cooperation. The policy does not forbid it; it does not contemplate it.'; polN = 1; }
+    out.push(['The department\'s policy', polN, pol]);
+    // deterrence
+    let det = 0; const parts = [];
+    if (d.ind === 'vp') { det += 2; parts.push('Charging the vice president is the term Paternoster and Simpson\'s respondents said they feared: a personal cost to the manager who decided. Their finding was that sanctions aimed at the firm deter only through the cost the individual perceives (Lab 4).'); }
+    else if (d.ind === 'plant') { det += 1; parts.push('Charging the plant employees and not the executive who told them to handle it sends the cost down the hierarchy; the people who set the incentive bear none of it.'); }
+    else parts.push('No individual is charged. Paternoster and Simpson found that a fine on the firm alone, once the manager\'s personal cost is held constant, had no effect on intentions.');
+    if (fine >= 480) { det += 1; parts.push('A fine at or above half the low end is large relative to the $150 million gain; below that, the fine is a cost of doing business the company has already booked.'); }
+    if (d.mon === 'mon' && d.ind !== 'none' && fine > 0) { det = Math.min(3, det + 1); parts.push('Fine, individuals, and oversight together are the "multiple treatments" Schell-Busey and colleagues found to be the only consistently effective combination.'); }
+    out.push(['Deterrence', Math.min(3, det), parts.join(' ')]);
+    // accountability
+    let acc = 0; const ap = [];
+    if (d.adm === 'yes') { acc += 1; ap.push('An admitted statement of facts is a public record of what happened.'); } else ap.push('Without an admission, the record contains a payment and a promise and no finding of what was done.');
+    if (d.ind !== 'none') { acc += 1; ap.push('Someone answers in person.'); } else ap.push('No person answers.');
+    if (d.mon === 'mon') { acc += 1; ap.push('An independent monitor reporting to the government is the term Judge O\'Connor fought over in the Boeing plea.'); } else if (d.mon === 'cons') ap.push('A consultant the company chooses reports to the company; this is the Boeing NPA\'s arrangement, which the judge said fails to secure accountability.');
+    if (Number(d.fund) > 0) { acc = Math.min(3, acc + (Number(d.fund) >= 600 ? 1 : 0.5)); ap.push('The victims are compensated inside the agreement rather than left to sue.'); }
+    out.push(['Accountability, in Judge O\'Connor\'s sense', Math.round(Math.min(3, acc)), ap.join(' ')]);
+    // pyramid
+    const rung = d.form === 'DECL' ? 'the base' : d.form === 'NPA' ? 'a warning with a price' : d.form === 'DPA' ? 'a suspended criminal penalty' : 'the criminal penalty rung';
+    let pyr = d.form === 'PLEA' ? 3 : d.form === 'DPA' ? 2 : d.form === 'NPA' ? 1 : 0;
+    let pt = 'Your deal sits at ' + rung + ' of the enforcement pyramid. Ayres and Braithwaite would ask two questions: is a first offense with cooperation the right place to start low (yes, on their model), and is escalation credible if Meridian defects during the term?';
+    if (d.form !== 'DECL' && Number(d.term) >= 3 && d.mon !== 'none') { pyr = Math.min(3, pyr + 1); pt += ' A term of three years or more with someone watching makes the next rung visible; that is what the model requires.'; } else if (d.form !== 'DECL') pt += ' With ' + (d.mon === 'none' ? 'no one watching' : 'a short term') + ', the threat of the next rung depends on the company reporting its own breach.';
+    out.push(['Responsive regulation', pyr, pt]);
+    // decoupling
+    let dec = 3; const dp = [];
+    if (d.mon === 'cons') { dec -= 1; dp.push('A company-chosen consultant is the arrangement most exposed to symbolic compliance: policies adopted, practice unchanged.'); }
+    if (d.mon === 'none') { dec -= 1; dp.push('Self-certification is decoupling by design unless someone tests it.'); }
+    if (d.adm === 'no') { dec -= 1; dp.push('No admission means the compliance program is built against a harm the company does not concede occurred.'); }
+    if (d.ind === 'none') { dec -= 1; dp.push('With no individual charged, the incentive that produced the practice is unchanged for the next vice president.'); }
+    if (dp.length === 0) dp.push('An admitted record, an outside monitor, and charged individuals leave the least room for the policies to decouple from the practice.');
+    out.push(['Resistance to decoupling (Heese and colleagues)', Math.max(0, dec), dp.join(' ')]);
+    $('scores').innerHTML = out.map(o => '<div class="ev"><div class="evhead"><span class="evnum">' + esc(o[0]).toUpperCase() + '</span><span class="evtitle">' + '●'.repeat(o[1]) + '○'.repeat(3 - o[1]) + '</span></div><div class="evtext">' + esc(o[2]) + '</div></div>').join('');
+    return out;
+  }
+  score();
+  let lockedDeal = null;
+  $('lockBtn').addEventListener('click', () => {
+    if (locked) return; locked = true; $('lockBtn').disabled = true; bEl.querySelectorAll('[data-k]').forEach(x => x.disabled = true);
+    lockedDeal = { terms: Object.assign({}, deal), scores: score().map(o => [o[0], o[1]]) };
+    $('lockNote').textContent = 'Locked. Your deal is recorded and compared below.';
+    const d = deal; const rows = [['Form', label('form'), 'Non-prosecution agreement', 'Deferred prosecution agreement'], ['Criminal fine', label('fine'), '$487.2M, with $243.6M already paid credited', '$243.6M'], ['Individuals charged', label('ind'), 'None (one technical pilot tried under the 2021 agreement and acquitted)', 'Two technical pilots blamed; one charged, acquitted 2022'], ['Oversight', label('mon'), 'Compliance consultant chosen by Boeing', 'None'], ['Term', label('term'), 'Two years', 'Three years'], ['Compensation', label('fund'), '$444.5M to the families; $455M on compliance and safety', '$500M to the families; $1.77B to airlines'], ['Admission', label('adm'), 'Agreed statement of facts', 'Agreed statement of facts'], ['Judicial review', d.form === 'DECL' ? 'None; nothing is filed' : d.form === 'NPA' ? 'None; no judge sees an NPA' : d.form === 'DPA' ? 'A judge must accept the eventual dismissal' : 'A judge must accept the plea and can reject its terms','Dismissal granted November 6, 2025, "fails to secure the necessary accountability"', 'Plea to replace it rejected December 2024']];
+    $('cmpTable').innerHTML = '<div class="tablewrap"><table class="runlog"><thead><tr><th>Term</th><th>Your Meridian deal</th><th>Boeing, May 2025 NPA</th><th>Boeing, January 2021 DPA</th></tr></thead><tbody>' + rows.map(r => '<tr><td>' + esc(r[0]) + '</td><td style="white-space:normal">' + esc(r[1]) + '</td><td style="white-space:normal">' + esc(r[2]) + '</td><td style="white-space:normal">' + esc(r[3]) + '</td></tr>').join('') + '</tbody></table></div>';
+    $('cmp').style.display = 'block';
+  });
+
+  // ---------- pyramid ----------
+  const RUNGS = ['Persuasion', 'Warning letter', 'Civil penalty', 'Criminal penalty', 'License suspension', 'License revocation'];
+  const pool = RUNGS.slice().sort(() => Math.random() - 0.5); const placed = []; const pEl = $('pyrList');
+  function drawPyr(){
+    pEl.innerHTML = '<div class="evsrc" style="margin-bottom:6px">Click the sanctions in order from the base of the pyramid to the peak.</div><div class="codes">' + pool.filter(r => !placed.includes(r)).map(r => '<button class="ynb" data-r="' + esc(r) + '" type="button">' + esc(r) + '</button>').join('') + '</div><div class="evsrc" style="margin-top:8px">Your order, base first: ' + (placed.length ? esc(placed.join(' → ')) : '(none yet)') + '</div>';
+  }
+  drawPyr();
+  pEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]'); if (!b || placed.length === 6) return; placed.push(b.dataset.r); drawPyr();
+    if (placed.length === 6) { const right = placed.filter((r, i) => r === RUNGS[i]).length; $('pyrVerdict').innerHTML = '<span class="tag ' + (right === 6 ? 'yes' : right >= 4 ? 'arg' : 'no') + '">' + right + ' of 6 in the reference position</span> Reference, base to peak: ' + RUNGS.join(', ') + '.'; $('pyrDone').style.display = 'block'; }
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 12 · THE DEAL', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('GUESSES: monitors in 2025 ' + (gM() || 'not answered') + ' (ref 0); Milton restitution ' + (gR() ? '$' + gR() + 'M' : 'not answered') + ' (ref $675M); leniency ' + (gH() || 'not answered') + ' (ref ben)');
+    lines.push('');
+    if (lockedDeal) { lines.push('YOUR MERIDIAN DEAL (locked)'); TERMS.forEach(t => lines.push(t.label + ': ' + t.opts.find(o => o[0] === lockedDeal.terms[t.k])[1])); lines.push('Scores (0 to 3): ' + lockedDeal.scores.map(s => s[0] + ' ' + s[1]).join('; ')); }
+    else lines.push('YOUR MERIDIAN DEAL: not locked');
+    lines.push('');
+    lines.push('PYRAMID ORDER: ' + (placed.length === 6 ? placed.join(' > ') : 'not completed') + ' (reference: ' + RUNGS.join(' > ') + ')');
+    lines.push('');
+    lines.push('QUESTION 1 (your deal)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (Boeing)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (the camps)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 12 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 12 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 12 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, deal, score };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

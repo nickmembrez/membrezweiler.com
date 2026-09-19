@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Census Categories · SOC 1113 Trend Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --new: #137a55;
+    --gone: #ae4d26;
+    --wash: rgba(42,120,214,0.08);
+    --bar: #266cc1;
+    --bar-dim: #b9cfe9;
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --new: #199e70;
+    --gone: #ef622a;
+    --wash: rgba(57,135,229,0.10);
+    --bar: #3c8ff3;
+    --bar-dim: #2b3a4d;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* decade view */
+  .yearbar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .bigyear { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 130px; }
+  .navbtn { font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); }
+  .navbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .yearslider { flex: 1; min-width: 220px; accent-color: var(--accent); }
+  .methodtag { font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; background: var(--wash); color: var(--accent); }
+
+  .decade-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .decade-grid { grid-template-columns: 1fr; } }
+  .formcard { border: 1px solid var(--grid); border-radius: 10px; padding: 14px 16px; background: var(--page); }
+  .formcard .qlabel { font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .boxlist { display: flex; flex-direction: column; gap: 5px; }
+  .box { display: flex; align-items: center; gap: 9px; font-size: 14.5px; padding: 3px 6px; border-radius: 6px; }
+  .box .sq { width: 13px; height: 13px; border: 1.5px solid var(--text-secondary); border-radius: 2px; flex: 0 0 auto; }
+  .box.new { background: rgba(27,175,122,0.10); }
+  .box .badge { font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; margin-left: auto; }
+  .box.new .badge { background: var(--new); color: #fff; }
+  .gonelist { margin-top: 10px; }
+  .gone-item { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--text-muted); padding: 2px 6px; }
+  .gone-item .badge { font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 999px; background: var(--gone); color: #fff; margin-left: auto; }
+  .gone-item .name { text-decoration: line-through; }
+  .notecard p { font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+  .notecard p + p { margin-top: 8px; }
+  .countline { margin-top: 12px; font-size: 14px; background: var(--wash); border-radius: 10px; padding: 10px 14px; color: var(--text-secondary); }
+  .countline strong { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  /* lifespan view */
+  .lifewrap { overflow-x: auto; }
+  svg { display: block; width: 100%; height: auto; user-select: none; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .ticklabel { fill: var(--text-muted); font-size: 12px; }
+  .rowlabel { fill: var(--text-primary); font-size: 12.5px; font-weight: 600; }
+  .rownote { fill: var(--text-muted); font-size: 10.5px; }
+
+  /* count view */
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .teeth { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .teeth li { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.5; }
+  .teeth .dot { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: var(--gone); margin-top: 7px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Census Categories <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every category on this page appeared on a real U.S. Census questionnaire, in the year shown.</strong> The census has counted the country every ten years since 1790, and the boxes it counts people into have never stayed still. Categories appear, vanish, split, and get renamed. If race were a fixed biological fact, none of that would happen. Step through the decades and watch the boxes move.</p>
+    </div>
+
+    <div class="tabs" id="tabs" role="tablist"></div>
+
+    <!-- ============ ONE CENSUS AT A TIME ============ -->
+    <div class="section active" id="sec-decade">
+      <div class="card">
+        <div class="yearbar">
+          <button class="navbtn" id="prevBtn" type="button">‹ Earlier</button>
+          <span class="bigyear" id="bigYear">1790</span>
+          <input type="range" class="yearslider" id="yearSlider" min="0" max="0" step="1" value="0">
+          <button class="navbtn" id="nextBtn" type="button">Later ›</button>
+          <span class="methodtag" id="methodTag"></span>
+        </div>
+        <div class="decade-grid">
+          <div class="formcard">
+            <div class="qlabel" id="qLabel"></div>
+            <div class="boxlist" id="boxList"></div>
+            <div class="gonelist" id="goneList"></div>
+          </div>
+          <div class="notecard">
+            <div id="noteBox"></div>
+            <div class="countline" id="countLine"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ LIFESPANS ============ -->
+    <div class="section" id="sec-life">
+      <div class="card">
+        <h2>Every box's lifespan, 1790 to 2020</h2>
+        <p class="lede" style="margin-bottom:12px">Each bar shows the censuses in which a category (or its renamed versions) appeared as a response option. Gaps are real: a category could vanish for decades and return under a new name.</p>
+        <div class="lifewrap"><svg id="lifeSvg" viewBox="0 0 980 560"></svg></div>
+      </div>
+      <div class="card">
+        <h2>How many boxes</h2>
+        <p class="lede" style="margin-bottom:10px">The number of race response options on the questionnaire, census by census. Three in 1790. Fifteen plus write-in lines in 2020.</p>
+        <svg id="countSvg" viewBox="0 0 980 240"></svg>
+      </div>
+    </div>
+
+    <!-- ============ CONSEQUENCES ============ -->
+    <div class="section" id="sec-teeth">
+      <div class="card">
+        <h2>Built boxes still bite</h2>
+        <p class="lede" style="margin-bottom:12px">Constructed does not mean consequence-free. The Thomas theorem runs straight through this history: once a category is defined as real, institutions act on it, and the consequences are real. A few documented examples.</p>
+        <ul class="teeth">
+          <li><span class="dot"></span><span><strong>1790 to 1860:</strong> the slave category fed the Constitution's three-fifths clause, so the count itself allocated political power over the people being counted.</span></li>
+          <li><span class="dot"></span><span><strong>1930:</strong> enumerators were instructed to record any person with any known Black ancestry as Negro, writing the one-drop rule into federal data during the Jim Crow era.</span></li>
+          <li><span class="dot"></span><span><strong>1930 to 1940:</strong> "Mexican" appeared as a race in 1930 and was removed by 1940 after protest from the Mexican government and Mexican American organizations, who understood that the classification affected how people were treated.</span></li>
+          <li><span class="dot"></span><span><strong>1940s:</strong> the Census Bureau assisted the World War II internment of Japanese Americans with neighborhood-level data, a role the Bureau formally acknowledged decades later.</span></li>
+          <li><span class="dot"></span><span><strong>Today:</strong> census categories drive congressional apportionment, Voting Rights Act enforcement, and the distribution of hundreds of billions of dollars in federal funds each year. The boxes still decide things.</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Questions to take with you</h2>
+        <ol class="qs">
+          <li>"Quadroon" and "octoroon" existed for exactly one census. What was being measured in 1890, and who decided it mattered?</li>
+          <li>For 170 years an enumerator looked at you and wrote down what you were. Since 1970 you check the box yourself. What changed in the country to force that switch, and what does the switch change about what the data mean?</li>
+          <li>"Mexican" was a race for one census and gone the next after organized protest. What does that episode show about who gets a say in the boxes?</li>
+          <li>One category has appeared on every census since 1790 without ever being questioned, split, or renamed until write-ins arrived in 2020. What does the stability of "White" tell you about who ran the count?</li>
+          <li>The 2024 federal standard adds a Middle Eastern and North African category, likely for 2030. Whose definition of a situation is winning, and what consequences follow from it?</li>
+          <li>Run the Thomas theorem on one box of your choosing: name the belief, the institutional behavior, and the real consequence.</li>
+        </ol>
+      </div>
+    </div>
+
+    <footer role="presentation">Sources: U.S. Census Bureau decennial census questionnaires, 1790 to 2020 (census.gov, "Through the Decades" questionnaire archive). Pew Research Center, "What Census Calls Us." U.S. Office of Management and Budget, revisions to Statistical Policy Directive No. 15, March 2024. Category lists reflect the race or color question's response options as printed for each census. Early censuses (1790 to 1840) tallied households rather than listing individuals, and their status categories are shown as printed.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* Each entry: year, question label, boxes (as printed), added, removed (vs prior census), note, method */
+const CENSUSES = [
+  { year: 1790, q: 'Household tally · as printed in 1790',
+    boxes: ['Free white males', 'Free white females', 'All other free persons', 'Slaves'],
+    added: [], removed: [],
+    note: ['The first census counted households in four status columns, with free white males split by age. Race, freedom, and sex were the axes the new republic thought worth counting.',
+           'The count had constitutional stakes from day one: enslaved people were counted at three fifths for apportioning Congress.'],
+    method: 'Enumerator decides' },
+  { year: 1820, q: 'Household tally · as printed in 1820',
+    boxes: ['Free white persons', 'Free colored persons', 'Slaves', 'Foreigners not naturalized'],
+    added: ['Free colored persons', 'Foreigners not naturalized'], removed: ['All other free persons'],
+    note: ['The word "colored" enters the census. The 1800 through 1840 counts kept the household-tally structure while adding finer age brackets and, in 1820, a count of unnaturalized foreigners.'],
+    method: 'Enumerator decides' },
+  { year: 1850, q: 'Color · as printed in 1850',
+    boxes: ['White (left blank)', 'Black', 'Mulatto'],
+    added: ['Black', 'Mulatto'], removed: ['Free white persons', 'Free colored persons', 'Foreigners not naturalized'],
+    note: ['The census starts listing every free individual by name, with a Color column: blank for white, B for Black, M for Mulatto. Enslaved people were listed on separate slave schedules, usually without names.',
+           'Note the default: whiteness was the blank. Everyone else got a letter.'],
+    method: 'Enumerator decides' },
+  { year: 1860, q: 'Color · as printed in 1860',
+    boxes: ['White (left blank)', 'Black', 'Mulatto', 'Indian'],
+    added: ['Indian'], removed: [],
+    note: ['"Indian" appears as a color category. The last census taken under slavery.'],
+    method: 'Enumerator decides' },
+  { year: 1870, q: 'Color · as printed in 1870',
+    boxes: ['White', 'Black', 'Mulatto', 'Chinese', 'Indian'],
+    added: ['Chinese'], removed: [],
+    note: ['The first census after emancipation, and the first with "Chinese" as a category, reflecting immigration to the West and the politics around it. The Chinese Exclusion Act followed in 1882.'],
+    method: 'Enumerator decides' },
+  { year: 1890, q: 'Race · as printed in 1890',
+    boxes: ['White', 'Black', 'Mulatto', 'Quadroon', 'Octoroon', 'Chinese', 'Japanese', 'Indian'],
+    added: ['Quadroon', 'Octoroon', 'Japanese'], removed: [],
+    note: ['The word "race" appears on the questionnaire for the first time, and the government attempts fractional ancestry accounting: mulatto, quadroon (one quarter), octoroon (one eighth).',
+           'Enumerators could not apply the distinctions consistently, and both categories vanished after this single census. A measurement program built on a construction collapsed under its own definitions.'],
+    method: 'Enumerator decides' },
+  { year: 1900, q: 'Color or race · as printed in 1900',
+    boxes: ['White', 'Black', 'Chinese', 'Japanese', 'Indian'],
+    added: [], removed: ['Mulatto', 'Quadroon', 'Octoroon'],
+    note: ['The fractional categories are gone. A separate Indian schedule asked about lineage fractions instead.'],
+    method: 'Enumerator decides' },
+  { year: 1910, q: 'Color or race · as printed in 1910',
+    boxes: ['White', 'Black', 'Mulatto', 'Chinese', 'Japanese', 'Indian', 'Other (write in)'],
+    added: ['Mulatto', 'Other (write in)'], removed: [],
+    note: ['Mulatto returns after a decade away, and a write-in "Other" appears for the first time. The boxes are visibly unstable now: gone, back, renamed, depending on the decade’s politics and the Bureau’s theories.'],
+    method: 'Enumerator decides' },
+  { year: 1920, q: 'Color or race · as printed in 1920',
+    boxes: ['White', 'Black', 'Mulatto', 'Indian', 'Chinese', 'Japanese', 'Filipino', 'Hindu', 'Korean', 'Other'],
+    added: ['Filipino', 'Hindu', 'Korean'], removed: [],
+    note: ['Three new Asian categories arrive, tracking immigration and the exclusion politics around it. "Hindu" meant South Asian regardless of religion, a reminder that the boxes encode the counters’ categories, not the counted’s.'],
+    method: 'Enumerator decides' },
+  { year: 1930, q: 'Color or race · as printed in 1930',
+    boxes: ['White', 'Negro', 'Mexican', 'Indian', 'Chinese', 'Japanese', 'Filipino', 'Hindu', 'Korean', 'Other'],
+    added: ['Mexican'], removed: ['Mulatto', 'Black (renamed Negro)'],
+    note: ['Mulatto disappears for good, replaced by an instruction: record any person with any known Black ancestry as Negro. The one-drop rule, written into federal data collection.',
+           '"Mexican" appears as a race for the first and only time.'],
+    method: 'Enumerator decides' },
+  { year: 1940, q: 'Color or race · as printed in 1940',
+    boxes: ['White', 'Negro', 'Indian', 'Chinese', 'Japanese', 'Filipino', 'Hindu', 'Korean', 'Other'],
+    added: [], removed: ['Mexican'],
+    note: ['"Mexican" is gone after one census, removed following protest from the Mexican government and Mexican American organizations. People of Mexican descent were counted as white.',
+           'A category appeared, was contested by the people it classified, and was withdrawn. The boxes respond to power.'],
+    method: 'Enumerator decides' },
+  { year: 1950, q: 'Race · as printed in 1950',
+    boxes: ['White', 'Negro', 'Indian', 'Japanese', 'Chinese', 'Filipino', 'Other'],
+    added: [], removed: ['Hindu', 'Korean'],
+    note: ['The word "color" is dropped from the question. Hindu and Korean disappear from the list.'],
+    method: 'Enumerator decides' },
+  { year: 1960, q: 'Color or race · as printed in 1960',
+    boxes: ['White', 'Negro', 'American Indian', 'Japanese', 'Chinese', 'Filipino', 'Hawaiian', 'Part Hawaiian', 'Aleut', 'Eskimo'],
+    added: ['Hawaiian', 'Part Hawaiian', 'Aleut', 'Eskimo'], removed: ['Other'],
+    note: ['Hawaii and Alaska became states in 1959, and four new categories arrive with them. "Indian" becomes "American Indian." Mail questionnaires begin, starting the shift away from an enumerator’s judgment.'],
+    method: 'Transition begins' },
+  { year: 1970, q: 'Color or race · as printed in 1970',
+    boxes: ['White', 'Negro or Black', 'American Indian', 'Japanese', 'Chinese', 'Filipino', 'Hawaiian', 'Korean', 'Other'],
+    added: ['Korean', 'Other'], removed: ['Part Hawaiian', 'Aleut', 'Eskimo'],
+    note: ['The decisive change is who answers: you now classify yourself. After the Civil Rights Act and Voting Rights Act, the categories also became the units for measuring discrimination, which raised the stakes of every box.'],
+    method: 'You decide' },
+  { year: 1980, q: 'Race · as printed in 1980',
+    boxes: ['White', 'Black or Negro', 'American Indian', 'Eskimo', 'Aleut', 'Japanese', 'Chinese', 'Filipino', 'Korean', 'Vietnamese', 'Asian Indian', 'Hawaiian', 'Guamanian', 'Samoan', 'Other'],
+    added: ['Vietnamese', 'Asian Indian', 'Guamanian', 'Samoan', 'Eskimo', 'Aleut'], removed: [],
+    note: ['The list grows to fifteen. A separate question asks whether the person is of Hispanic or Latino origin, establishing the race-plus-ethnicity format still in use. "Asian Indian" returns a population counted as "Hindu" sixty years earlier.'],
+    method: 'You decide' },
+  { year: 2000, q: 'Race · as printed in 2000 · mark one or more',
+    boxes: ['White', 'Black, African Am., or Negro', 'American Indian or Alaska Native', 'Asian Indian', 'Chinese', 'Filipino', 'Japanese', 'Korean', 'Vietnamese', 'Other Asian', 'Native Hawaiian', 'Guamanian or Chamorro', 'Samoan', 'Other Pacific Islander', 'Some other race'],
+    added: ['Mark one or more (new rule)', 'Native Hawaiian (renamed)', 'Alaska Native (merged)'], removed: ['Eskimo', 'Aleut (folded into Alaska Native)'],
+    note: ['For the first time in 210 years, a person can check more than one box. Nearly seven million people immediately did.',
+           'The 1990 census, one decade earlier, had literally assigned multiracial respondents to whichever race they wrote first.'],
+    method: 'You decide' },
+  { year: 2020, q: 'Race · as printed in 2020 · mark one or more',
+    boxes: ['White (with origin write-in)', 'Black or African Am. (with origin write-in)', 'American Indian or Alaska Native', 'Asian Indian', 'Chinese', 'Filipino', 'Japanese', 'Korean', 'Vietnamese', 'Other Asian', 'Native Hawaiian', 'Guamanian or Chamorro', 'Samoan', 'Other Pacific Islander', 'Some other race'],
+    added: ['Origin write-in lines under White and Black'], removed: ['Negro (term dropped after roughly a century)'],
+    note: ['"Negro" leaves the form after about a hundred years. White and Black get write-in lines for specific origins, with Middle Eastern and North African examples listed under White.',
+           'In March 2024 the federal government adopted a combined race and ethnicity question and a separate Middle Eastern and North African category, expected on the 2030 census. The boxes are moving again, right now.'],
+    method: 'You decide' },
+];
+
+/* lifespans: [label, [[start,end],...], note] . end inclusive, census years */
+const LIFESPANS = [
+  ['White', [[1790, 2020]], ''],
+  ['Slave / status categories', [[1790, 1860]], 'ended with emancipation'],
+  ['Black / Negro / African American', [[1820, 2020]], ''],
+  ['Mulatto', [[1850, 1890], [1910, 1920]], 'gone, back, gone for good'],
+  ['Quadroon', [[1890, 1890]], 'one census only'],
+  ['Octoroon', [[1890, 1890]], 'one census only'],
+  ['Indian / American Indian / AIAN', [[1860, 2020]], ''],
+  ['Chinese', [[1870, 2020]], ''],
+  ['Japanese', [[1890, 2020]], ''],
+  ['Filipino', [[1920, 2020]], ''],
+  ['Hindu / Asian Indian', [[1920, 1940], [1980, 2020]], ''],
+  ['Korean', [[1920, 1940], [1970, 2020]], ''],
+  ['Mexican', [[1930, 1930]], 'one census, removed after protest'],
+  ['Hawaiian / Native Hawaiian', [[1960, 2020]], ''],
+  ['Eskimo / Aleut', [[1960, 1990]], 'folded into Alaska Native'],
+  ['Vietnamese', [[1980, 2020]], ''],
+  ['Mark more than one race', [[2000, 2020]], ''],
+  ['Middle Eastern / North African', [], 'adopted 2024, expected 2030'],
+];
+
+const COUNTS = CENSUSES.map(c => ({ year: c.year, n: c.boxes.length }));
+
+let idx = 0;
+
+function el(svg, name, attrs) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  svg.appendChild(e);
+  return e;
+}
+
+function renderDecade() {
+  const c = CENSUSES[idx];
+  document.getElementById('bigYear').textContent = c.year;
+  document.getElementById('yearSlider').value = idx;
+  document.getElementById('methodTag').textContent = c.method;
+  document.getElementById('qLabel').textContent = c.q;
+  const list = document.getElementById('boxList');
+  list.innerHTML = '';
+  c.boxes.forEach(b => {
+    const isNew = c.added.some(a => b.startsWith(a.split(' (')[0]) || a.startsWith(b.split(' (')[0]));
+    const row = document.createElement('div');
+    row.className = 'box' + (isNew ? ' new' : '');
+    row.innerHTML = '<span class="sq"></span><span>' + b + '</span>' + (isNew ? '<span class="badge">NEW</span>' : '');
+    list.appendChild(row);
+  });
+  const extras = c.added.filter(a => !c.boxes.some(b => b.startsWith(a.split(' (')[0]) || a.startsWith(b.split(' (')[0])));
+  extras.forEach(a => {
+    const row = document.createElement('div');
+    row.className = 'box new';
+    row.innerHTML = '<span class="sq"></span><span>' + a + '</span><span class="badge">NEW</span>';
+    list.appendChild(row);
+  });
+  const gone = document.getElementById('goneList');
+  gone.innerHTML = '';
+  c.removed.forEach(r => {
+    const row = document.createElement('div');
+    row.className = 'gone-item';
+    row.innerHTML = '<span class="name">' + r + '</span><span class="badge">GONE</span>';
+    gone.appendChild(row);
+  });
+  document.getElementById('noteBox').innerHTML = c.note.map(n => '<p>' + n + '</p>').join('');
+  const prev = idx > 0 ? CENSUSES[idx - 1] : null;
+  document.getElementById('countLine').innerHTML =
+    '<strong>' + c.boxes.length + '</strong> response options on this form' +
+    (prev ? ', compared with <strong>' + prev.boxes.length + '</strong> in ' + prev.year + '.' : '.');
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('nextBtn').disabled = idx === CENSUSES.length - 1;
+}
+
+function renderLife() {
+  const svg = document.getElementById('lifeSvg');
+  svg.innerHTML = '';
+  const CW = 980, rowH = 28, top = 30, left = 300, right = 30;
+  const CH = top + LIFESPANS.length * rowH + 30;
+  svg.setAttribute('viewBox', '0 0 ' + CW + ' ' + CH);
+  const iw = CW - left - right;
+  const xOf = yr => left + (yr - 1790) / (2030 - 1790) * iw;
+  for (let yr = 1790; yr <= 2030; yr += 40) {
+    el(svg, 'line', { x1: xOf(yr), x2: xOf(yr), y1: top - 8, y2: CH - 24, class: 'gridline' });
+    el(svg, 'text', { x: xOf(yr), y: 16, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+  }
+  LIFESPANS.forEach((row, i) => {
+    const y = top + i * rowH + rowH / 2;
+    el(svg, 'text', { x: left - 10, y: y + 4, 'text-anchor': 'end', class: 'rowlabel' }).textContent = row[0];
+    row[1].forEach(span => {
+      const x1 = xOf(span[0]) - 4, x2 = xOf(span[1]) + 4;
+      el(svg, 'rect', { x: x1, y: y - 7, width: Math.max(10, x2 - x1), height: 14, rx: 7, fill: 'var(--bar)' });
+    });
+    if (row[0].startsWith('Middle Eastern')) {
+      const x1 = xOf(2030) - 6;
+      el(svg, 'rect', { x: x1, y: y - 7, width: 12, height: 14, rx: 7, fill: 'var(--bar-dim)', stroke: 'var(--bar)', 'stroke-width': 1.5, 'stroke-dasharray': '3 3' });
+      el(svg, 'text', { x: x1 - 8, y: y + 4, 'text-anchor': 'end', class: 'rownote' }).textContent = row[2];
+    } else if (row[2]) {
+      const lastSpan = row[1][row[1].length - 1];
+      const nx = lastSpan ? xOf(lastSpan[1]) + 12 : xOf(2030) + 10;
+      if (nx < CW - 150) el(svg, 'text', { x: nx, y: y + 4, class: 'rownote' }).textContent = row[2];
+    }
+  });
+}
+
+function renderCount() {
+  const svg = document.getElementById('countSvg');
+  svg.innerHTML = '';
+  const CW = 980, CH = 240, m = { top: 16, right: 24, bottom: 30, left: 44 };
+  const iw = CW - m.left - m.right, ih = CH - m.top - m.bottom;
+  const maxN = 16;
+  const xOf = yr => m.left + (yr - 1790) / (2020 - 1790) * iw;
+  const yOf = n => m.top + (1 - n / maxN) * ih;
+  for (let n = 0; n <= maxN; n += 4) {
+    el(svg, 'line', { x1: m.left, x2: CW - m.right, y1: yOf(n), y2: yOf(n), class: 'gridline' });
+    el(svg, 'text', { x: m.left - 8, y: yOf(n) + 4, 'text-anchor': 'end', class: 'ticklabel' }).textContent = n;
+  }
+  for (let yr = 1790; yr <= 2020; yr += 40) {
+    el(svg, 'text', { x: xOf(yr), y: CH - 8, 'text-anchor': 'middle', class: 'ticklabel' }).textContent = yr;
+  }
+  el(svg, 'path', { d: 'M' + COUNTS.map(p => [xOf(p.year), yOf(p.n)].join(',')).join('L'), fill: 'none', stroke: 'var(--bar)', 'stroke-width': 2.5 });
+  COUNTS.forEach(p => el(svg, 'circle', { cx: xOf(p.year), cy: yOf(p.n), r: 3.5, fill: 'var(--bar)' }));
+}
+
+document.getElementById('yearSlider').max = CENSUSES.length - 1;
+document.getElementById('yearSlider').addEventListener('input', e => { idx = Number(e.target.value); renderDecade(); });
+document.getElementById('prevBtn').addEventListener('click', () => { if (idx > 0) { idx--; renderDecade(); } });
+document.getElementById('nextBtn').addEventListener('click', () => { if (idx < CENSUSES.length - 1) { idx++; renderDecade(); } });
+
+const TABS = [
+  { id: 'sec-decade', label: 'One census at a time' },
+  { id: 'sec-life', label: 'Every box’s lifespan' },
+  { id: 'sec-teeth', label: 'Consequences and questions' },
+];
+const tabsBox = document.getElementById('tabs');
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.className = 'tab'; b.setAttribute('role', 'tab');
+  b.setAttribute('aria-selected', i === 0 ? 'true' : 'false');
+  b.textContent = t.label;
+  b.addEventListener('click', () => {
+    tabsBox.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', 'false'));
+    b.setAttribute('aria-selected', 'true');
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(t.id).classList.add('active');
+  });
+  tabsBox.appendChild(b);
+});
+
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  themeBtn.textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(isDark);
+themeBtn.addEventListener('click', () => { isDark = !isDark; applyTheme(isDark); });
+
+renderDecade();
+renderLife();
+renderCount();
+
+window.__S = { renderDecade, get state() { return { idx }; } };
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{"yearSlider": "Census year"}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Counts · White-Collar Crime · Crime Lab 1</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Who Counts <span class="sub">White-Collar Crime · Crime Lab 1 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Every count of white-collar crime starts with a definition, and the definitions do not agree.</strong> Benson and Simpson's first chapter gives you two families: definitions built around the offender (who did it) and definitions built around the offense (how it was done). This lab puts twelve real events from the last two years in front of you and asks you to run each one through three definitions. The point is not to find the right definition. The point is to see, event by event, what each definition keeps and what it throws away. Work in pairs, but each of you submits your own response sheet at the end of class.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-defs" type="button">Three definitions</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sort" type="button">Sort twelve events</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-count" type="button">The count</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-whom" type="button">For whom?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: DEFINITIONS -->
+    <div class="section active" id="sec-defs">
+      <div class="card">
+        <h2>The three definitions you will use</h2>
+        <p class="lede">Read each one and find its hinge, the single requirement that will do the most sorting work. Then answer the quick check at the bottom before you move on.</p>
+        <div class="defs">
+          <div class="def">
+            <div class="who">Sutherland, 1940 · offender-based</div>
+            <div class="quote">"A crime committed by a person of respectability and high social status in the course of his occupation."</div>
+            <div class="hinge"><strong>Hinge:</strong> who the offender is, and whether the act happened inside a legitimate occupation. Sutherland treated civil and regulatory violations by corporations as crimes for his purposes, so "crime" here does not require a criminal conviction. What it does require is status and respectability.</div>
+          </div>
+          <div class="def">
+            <div class="who">Edelhertz, 1970 · offense-based</div>
+            <div class="quote">"An illegal act or series of illegal acts committed by non-physical means and by concealment or guile, to obtain money or property, to avoid the payment or loss of money or property, or to obtain business or personal advantage."</div>
+            <div class="hinge"><strong>Hinge:</strong> the method. Nonphysical means plus concealment or guile, for gain. The offender's status and occupation are irrelevant. Edelhertz's four types were personal crimes, abuses of trust, business crimes, and con games.</div>
+          </div>
+          <div class="def">
+            <div class="who">Reiss and Biderman, 1981 · position-based</div>
+            <div class="quote">"Violations of law to which penalties are attached that involve the use of a violator's position of significant power, influence, or trust in the legitimate economic or political institutional order for the purpose of illegal gain, or to commit an illegal act for personal or organizational gain."</div>
+            <div class="hinge"><strong>Hinge:</strong> a position inside a legitimate institution, used for gain. Status is not required, but a position is. Any violation with a penalty attached qualifies, criminal or not, and the gain can go to the person or to the organization.</div>
+          </div>
+        </div>
+        <div class="guessbox">
+          <p class="gq">Quick check. A person with no job lies on a public benefits application and collects money. Which definition is the only one that clearly counts it?</p>
+          <div class="pickrow">
+            <button class="pick" data-qc="s" type="button">Sutherland</button>
+            <button class="pick" data-qc="e" type="button">Edelhertz</button>
+            <button class="pick" data-qc="r" type="button">Reiss and Biderman</button>
+          </div>
+          <p class="verdict" id="qcVerdict"></p>
+        </div>
+        <div class="veiled" id="qcReveal">
+          <p class="teach"><strong>Edelhertz.</strong> The act is nonphysical, it uses concealment, and it obtains money. That is the whole test. Sutherland needs status and an occupation, and this person has neither. Reiss and Biderman need a position inside a legitimate institution, and there is none. Benson and Simpson make exactly this example the warning label on offense-based definitions: if you use Edelhertz, "someone who lies on a welfare application could be a white-collar offender." Keep that in mind as you sort. An offense-based definition counts more and counts lower.</p>
+        </div>
+        <p class="srcnote">Definitions are quoted as they appear in Benson and Simpson, Understanding White-Collar Crime: An Opportunity Perspective (2015), chapter 1, which is this week's reading. Original sources: Sutherland, E. H. (1940). White-collar criminality. American Sociological Review, 5(1), 1 to 12. Edelhertz, H. (1970). The Nature, Impact and Prosecution of White-Collar Crime. National Institute of Law Enforcement and Criminal Justice. Reiss, A. J., and Biderman, A. D. (1981). Data Sources on White-Collar Law-Breaking. National Institute of Justice.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: SORT -->
+    <div class="section" id="sec-sort">
+      <div class="card">
+        <h2>Twelve events, three definitions</h2>
+        <p class="lede">Each event below is real and was resolved or charged between 2024 and 2026. Each carries a line naming the charges actually brought or the law actually used, because whether an act was treated as a crime, a civil violation, or an administrative matter is part of what you are sorting. For each one, decide whether it counts as white-collar crime under each of the three definitions. Once you have made all three calls for an event, the reference call appears with reasoning. Some reference calls are marked <strong>arguable</strong>. Those are not errors in the answer key. They are places where the definition itself does not settle the question, and they are the events you will write about in your response sheet.</p>
+        <div id="events"></div>
+        <p class="progress" id="sortProgress">0 of 12 events sorted.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: COUNT -->
+    <div class="section" id="sec-count">
+      <div class="card">
+        <h2>How many count?</h2>
+        <p class="lede">Twelve events went in. Before you see the totals, commit to a guess for the strictest definition.</p>
+        <div class="guessbox">
+          <p class="gq">Under Sutherland's definition, how many of the twelve events clearly count? (Arguable calls are excluded from this number.)</p>
+          <div class="gr">
+            <input type="range" id="sSlider" min="0" max="12" step="1" value="6">
+            <span class="gval" id="sVal">6</span>
+            <button class="gbtn" id="sLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="sVerdict"></p>
+        </div>
+        <div class="veiled" id="countReveal">
+          <h3>Reference calls</h3>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Sutherland, clearly counts</span><div class="btrack"><div class="bfill" style="width:0%" data-w="58.3%"></div></div><span class="bval">7 of 12</span></div>
+            <div class="brow"><span class="blabel">Sutherland, arguable</span><div class="btrack"><div class="bfill amber" style="width:0%" data-w="25%"></div></div><span class="bval">3 of 12</span></div>
+            <div class="brow"><span class="blabel">Edelhertz, clearly counts</span><div class="btrack"><div class="bfill" style="width:0%" data-w="75%"></div></div><span class="bval">9 of 12</span></div>
+            <div class="brow"><span class="blabel">Edelhertz, arguable</span><div class="btrack"><div class="bfill amber" style="width:0%" data-w="25%"></div></div><span class="bval">3 of 12</span></div>
+            <div class="brow"><span class="blabel">Reiss and Biderman, clearly counts</span><div class="btrack"><div class="bfill" style="width:0%" data-w="75%"></div></div><span class="bval">9 of 12</span></div>
+            <div class="brow"><span class="blabel">Reiss and Biderman, arguable</span><div class="btrack"><div class="bfill amber" style="width:0%" data-w="0%"></div></div><span class="bval">0 of 12</span></div>
+          </div>
+          <h3>Your calls</h3>
+          <div class="bars" id="yourBars"></div>
+          <p class="progress" id="yourNote"></p>
+          <p class="teach"><strong>Look at which events fell out of each definition.</strong> Sutherland loses the romance scam and the benefits fraud outright, and it wavers on the bookkeeper, the researcher, and the ransomware pair. Those are the offenses of people without high status, or people whose status was not the instrument of the offense. Edelhertz keeps nearly everything, including the benefits fraud and the overseas scam, and it wavers in only two situations: where the harm was physical (the sewer discharge, the mill explosion) and where no court ever called the act illegal (the falsified science). Reiss and Biderman split the difference by asking one question, whether the offender used a position inside a legitimate institution, and that question drops exactly three events: the scam, the ransomware attacks, and the benefits fraud.</p>
+          <p class="teach"><strong>This is the general regularity Benson and Simpson describe.</strong> The two approaches are not contradictory. The techniques Edelhertz names, misrepresentation and concealment for gain, are used far more often by people who hold positions of trust, because those positions supply the opportunity. Status matters because it opens doors to the technique, not because the technique requires it. That is why the three definitions agree on the attorney, the senator, the pharmacist, and the corporation, and disagree at the edges, where either the status or the technique is missing.</p>
+          <p class="teach"><strong>The count is the consequence.</strong> Benson and Simpson note that offense-based definitions produce far more cases than offender-based ones. You just saw why. A research study, a government statistic, or a news claim about how much white-collar crime there is has already made this choice, usually without saying so. When you read one, the first question is which of these twelve kinds of events it was set up to see.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: FOR WHOM -->
+    <div class="section" id="sec-whom">
+      <div class="card">
+        <h2>Occupational or corporate?</h2>
+        <p class="lede">Clinard and Quinney (1973) drew a line that runs through every definition above. <strong>Occupational crime</strong> is committed by an individual in the course of a job, for the individual's own benefit, and often at the expense of the employer. <strong>Corporate crime</strong> is committed by officers or employees on behalf of the organization, for the organization's benefit. Sort the eight events that clearly involve a legitimate occupation or organization.</p>
+        <div id="whom"></div>
+        <div class="veiled" id="whomWrap">
+          <div class="statrow">
+            <div class="stat ok"><div class="v" id="wScore">0 of 8</div><div class="l">Your calls that match the reference</div></div>
+            <div class="stat"><div class="v">4</div><div class="l">Occupational: the bookkeeper, the attorney, the researcher, the senator</div></div>
+            <div class="stat warn"><div class="v">4</div><div class="l">Corporate: Amazon, the hospitality companies, the waste plant, the mill</div></div>
+          </div>
+          <p class="teach"><strong>Notice who was punished in each column.</strong> Every occupational offender here was an individual who went to prison or lost standing. In the corporate column, the waste plant managers and the mill's managers went to prison, but the largest case by far, Amazon at $2.5 billion, ended in a civil settlement with no admission of wrongdoing and no individual charged. The hospitality companies paid back wages and nothing else. The line between occupational and corporate is also, in practice, a line between people who get prosecuted and organizations that get fined. Unit 4 comes back to this.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE SHEET -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 1 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your sorting calls into one block of text, and paste that text into the Lab 1 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq">
+          <div class="qt">Your name</div>
+          <input type="text" id="rName" placeholder="First and last name">
+        </div>
+        <div class="rq">
+          <div class="qt">1. Pick one event where the three definitions disagreed, or where the reference call was arguable. Which definition would you use for this course, and what does that choice do to that event?</div>
+          <div class="qh">Three to five sentences. Name the event by number and title, and say whether the charges actually brought match the definition you chose.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Which of the twelve events would you expect to appear in the number the news calls the crime rate? What would happen to a national count of white-collar crime if the count used Edelhertz instead of Sutherland?</div>
+          <div class="qh">Three to five sentences. The crime rate is the FBI's violent and property crime totals.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Benson and Simpson say offender-based and offense-based definitions are not contradictory, because they describe the same regularity from two sides. Use two events from this lab to state that regularity in your own words.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Name two real cases you are considering for the semester. For each, say which of the three definitions it clearly counts under and whether it is occupational or corporate.</div>
+          <div class="qh">Two to four sentences. This is a first pass, and you can change your case at the Part 1 workshop next week.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap">
+          <textarea id="outText" readonly aria-label="Assembled submission text"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Sources for the twelve events</h2>
+      <p class="srcnote" id="srcList"></p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All events are drawn from the agency releases and reporting cited above, retrieved September 2026. Your clicks and answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  function animateBars(c){
+    c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); });
+  }
+
+  // ---------- tab 1: quick check ----------
+  let qcPicked = null;
+  document.querySelectorAll('#sec-defs .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (qcPicked) return;
+      qcPicked = btn.dataset.qc;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-defs .pick').forEach(b => { b.disabled = true; if (b.dataset.qc === 'e') b.classList.add('answer'); });
+      $('qcVerdict').textContent = qcPicked === 'e' ? 'Right. Only Edelhertz counts it.' : 'The answer is Edelhertz. Read the note below for why the other two do not.';
+      $('qcReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- tab 2: events ----------
+  // Reference calls: 'Y' counts, 'N' does not, 'A' arguable.
+  const DEFS = [
+    { k: 's', name: 'Sutherland' },
+    { k: 'e', name: 'Edelhertz' },
+    { k: 'r', name: 'Reiss and Biderman' }
+  ];
+  const EVENTS = [
+    { title: 'An M&A attorney feeds a trading ring',
+      text: 'A Los Angeles mergers-and-acquisitions lawyer took nonpublic information about more than twelve pending deals from his law firm\'s clients and passed it to a partner, who traded on it and tipped others. The scheme ran from 2018 to 2024 and produced millions of dollars in profits. In May 2026 the SEC charged 21 people, and federal prosecutors in Massachusetts charged 30 across two indictments.',
+      src: 'U.S. Securities and Exchange Commission, press release 2026-44, May 6, 2026.',
+      law: 'Civil (SEC): securities fraud under Section 10(b) of the Securities Exchange Act of 1934 and Rule 10b-5, the provisions that make insider trading unlawful. Criminal (U.S. Attorney, District of Massachusetts, 30 defendants across two indictments): conspiracy to commit securities fraud, securities fraud (charged under both Title 18 and Title 15), money laundering conspiracy, obstruction of justice, false statements to law enforcement, and false declarations before a grand jury. The Title 18 securities fraud counts carry up to 25 years.',
+      ref: { s: 'Y', e: 'Y', r: 'Y' },
+      why: { s: 'A lawyer at a firm handling corporate deals has respectability and status, and the information came to him only through his occupation.',
+             e: 'Nonphysical means, concealment, and money obtained. This is the textbook case for an offense-based definition.',
+             r: 'He used a position of trust in the legitimate economic order, his firm\'s access to client information, for illegal gain.' },
+      note: 'All three definitions agree, which is what you should expect when both the status and the technique are present. The interesting events are the ones below where they are not.' },
+    { title: 'A bookkeeper pays her own credit card from the company account',
+      text: 'The office manager and bookkeeper of a real estate brokerage in Columbus, Georgia moved $453,876 from company accounts to her personal American Express card in monthly transfers over about five and a half years, mostly to pay for home repairs. She was sentenced in June 2025 to 27 months in federal prison and ordered to repay the full amount.',
+      src: 'U.S. Attorney\'s Office, Middle District of Georgia, press release, June 18, 2025.',
+      law: 'Five counts of wire fraud (18 U.S.C. 1343), guilty plea in January 2025. Embezzlement as such is usually a state offense (in Georgia, theft by conversion); the case became federal because the transfers moved electronically across state lines, which is what wire fraud reaches. Restitution was ordered under the Mandatory Victims Restitution Act.',
+      ref: { s: 'A', e: 'Y', r: 'Y' },
+      why: { s: 'Arguable. She had a respectable occupation and the act happened inside it, but "high social status" is a stretch for an office manager at a brokerage. Studies of convicted white-collar offenders find that most look like her, not like Sutherland\'s corporate executives.',
+             e: 'Nonphysical, concealed, money obtained. Edelhertz would file this under abuses of trust.',
+             r: 'A position of trust in a legitimate business, used for personal gain. Status is not required, so the objection under Sutherland disappears here.' },
+      note: 'This is the case Benson and Simpson have in mind when they say offense-based definitions capture "crimes of the middle classes." Whether you count it depends on whether you think white-collar crime is about elites or about method.' },
+    { title: 'Romance, then a fake trading platform',
+      text: 'Operators posing as romantic interests on dating platforms built trust with victims over weeks, then steered them to cryptocurrency investment platforms that displayed fake gains and blocked withdrawals. A California man who laundered the proceeds was sentenced in February 2026 to 40 months in federal prison; restitution exceeded $2.8 million and $2.3 million was seized.',
+      src: 'U.S. Attorney\'s Office, Eastern District of Texas, press release, February 19, 2026.',
+      law: 'For the launderer: conspiracy to commit money laundering (18 U.S.C. 1956(h)), plus forfeiture of seized funds. The scam operators themselves, when they can be reached, are charged with wire fraud and wire fraud conspiracy (18 U.S.C. 1343, 1349). Most cannot be reached, which is why U.S. prosecutions in this area so often land on the domestic money movers rather than the people who ran the scheme.',
+      ref: { s: 'N', e: 'Y', r: 'N' },
+      why: { s: 'No legitimate occupation, no respectability, no status. Sutherland\'s definition does not reach this at all.',
+             e: 'Concealment and guile, nonphysical means, money obtained. Edelhertz would call this a con game, one of his four types.',
+             r: 'No position in the legitimate economic or political order was used. The scam is the whole business.' },
+      note: 'This is the largest category of reported fraud loss in the United States by dollar value, and only one of the three definitions counts it. If your definition of white-collar crime excludes it, you need a name for what it is instead.' },
+    { title: 'Prime enrollment without consent',
+      text: 'The Federal Trade Commission alleged that Amazon enrolled millions of consumers in Prime subscriptions without their consent through confusing interfaces and made cancellation deliberately difficult. In September 2025 Amazon settled for a $1 billion civil penalty, the largest ever for an FTC rule violation, and $1.5 billion in consumer refunds. The case was civil, under the Restore Online Shoppers\' Confidence Act and the FTC Act, and Amazon admitted no wrongdoing.',
+      src: 'Federal Trade Commission, press release, September 25, 2025; FTC v. Amazon.com, Inc. (ROSCA), case 2123050.',
+      law: 'Civil only: the Restore Online Shoppers\' Confidence Act (ROSCA, 15 U.S.C. 8401 to 8405), which governs online negative-option subscriptions, and Section 5 of the FTC Act (unfair or deceptive acts or practices). Remedies were a civil penalty and consumer redress under a stipulated order. No criminal statute was in play; deceptive enrollment design is not a crime.',
+      ref: { s: 'Y', e: 'Y', r: 'Y' },
+      why: { s: 'A large corporation acting through its executives, in the course of business. Sutherland built his 1949 study on civil and administrative actions against corporations exactly like this one, so the absence of a criminal charge does not exclude it.',
+             e: 'Deception (guile) by nonphysical means to obtain money. ROSCA makes the conduct illegal even though the case was civil. Edelhertz says illegal, not criminal.',
+             r: 'A violation of law with a penalty attached, by an organization using its position in the economic order for organizational gain.' },
+      note: 'All three count it. Now notice what the case looked like in practice: no arrest, no indictment, no individual named, and a settlement in which the company admitted nothing. Whether a $2.5 billion payment with no admission is "crime" is a question the definitions answer differently from the courts.' },
+    { title: 'Overtime recorded as bonuses',
+      text: 'Three hospitality companies operating in South Carolina and North Carolina paid 33 cooks straight time for hours over 40 in a week instead of time and a half, and recorded the payments as bonuses in payroll records. The U.S. Department of Labor recovered $95,095 in back wages in April 2026. The action was civil; no one was charged with a crime.',
+      src: 'U.S. Department of Labor, Wage and Hour Division, news release, April 2, 2026.',
+      law: 'Civil: overtime violations under Section 7 of the Fair Labor Standards Act (29 U.S.C. 207) and recordkeeping violations under Section 11(c). Remedies are back wages, an equal amount in liquidated damages, and civil money penalties. The FLSA does contain a criminal provision for willful violations (29 U.S.C. 216(a)), a misdemeanor that is almost never used. The false payroll entries could in principle support a false records or false statements theory, but nothing of the kind was charged.',
+      ref: { s: 'Y', e: 'Y', r: 'Y' },
+      why: { s: 'Employers acting in the course of business, and Sutherland explicitly counted labor law violations. The owners of three restaurant companies are respectable business people, though not the corporate elite of his study.',
+             e: 'Nonphysical, concealed by false payroll records, and done to avoid the payment of money. It fits Edelhertz word for word.',
+             r: 'An employer\'s position of power over employees, used for organizational gain, in violation of a law with penalties attached.' },
+      note: 'Every definition counts it and no criminal justice agency touched it. Wage theft is handled by a civil labor agency that had 611 investigators nationwide in May 2025, one for every 278,000 workers. Being counted by a definition and being counted by the state are different things.' },
+    { title: 'Bypass the treatment system, put the hose in a bucket',
+      text: 'The plant manager and the plant supervisor of a waste pretreatment facility in Nashville bypassed the treatment system and discharged untreated waste into the city sewer in late 2022 and early 2023. They also directed employees to remove the hoses from the monitoring device and place them in buckets of cleaner water so the samples would pass. Both pleaded guilty in 2026 to a Clean Water Act conspiracy, facing up to five years in prison.',
+      src: 'U.S. Department of Justice, Office of Public Affairs, press release, May 19, 2026.',
+      law: 'Criminal provisions of the Clean Water Act (33 U.S.C. 1319(c)): conspiracy to knowingly violate pretreatment standards by bypassing treatment and discharging to a public sewer, and to tamper with a monitoring device. Both pleaded guilty; each count carries up to five years and a $250,000 fine. Tampering with monitoring is its own offense under the Act, separate from the discharge.',
+      ref: { s: 'Y', e: 'A', r: 'Y' },
+      why: { s: 'Managers of a legitimate company, acting in the course of their occupation, for the company\'s benefit. Sutherland\'s corporate cases were carried out by people exactly like this.',
+             e: 'Arguable. The discharge itself is a physical act with physical harm, which Edelhertz\'s definition was not built to see. The bucket trick, though, is concealment for business advantage. Edelhertz counts the tampering and misses the pollution.',
+             r: 'A position in a legitimate business, used to commit an illegal act for organizational gain, with penalties attached.' },
+      note: 'Benson and Simpson\'s central criticism of offense-based definitions is right here: with its focus on money and property, Edelhertz\'s approach excludes physically harmful violations of health, safety, and environmental law. The harm to the river does not count. The lie about the sample does.' },
+    { title: 'Five workers die; the logs were false',
+      text: 'A combustible dust explosion at a corn mill in Cambria, Wisconsin killed five workers in May 2017. In 2023 a jury convicted the company\'s vice president of operations and other managers of conspiring to falsify dust-cleaning and air pollution records, making false compliance certifications, and obstructing the OSHA investigation. The company pleaded guilty to falsifying environmental and sanitation logs. In February 2024 the vice president and two other managers received two-year prison sentences; the company was fined $1 million and ordered to pay $10.25 million in restitution.',
+      src: 'U.S. Department of Justice, Office of Public Affairs, press release, February 2024; U.S. Environmental Protection Agency news release on the sentencing; United States v. Didion Milling Inc. et al.',
+      law: 'The 2022 indictment included willful violations of OSHA standards causing death (29 U.S.C. 666(e)), which is a misdemeanor with a six-month maximum. The prison sentences came from the felony counts: conspiracy (18 U.S.C. 371) to falsify records, false compliance certifications under the Clean Air Act (42 U.S.C. 7413(c)(2)), false statements to OSHA (18 U.S.C. 1001), obstruction of an agency proceeding (18 U.S.C. 1505), and perjury. The company pleaded guilty to falsifying environmental and sanitation logs. The legal weight of the case sat on the paperwork, not on the deaths.',
+      ref: { s: 'Y', e: 'A', r: 'Y' },
+      why: { s: 'A corporation and its vice president, acting in the course of business. This is corporate crime in Sutherland\'s sense, with the added feature that people died.',
+             e: 'Arguable, in the same way as the sewer case. The deaths came from a physical explosion, which Edelhertz cannot count. The falsified logs and the obstruction are concealment for business advantage, which he can. Under Edelhertz, the paperwork is the crime and the deaths are not.',
+             r: 'Positions of significant power in a legitimate business, used to commit illegal acts for organizational gain.' },
+      note: 'Read the convictions again. Nobody was convicted of killing five people. They were convicted of lying about cleaning schedules and lying to OSHA afterward. That is not a quirk of this case. It is how corporate violence usually reaches a courtroom, if it reaches one at all, and it is one reason Benson and Simpson insist that a definition of white-collar crime has to be able to see physical harm.' },
+    { title: 'Medications never prescribed, never dispensed',
+      text: 'Business owners and a pharmacist in the Western District of Tennessee were charged in June 2025 with a $28.7 million scheme that billed a federal workers\' compensation fund for medications for injured postal workers that were never prescribed by a licensed practitioner and largely never dispensed. The case was part of a national takedown that charged 324 defendants, including 96 licensed medical professionals, with schemes involving more than $14.6 billion in alleged intended losses.',
+      src: 'U.S. Department of Justice, Office of Public Affairs, National Health Care Fraud Takedown press release, June 30, 2025.',
+      law: 'Charges across the takedown were built on the federal health care fraud statute (18 U.S.C. 1347) and conspiracy to commit health care fraud (18 U.S.C. 1349), commonly alongside false statements relating to health care matters (18 U.S.C. 1035), the Anti-Kickback Statute (42 U.S.C. 1320a-7b(b)), and money laundering. The same conduct also creates civil liability under the False Claims Act (31 U.S.C. 3729), which is how most health care fraud dollars are actually recovered. This case billed a federal workers\' compensation program, so the victim was the government itself.',
+      ref: { s: 'Y', e: 'Y', r: 'Y' },
+      why: { s: 'A licensed pharmacist and business owners, acting through a legitimate pharmacy. Health care professionals were among Sutherland\'s original examples.',
+             e: 'Billing for what was never provided is misrepresentation by nonphysical means to obtain money.',
+             r: 'A licensed position of trust in the health care system, used for gain.' },
+      note: 'Health care fraud is the largest category of federal white-collar prosecution by dollar value, and all three definitions agree on it. When the definitions agree, the offense tends to be one the government already prosecutes. Watch for that pattern.' },
+    { title: 'Cell lines relabeled as patient tissue',
+      text: 'A cancer researcher, then at the University of Oklahoma Health Sciences Center, falsified data in two NIH grant applications submitted in 2019 and 2020, including relabeling cell line data as patient-derived organoid data, splicing western blot images from unrelated experiments, and misrepresenting the source of an electron micrograph. In February 2026 the federal Office of Research Integrity imposed three years of supervision on any federally funded research and a three-year ban from Public Health Service advisory and peer review roles. No criminal charge was filed.',
+      src: 'U.S. Office of Research Integrity, case summary (Andrade, Daniel); reported by Retraction Watch, February 6, 2026.',
+      law: 'Administrative only: a finding of research misconduct under the Public Health Service regulations (42 C.F.R. Part 93), with supervision and exclusion from advisory roles as the sanctions. Criminal statutes that can reach the same conduct, and occasionally have in other cases, are false statements (18 U.S.C. 1001) for the grant applications, wire fraud (18 U.S.C. 1343), and the civil False Claims Act (31 U.S.C. 3729) for funds obtained. None was pursued here.',
+      ref: { s: 'A', e: 'A', r: 'Y' },
+      why: { s: 'Arguable. A scientist has respectability and status and the act happened inside the occupation, but Sutherland\'s definition says "crime," and no court called this one. Sutherland himself counted administrative findings against corporations, so consistency suggests counting an administrative finding against a researcher. Reasonable people disagree.',
+             e: 'Arguable. The act is nonphysical concealment for personal advantage (grant funding, career), which fits. But Edelhertz says "illegal act," and this was adjudicated as a violation of federal research regulations, not a crime. Whether a regulatory violation is "illegal" is exactly the kind of question the definition leaves open.',
+             r: 'A position of trust in a legitimate institution, used for personal gain, in violation of rules with penalties attached. This is the one definition that counts it cleanly, because it never required a crime.' },
+      note: 'This is where the former academic fraud unit of this course now lives. Data fabrication with federal money on the line can be prosecuted as false statements or grant fraud, and occasionally is. Most of the time it is handled the way this case was, by an administrative office with no power to imprison. Which definition you choose decides whether it belongs in a white-collar crime course at all.' },
+    { title: 'Gold bars in the closet',
+      text: 'Former U.S. Senator Robert Menendez, while chairing the Senate Foreign Relations Committee, accepted gold bars, hundreds of thousands of dollars in cash, and a luxury convertible from businessmen. In return he tried to interfere with state and federal investigations on their behalf and acted on behalf of the government of Egypt. A jury convicted him in 2024 of bribery, extortion, honest services fraud, obstruction, and acting as a foreign agent. In January 2025 he was sentenced to 11 years in federal prison.',
+      src: 'United States v. Menendez, S.D.N.Y.; sentencing reported by ABC News and the New Jersey Monitor, January 29, 2025.',
+      law: 'Convicted on 16 counts including conspiracy to commit bribery, bribery of a public official (18 U.S.C. 201), honest services wire fraud (18 U.S.C. 1343 and 1346), extortion under color of official right under the Hobbs Act (18 U.S.C. 1951), conspiracy for a public official to act as an agent of a foreign principal (18 U.S.C. 219), and obstruction of justice. The foreign agent count is the unusual one; the rest are the standard federal public corruption package.',
+      ref: { s: 'Y', e: 'Y', r: 'Y' },
+      why: { s: 'A sitting senator is close to the maximum of respectability and status, and the acts were committed through the office.',
+             e: 'Concealed exchange of money and property for official advantage. Bribery is nonphysical and hidden by design.',
+             r: 'A position of significant power in the legitimate political order, used for illegal personal gain. Reiss and Biderman wrote "political" into their definition for cases like this.' },
+      note: 'Political white-collar crime is the one area where the public rarely argues about whether it counts. Note the sentence. Eleven years for bribery is longer than what most of the corporate offenders in this lab received for conduct that killed people.' },
+    { title: 'The incident responders were the attackers',
+      text: 'A manager of incident response at one cybersecurity firm and a ransomware negotiator at another, whose day jobs were helping victims recover from ransomware, deployed ALPHV BlackCat ransomware against five companies over six months in 2023, including a physician\'s office, a pharmaceutical company, and a Florida medical company that paid $1.3 million. Both pleaded guilty to extortion conspiracy in December 2025 and were sentenced in April 2026 to four years in prison.',
+      src: 'U.S. Attorney\'s Office, Southern District of Florida; sentencing reported by CyberScoop, April 30, 2026, and Becker\'s Hospital Review, December 31, 2025.',
+      law: 'Guilty pleas to conspiracy to interfere with interstate commerce by extortion under the Hobbs Act (18 U.S.C. 1951), up to 20 years. Two further counts in the indictment were dropped under the plea agreement. Ransomware prosecutions in federal court also routinely charge intentional damage to a protected computer under the Computer Fraud and Abuse Act (18 U.S.C. 1030). Note that the offense of conviction is extortion, the same statute used against the senator in event 10.',
+      ref: { s: 'A', e: 'Y', r: 'N' },
+      why: { s: 'Arguable, leaning no. Both men held respectable, skilled positions, but the attacks were not committed "in the course of" those occupations. They used skills and knowledge from the job, not the job itself. Sutherland\'s phrase does a lot of work here.',
+             e: 'Extortion by threat is nonphysical, the attacks were concealed, and money was obtained. Edelhertz counts it without hesitation.',
+             r: 'They did not use a position in the legitimate order to commit the offense. They used a position to learn how. That is not what the definition says.' },
+      note: 'Compare this with the attorney in event 1. Both used professional knowledge. The difference is that the attorney\'s position was the instrument of the crime, while the responders\' positions were only the training ground. The definitions that hinge on occupation or position notice that difference. The definition that hinges on method does not.' },
+    { title: 'Unemployment claims in prisoners\' names',
+      text: 'A Virginia man used the personal identifying information of prison inmates and others to file fraudulent pandemic unemployment insurance claims with state workforce agencies between June 2020 and October 2021, then kept the payments coming through weekly recertifications. He collected $221,118. In June 2026 he was sentenced to four years and three months in federal prison, consecutive to a state sentence he was already serving.',
+      src: 'U.S. Attorney\'s Office, Eastern District of Virginia, press release, June 9, 2026.',
+      law: 'Sentenced for an unemployment insurance benefit fraud conspiracy; the release does not name the statute. Pandemic UI schemes of this kind are typically charged as conspiracy to commit wire fraud (18 U.S.C. 1349 and 1343), and using other people\'s identities exposes a defendant to aggravated identity theft (18 U.S.C. 1028A), which carries a mandatory two-year consecutive term. Forfeiture and restitution of the full amount were ordered.',
+      ref: { s: 'N', e: 'Y', r: 'N' },
+      why: { s: 'No occupation, no respectability, no status. This is the opposite of Sutherland\'s offender.',
+             e: 'Nonphysical, concealed, money obtained. Edelhertz would call it a personal crime, his first type, alongside individual tax fraud and credit card fraud.',
+             r: 'No position in a legitimate institution was used.' },
+      note: 'This is the event from the quick check. Under Edelhertz it is white-collar crime, and in federal court statistics that use an offense-based sample, this defendant would be counted as a white-collar offender next to the senator. That is the "trap" Benson and Simpson describe: the definition is easy to sample from and it fills the sample with cases like this one.' }
+  ];
+  const evEl = $('events');
+  const calls = EVENTS.map(() => ({ s: null, e: null, r: null }));
+  EVENTS.forEach((ev, i) => {
+    const d = document.createElement('div');
+    d.className = 'ev';
+    let rows = '';
+    DEFS.forEach(df => {
+      rows += '<div class="drow"><span class="dlabel">' + df.name + '</span>' +
+        '<div class="yn"><button class="ynb" data-ev="'+i+'" data-def="'+df.k+'" data-a="Y" type="button">Counts</button>' +
+        '<button class="ynb" data-ev="'+i+'" data-def="'+df.k+'" data-a="N" type="button">Does not count</button></div>' +
+        '<div class="ref" id="ref-'+i+'-'+df.k+'"></div></div>';
+    });
+    d.innerHTML = '<div class="evhead"><span class="evnum">EVENT ' + (i+1) + '</span><span class="evtitle">' + ev.title + '</span></div>' +
+      '<div class="evtext">' + ev.text + '</div>' +
+      '<div class="evsrc">Source: ' + ev.src + '</div>' + '<div class="evsrc"><strong>Charges or legal basis:</strong> ' + ev.law + '</div>' + rows +
+      '<div class="evnote" id="note-'+i+'"></div>';
+    evEl.appendChild(d);
+  });
+  function tagFor(r){ return r === 'Y' ? '<span class="tag yes">counts</span>' : r === 'N' ? '<span class="tag no">does not count</span>' : '<span class="tag arg">arguable</span>'; }
+  function revealEvent(i){
+    const ev = EVENTS[i];
+    DEFS.forEach(df => {
+      const r = ev.ref[df.k], c = calls[i][df.k];
+      let agree = '';
+      if (r === 'A') agree = ' Either call is defensible.';
+      else agree = (c === r) ? ' You agreed.' : ' You called it the other way.';
+      const el = $('ref-'+i+'-'+df.k);
+      el.innerHTML = tagFor(r) + ev.why[df.k] + '<strong>' + agree + '</strong>';
+      el.style.display = 'block';
+    });
+    const n = $('note-'+i);
+    n.innerHTML = '<strong>Why this event is here.</strong> ' + ev.note;
+    n.style.display = 'block';
+  }
+  function sortedCount(){ return calls.filter(c => c.s && c.e && c.r).length; }
+  evEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ev]');
+    if (!b) return;
+    const i = Number(b.dataset.ev), k = b.dataset.def, a = b.dataset.a;
+    if (calls[i][k]) return;
+    calls[i][k] = a;
+    evEl.querySelectorAll('[data-ev="'+i+'"][data-def="'+k+'"]').forEach(x => { x.disabled = true; if (x.dataset.a === a) x.classList.add('sel'); });
+    if (calls[i].s && calls[i].e && calls[i].r) revealEvent(i);
+    $('sortProgress').textContent = sortedCount() + ' of 12 events sorted.' + (sortedCount() === 12 ? ' Go to The count tab.' : '');
+  });
+
+  // ---------- tab 3: count ----------
+  (function(){
+    const slider = $('sSlider'), val = $('sVal'), lock = $('sLock');
+    slider.addEventListener('input', () => { val.textContent = slider.value; });
+    lock.addEventListener('click', () => {
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = 7, d = g - a;
+      let t = 'You guessed ' + g + '. The reference count is 7, with 3 more arguable. ';
+      if (d === 0) t += 'Exactly right.';
+      else if (Math.abs(d) <= 1) t += 'Within one.';
+      else if (d > 0) t += 'You were ' + Math.abs(d) + ' high.';
+      else t += 'You were ' + Math.abs(d) + ' low.';
+      $('sVerdict').textContent = t;
+      // your bars
+      const yb = $('yourBars');
+      let html = '';
+      const done = sortedCount();
+      DEFS.forEach(df => {
+        const y = calls.filter(c => c[df.k] === 'Y').length;
+        html += '<div class="brow"><span class="blabel">' + df.name + ', your "counts" calls</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="' + (y/12*100).toFixed(1) + '%"></div></div><span class="bval">' + y + ' of 12</span></div>';
+      });
+      yb.innerHTML = html;
+      $('yourNote').textContent = done < 12 ? 'You have sorted ' + done + ' of 12 events. Your bars reflect only the events you have sorted so far.' : 'All 12 events sorted.';
+      $('countReveal').style.display = 'block';
+      animateBars($('countReveal'));
+    });
+  })();
+
+  // ---------- tab 4: for whom ----------
+  const WHOM = [
+    { t: 'Event 2. The bookkeeper who paid her credit card from the brokerage account.', a: 'occ',
+      v: '<strong>Occupational.</strong> She benefited, the employer lost. This is the classic embezzlement shape, an individual against the organization from inside it.' },
+    { t: 'Event 4. Amazon and Prime enrollment.', a: 'corp',
+      v: '<strong>Corporate.</strong> The gain went to the company as subscription revenue. No individual was named or charged, which is typical of corporate crime as it is actually enforced.' },
+    { t: 'Event 1. The M&A attorney and the trading ring.', a: 'occ',
+      v: '<strong>Occupational.</strong> He used his firm\'s access for personal profit, and the firm and its clients were the ones betrayed.' },
+    { t: 'Event 5. The hospitality companies and the overtime recorded as bonuses.', a: 'corp',
+      v: '<strong>Corporate.</strong> The businesses kept the wages. The workers lost. The organization was the beneficiary, which is why the remedy ran against the companies and not against any manager.' },
+    { t: 'Event 9. The researcher who falsified grant applications.', a: 'occ',
+      v: '<strong>Occupational.</strong> The gain was personal: funding, publications, a career. The university and the funding agency were the injured parties, not the beneficiaries.' },
+    { t: 'Event 6. The waste plant managers who bypassed treatment and rigged the sampler.', a: 'corp',
+      v: '<strong>Corporate.</strong> Neither manager pocketed anything. The company avoided treatment costs. Managers went to prison for a benefit that accrued to the organization, which is the pattern in most corporate criminal cases that produce individual defendants.' },
+    { t: 'Event 10. The senator and the gold bars.', a: 'occ',
+      v: '<strong>Occupational.</strong> The office was the instrument and the gain was personal. Criminologists sometimes carve out political or governmental crime as its own category, but on Clinard and Quinney\'s line it falls on the occupational side.' },
+    { t: 'Event 7. The corn mill and the falsified safety logs.', a: 'corp',
+      v: '<strong>Corporate.</strong> The false logs served the company\'s production and compliance costs, not any manager\'s pocket. The vice president went to prison for the organization\'s benefit.' }
+  ];
+  const whomEl = $('whom');
+  const wstate = WHOM.map(() => null);
+  WHOM.forEach((h, i) => {
+    const d = document.createElement('div');
+    d.className = 'ev';
+    d.innerHTML = '<div class="drow" style="margin-top:0"><div class="evtext" style="margin-top:0;flex:1;min-width:260px">' + h.t + '</div>' +
+      '<div class="yn"><button class="ynb" data-w="'+i+'" data-a="occ" type="button">Occupational</button>' +
+      '<button class="ynb" data-w="'+i+'" data-a="corp" type="button">Corporate</button></div></div>' +
+      '<div class="evnote" id="wv'+i+'"></div>';
+    whomEl.appendChild(d);
+  });
+  whomEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-w]');
+    if (!b) return;
+    const i = Number(b.dataset.w), a = b.dataset.a;
+    if (wstate[i] !== null) return;
+    whomEl.querySelectorAll('[data-w="'+i+'"]').forEach(x => { x.disabled = true; if (x.dataset.a === a) x.classList.add('sel'); });
+    wstate[i] = (a === WHOM[i].a);
+    const el = $('wv'+i);
+    el.innerHTML = WHOM[i].v + (wstate[i] ? ' <strong>You agreed.</strong>' : ' <strong>You called it the other way.</strong>');
+    el.style.display = 'block';
+    if (wstate.every(v => v !== null)) {
+      $('wScore').textContent = wstate.filter(Boolean).length + ' of 8';
+      $('whomWrap').style.display = 'block';
+    }
+  });
+
+  // ---------- sources list ----------
+  $('srcList').innerHTML = EVENTS.map((ev, i) => '<strong>Event ' + (i+1) + '.</strong> ' + ev.src).join('<br>') +
+    '<br><strong>Enforcement capacity figure (event 5 note).</strong> Workplace Justice Lab, Rutgers University and Northwestern University, report on Wage and Hour Division staffing, May 2025 (611 investigators, one per 278,000 workers).' +
+    '<br><strong>Charges.</strong> Offense names are taken from the cited releases and indictments. Where a release did not name the statute, the line says so and describes how that kind of case is typically charged. Statute citations are to the United States Code (U.S.C.) and Code of Federal Regulations (C.F.R.).' +
+    '<br><strong>Definitions and framing.</strong> Benson, M. L., and Simpson, S. S. (2015). Understanding White-Collar Crime: An Opportunity Perspective (2nd ed.), chapter 1. Clinard, M. B., and Quinney, R. (1973). Criminal Behavior Systems: A Typology (2nd ed.). Holt, Rinehart and Winston.';
+
+  // ---------- tab 5: response sheet ----------
+  function labelFor(v){ return v === 'Y' ? 'counts' : v === 'N' ? 'does not count' : 'not sorted'; }
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = [];
+    lines.push('WHITE-COLLAR CRIME · CRIME LAB 1 · WHO COUNTS');
+    lines.push('Name: ' + name);
+    lines.push('Assembled: ' + new Date().toLocaleString());
+    lines.push('');
+    lines.push('SORTING CALLS (Sutherland / Edelhertz / Reiss and Biderman)');
+    EVENTS.forEach((ev, i) => {
+      const c = calls[i];
+      lines.push((i+1) + '. ' + ev.title + ': ' + labelFor(c.s) + ' / ' + labelFor(c.e) + ' / ' + labelFor(c.r));
+    });
+    lines.push('');
+    lines.push('OCCUPATIONAL OR CORPORATE');
+    WHOM.forEach((h, i) => {
+      const sel = whomEl.querySelector('[data-w="'+i+'"].sel');
+      lines.push(h.t + ' ' + (sel ? (sel.dataset.a === 'occ' ? 'Occupational' : 'Corporate') : 'not sorted'));
+    });
+    lines.push('');
+    lines.push('QUESTION 1 (definitions disagree)');
+    lines.push($('r1').value.trim() || '(blank)');
+    lines.push('');
+    lines.push('QUESTION 2 (crime rate and the count)');
+    lines.push($('r2').value.trim() || '(blank)');
+    lines.push('');
+    lines.push('QUESTION 3 (the regularity)');
+    lines.push($('r3').value.trim() || '(blank)');
+    lines.push('');
+    lines.push('QUESTION 4 (case project candidates)');
+    lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n');
+    $('outWrap').style.display = 'block';
+    $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 1 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText');
+    ta.focus(); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(() => { $('buildNote').textContent = 'Copied. Paste it into the Lab 1 submission in D2L.'; }, () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 1 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; });
+    } else {
+      $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 1 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+    }
+  });
+
+  window.__S = { activate, calls, wstate, EVENTS };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

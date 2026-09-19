@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Dark Figure · SOC 3333 Crime Lab</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --then: #b9cfe9;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #6e6c67;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --then: #2b3a4d;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .blabel { font-size: 13px; min-width: 210px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 15px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; border-radius: 7px; background: var(--now); transition: width 0.6s ease; }
+  .bfill.then { background: var(--then); }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 7ch; font-weight: 700; color: var(--text-secondary); }
+  .brow.total .blabel, .brow.total .bval { color: var(--text-primary); font-weight: 700; }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 5ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick:disabled { cursor: default; opacity: 0.9; }
+
+  table.cmp { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 13.5px; }
+  table.cmp th, table.cmp td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+  table.cmp th:first-child, table.cmp td:first-child { text-align: left; }
+  table.cmp thead th { font-size: 12.5px; color: var(--text-secondary); font-weight: 700; }
+  table.cmp tr.flag td { background: var(--wash); font-weight: 700; }
+
+  .incident { border: 1px solid var(--border); border-radius: 12px; padding: 15px 17px; margin-top: 13px; }
+  .inum { font-size: 12px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.06em; text-transform: uppercase; }
+  .itext { font-size: 15px; line-height: 1.55; margin: 6px 0 4px; }
+  .offlist { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+  .off { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 9px; cursor: pointer; background: none; color: var(--text-primary); font-family: inherit; text-align: left; width: 100%; }
+  .off:hover { border-color: var(--text-muted); }
+  .off .box { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--text-muted); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: transparent; }
+  .off.on .box { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .off .tagz { margin-left: auto; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; display: none; }
+  .off.correct .tagz.counted { display: inline; background: rgba(46,139,87,0.16); color: var(--good); }
+  .off.dropped .tagz.lost { display: inline; background: rgba(235,104,52,0.16); color: var(--warn); }
+  .off:disabled { cursor: default; }
+  .iresult { display: none; margin-top: 8px; }
+  .scorebar { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 10px; }
+  .scorebox { flex: 1; min-width: 130px; background: var(--wash); border-radius: 9px; padding: 10px 12px; }
+  .scorebox .v { font-size: 21px; font-weight: 800; }
+  .scorebox .l { font-size: 11.5px; color: var(--text-secondary); margin-top: 1px; }
+
+  .scen { border-top: 1px solid var(--border); padding: 13px 0; }
+  .scen:first-of-type { border-top: none; padding-top: 2px; }
+  .scenq { font-size: 15px; font-weight: 700; line-height: 1.45; }
+  .scenv { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 8px; }
+  .scenv strong { color: var(--text-primary); }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Dark Figure <span class="sub">SOC 3333 · Crime Lab · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Last week you measured the gap between belief and data. This week you find out where the data itself comes from, and what it cannot see.</strong> Every crime number you will ever read was produced by a counting system with rules, blind spots, and a definition of what counts. This page walks you through the two biggest systems in American criminology, the reasons they disagree, and a counting rule that quietly erased offenses for ninety years. Guess before each reveal. Nothing here is recorded, so write your numbers down. You will use them in Forum 2.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-dark" type="button">How dark is it?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-two" type="button">Two systems, one year</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-why" type="button">Why people stay silent</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-hier" type="button">The hierarchy rule</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-pick" type="button">Pick your source</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-forum" type="button">Your forum post</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-dark">
+      <div class="card">
+        <h2>Police data measure reported crime, not crime</h2>
+        <p class="lede">Every year the Bureau of Justice Statistics runs the National Crime Victimization Survey, asking a large sample of Americans age 12 and older whether they were victimized, and then whether they told the police. The distance between those two answers is the dark figure of crime. Start with the headline number.</p>
+        <div class="guessbox">
+          <p class="gq">In 2024, what percent of violent victimizations were reported to police?</p>
+          <div class="gr">
+            <input type="range" id="vSlider" min="0" max="100" step="1" value="50">
+            <span class="gval" id="vVal">50%</span>
+            <button class="gbtn" id="vLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="vVerdict"></p>
+        </div>
+        <div class="veiled" id="vReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Motor vehicle theft</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="75.0%"></div></div><span class="bval">75.0%</span></div>
+            <div class="brow"><span class="blabel">Robbery</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="73.4%"></div></div><span class="bval">73.4%</span></div>
+            <div class="brow"><span class="blabel">Aggravated assault</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="69.1%"></div></div><span class="bval">69.1%</span></div>
+            <div class="brow total"><span class="blabel">All violent crime</span><div class="btrack"><div class="bfill" style="width:0%" data-w="47.9%"></div></div><span class="bval">47.9%</span></div>
+            <div class="brow"><span class="blabel">Burglary or trespassing</span><div class="btrack"><div class="bfill" style="width:0%" data-w="40.7%"></div></div><span class="bval">40.7%</span></div>
+            <div class="brow"><span class="blabel">Simple assault</span><div class="btrack"><div class="bfill" style="width:0%" data-w="40.4%"></div></div><span class="bval">40.4%</span></div>
+            <div class="brow total"><span class="blabel">All property crime</span><div class="btrack"><div class="bfill" style="width:0%" data-w="30.5%"></div></div><span class="bval">30.5%</span></div>
+            <div class="brow"><span class="blabel">Other theft</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="25.4%"></div></div><span class="bval">25.4%</span></div>
+            <div class="brow"><span class="blabel">Rape or sexual assault</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="23.6%"></div></div><span class="bval">23.6%</span></div>
+          </div>
+          <p class="teach"><strong>Fewer than half of violent victimizations reached the police in 2024, and fewer than a third of property victimizations did.</strong> Look at the top and the bottom of that list. Motor vehicle theft is reported at 75 percent because insurance claims require a police report, which means the incentive to report is built into the system rather than into the crime. Rape and sexual assault sit at 23.6 percent, the least reported serious offense in the survey. Both facts are about reporting behavior, not about how often the offenses happen, and any chart built only from police records inherits both distortions silently.</p>
+        </div>
+        <p class="srcnote">Source: Bureau of Justice Statistics, Criminal Victimization, 2024 (published 2025), Table 4, percent of victimizations reported to police. The NCVS covers persons age 12 or older living in U.S. households and excludes homicide, crimes against businesses, and children under 12.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-two">
+      <div class="card">
+        <h2>The same year, counted twice</h2>
+        <p class="lede">Two federal systems measured American crime in 2024. Police agencies reported offenses known to them, compiled by the FBI and published by BJS. The victimization survey asked households directly. Same country, same year, two very different numbers. Before you look, one question.</p>
+        <div class="guessbox">
+          <p class="gq">For most offenses the victim survey finds far more crime than police records do. For exactly one offense below, police recorded MORE than the survey estimated. Which one?</p>
+          <div class="pickrow">
+            <button class="pick" data-pick="rape" type="button">Rape or sexual assault</button>
+            <button class="pick" data-pick="rob" type="button">Robbery</button>
+            <button class="pick" data-pick="burg" type="button">Burglary</button>
+            <button class="pick" data-pick="mvt" type="button">Motor vehicle theft</button>
+          </div>
+          <p class="verdict" id="twoVerdict"></p>
+        </div>
+        <div class="veiled" id="twoReveal">
+          <table class="cmp">
+            <thead><tr><th>Offense</th><th>Victim survey (NCVS)</th><th>Known to police</th><th>Survey ÷ police</th></tr></thead>
+            <tbody>
+              <tr><td>Rape or sexual assault</td><td>560,890</td><td>134,300</td><td>4.2×</td></tr>
+              <tr><td>Robbery</td><td>642,150</td><td>212,670</td><td>3.0×</td></tr>
+              <tr><td>Theft (larceny)</td><td>10,618,790</td><td>4,538,650</td><td>2.3×</td></tr>
+              <tr><td>Burglary or trespassing</td><td>1,609,650</td><td>782,100</td><td>2.1×</td></tr>
+              <tr><td>Aggravated assault</td><td>1,341,950</td><td>896,820</td><td>1.5×</td></tr>
+              <tr class="flag"><td>Motor vehicle theft</td><td>841,120</td><td>920,300</td><td>0.9×</td></tr>
+              <tr><td>Murder</td><td>Cannot be measured</td><td>17,420</td><td>n/a</td></tr>
+            </tbody>
+          </table>
+          <p class="teach"><strong>Motor vehicle theft is the exception, and the reason is a blind spot rather than a contradiction.</strong> The victim survey interviews people in households, so a stolen delivery van, rental car, or fleet vehicle never appears in it, while the police record it like any other theft. Add the high reporting rate you saw on the first tab and the survey's advantage disappears entirely. Murder is the other instructive row: the survey cannot measure it at all, for the obvious reason, which is exactly why criminologists lean on police homicide data when they want the most trustworthy crime trend.</p>
+          <p class="teach"><strong>Before you use this table as proof of anything, read the fine print.</strong> The two systems do not define offenses identically. The survey counts burglary and trespassing together while the police category is burglary alone. The survey excludes crimes against businesses, which the police data include. The survey counts victimizations while police data count offenses known. These are not rounding differences, they are different questions, and the honest conclusion is not that one system lies but that neither one alone is "the crime rate."</p>
+        </div>
+        <p class="srcnote">Sources: BJS, Criminal Victimization, 2024, Tables 1 and 2 (survey estimates, persons age 12 or older). BJS, Crime Known to Law Enforcement, 2024 (police-recorded offenses: rape 134,300, robbery 212,670, aggravated assault 896,820, burglary 782,100, larceny-theft 4,538,650, motor vehicle theft 920,300, homicide 17,420). Ratios in the last column are arithmetic from the two published counts and are shown to one decimal.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-why">
+      <div class="card">
+        <h2>Why people stay silent</h2>
+        <p class="lede">The dark figure is not an accident of paperwork. It is the aggregate of millions of individual decisions not to call. When BJS asked victims of unreported violence for their single most important reason, the answers were not what most people assume.</p>
+        <div class="guessbox">
+          <p class="gq">What was the most common reason victims gave for not reporting a violent victimization?</p>
+          <div class="pickrow">
+            <button class="pick" data-why="fear" type="button">Fear of reprisal</button>
+            <button class="pick" data-why="help" type="button">Police would not or could not help</button>
+            <button class="pick" data-why="own" type="button">Dealt with it another way, a private matter</button>
+            <button class="pick" data-why="minor" type="button">Not important enough to report</button>
+          </div>
+          <p class="verdict" id="whyVerdict"></p>
+        </div>
+        <div class="veiled" id="whyReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Dealt with it another way</span><div class="btrack"><div class="bfill" style="width:0%" data-w="85%"></div></div><span class="bval">34%</span></div>
+            <div class="brow"><span class="blabel">Not important enough</span><div class="btrack"><div class="bfill" style="width:0%" data-w="45%"></div></div><span class="bval">18%</span></div>
+            <div class="brow"><span class="blabel">Other, or no single reason</span><div class="btrack"><div class="bfill" style="width:0%" data-w="45%"></div></div><span class="bval">18%</span></div>
+            <div class="brow"><span class="blabel">Police would not or could not help</span><div class="btrack"><div class="bfill" style="width:0%" data-w="40%"></div></div><span class="bval">16%</span></div>
+            <div class="brow"><span class="blabel">Fear of reprisal</span><div class="btrack"><div class="bfill" style="width:0%" data-w="32%"></div></div><span class="bval">13%</span></div>
+          </div>
+          <p class="teach"><strong>The single largest reason is that people handled it themselves.</strong> A third of unreported violence was treated as a private matter, settled inside a family, a friendship, a school, or a workplace. Another 16 percent came from a judgment about the police, that calling would not help or would not be worth it. Put those together and you have most of the dark figure: not fear, but two quiet conclusions that the criminal justice system was either the wrong tool or an unreliable one. Bar lengths above are drawn relative to the largest category.</p>
+          <p class="teach"><strong>Why this matters for every crime chart you will ever read.</strong> If reporting behavior changes, police-recorded crime changes even when actual crime does not. A community that begins to trust its police can look like a community with rising crime. A victim advocacy campaign that encourages reporting can look like an epidemic. When you see a jump in police-recorded offenses, "more crime" is one explanation, and "more reporting" is another, and you cannot tell them apart from police data alone.</p>
+        </div>
+        <p class="srcnote">Source: BJS, Victimizations Not Reported to the Police, 2006 to 2010 (special report), most important reason given for not reporting violent victimizations. This remains the standard BJS breakdown of reasons, and it pools five years of survey responses. Percentages sum to 99 due to rounding in the original.</p>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-hier">
+      <div class="card">
+        <h2>The rule that erased offenses for ninety years</h2>
+        <p class="lede">From 1930 until the FBI's switch to incident-based reporting, the Uniform Crime Reports used the <strong>hierarchy rule</strong>. When one incident contained several offenses, the agency counted only the most serious one and discarded the rest. The order, from most to least serious, was homicide, rape, robbery, aggravated assault, burglary, larceny-theft, motor vehicle theft, arson. Two offenses broke the rule and were always counted in addition: motor vehicle theft and arson.</p>
+        <p class="lede" style="margin-top:10px">Below are four incidents. For each one, check the offenses you think the old summary system would have counted, then reveal what the rule actually did. NIBRS, the system the FBI now uses, records every offense in the incident.</p>
+        <div id="incidents"></div>
+        <div class="veiled" id="hierWrap">
+          <div class="scorebar">
+            <div class="scorebox"><div class="v" id="hSum">0</div><div class="l">Offenses counted across all four incidents under the old summary rule</div></div>
+            <div class="scorebox"><div class="v" id="hNib">0</div><div class="l">Offenses recorded under NIBRS</div></div>
+            <div class="scorebox"><div class="v" id="hLost" style="color:var(--warn)">0</div><div class="l">Offenses that existed but never entered the national statistics</div></div>
+          </div>
+          <p class="teach"><strong>Keep the size of this effect honest.</strong> Roughly nine in ten incidents involve only one offense, so the hierarchy rule never erased anything in most cases, and research puts the resulting undercount at well under one percent for violent crime and a few percent for property crime. The rule did not invent the crime decline or hide a crime wave. What it did do is systematically flatten the incidents that were most complicated, which are often the most serious ones, and make it impossible to ask questions like how often burglaries turn violent. NIBRS was built to answer exactly those questions.</p>
+          <p class="teach"><strong>The larger lesson is the one to take to Forum 2.</strong> A counting rule is a measurement decision, not a fact about the world. Somebody chose an ordering of seriousness when the program was built, and that choice was written into ninety years of American crime statistics. Then came the switch itself. When the FBI retired summary reporting in 2021, roughly 7,300 of the nation's 18,000 agencies failed to submit data at all, including New York City and Los Angeles, and the 2021 national numbers became close to unusable for exactly that reason. A change in how crime is counted showed up in the data as a change in crime. Every number has a bureaucratic history.</p>
+        </div>
+        <p class="srcnote">Sources: FBI, Uniform Crime Reporting Handbook (hierarchy rule, ordered offense list, and the justifiable homicide, motor vehicle theft, and arson exceptions, including the rule that a vehicle stolen during the unlawful entry of a building is counted as burglary). FBI, National Incident-Based Reporting System documentation. Magnitude estimates from published analyses of NIBRS data comparing incident-based and hierarchy-rule counts. 2021 transition figures: The Marshall Project analysis of FBI reporting (about 7,287 of roughly 18,000 agencies did not submit 2021 data, including New York City and Los Angeles).</p>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-pick">
+      <div class="card">
+        <h2>Pick your source</h2>
+        <p class="lede">No source is "the truth," so the practical skill is matching the question to the system that can actually answer it. Five research questions. For each, choose the source you would reach for first. There is a defensible answer in every case, and the reasoning matters more than the label.</p>
+        <div id="scens"></div>
+        <div class="veiled" id="pickWrap">
+          <p class="teach"><strong>Triangulation is the whole method.</strong> When police data and victim surveys move in the same direction, criminologists get confident. When they diverge, that divergence is itself a finding worth explaining, and the explanation is usually about reporting, definitions, or coverage rather than about a sudden change in human behavior. Carry one habit out of this page: whenever you meet a crime statistic, ask which system produced it and what that system cannot see.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-forum">
+      <div class="card">
+        <h2>Forum 2: your post</h2>
+        <p class="lede">Write roughly 250 to 300 words for your initial post, then reply to two classmates. Check that week’s module in the LMS for the posting and reply deadlines. This week you go to the databases yourself, and both are linked in the module.</p>
+        <ol class="qs" style="margin-top:12px">
+          <li>Pick one offense that interests you, ideally one connected to the offense type you are considering for your term paper.</li>
+          <li>Look it up in the <strong>FBI Crime Data Explorer</strong> (police-recorded data) and in <strong>N-DASH</strong>, the BJS victimization dashboard (survey data). Report both numbers, with the year and the exact measure you used.</li>
+          <li>Explain why they differ. Use the vocabulary from this week: the dark figure, reporting rates, definitional differences, coverage, the hierarchy rule and the shift to NIBRS. Point at a specific mechanism rather than saying the numbers are just different.</li>
+          <li>Take a position. Which source would you trust more for <em>that specific offense</em>, and why? Notice from this page that the right answer changes by offense, so defend yours.</li>
+        </ol>
+        <p class="teach"><strong>For your replies:</strong> ask about the mechanism. If a classmate picked the survey, ask what it cannot see for their offense. If they picked police data, ask how reporting behavior could be shaping their number. If you both picked the same offense and reached different conclusions, say so plainly and work out where you diverged.</p>
+        <p class="teach"><strong>One more thing while you are choosing an offense.</strong> Term Paper Part 1 is introduced the same week as this forum, and the offense you pick here can be the one you live with all semester, so treat this post as a test drive. Your first required office hours meeting, virtual or in person, comes due before Part 1 does. Both dates are in the LMS.</p>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for SOC 3333 Criminology, Midwestern State University. All figures are from the published federal sources cited on each tab, retrieved August 2026. Your guesses and clicks stay on this page and are never recorded or transmitted.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  function animateBars(container){
+    container.querySelectorAll('.bfill').forEach(b => {
+      requestAnimationFrame(() => { b.style.width = b.dataset.w; });
+    });
+  }
+
+  // ---------- tab 1 guess ----------
+  (function(){
+    const slider = $('vSlider'), val = $('vVal'), lock = $('vLock');
+    slider.addEventListener('input', () => { val.textContent = slider.value + '%'; });
+    function doLock(){
+      if (lock.disabled) return;
+      lock.disabled = true; slider.disabled = true;
+      const g = Number(slider.value), a = 47.9, d = g - a;
+      let t = 'You guessed ' + g + '%. The published figure is 47.9%. ';
+      if (Math.abs(d) <= 5) t += 'You were within 5 points. Close.';
+      else if (d > 0) t += 'You were ' + Math.abs(d).toFixed(1) + ' points high.';
+      else t += 'You were ' + Math.abs(d).toFixed(1) + ' points low.';
+      $('vVerdict').textContent = t;
+      $('vReveal').style.display = 'block';
+      animateBars($('vReveal'));
+    }
+    lock.addEventListener('click', doLock);
+    window.__lockV = doLock;
+  })();
+
+  // ---------- tab 2 pick ----------
+  let twoPicked = null;
+  document.querySelectorAll('#sec-two .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (twoPicked) return;
+      twoPicked = btn.dataset.pick;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-two .pick').forEach(b => b.disabled = true);
+      $('twoVerdict').textContent = twoPicked === 'mvt'
+        ? 'Right. Motor vehicle theft is the one offense where the police count came in higher.'
+        : 'The published answer is motor vehicle theft. Your pick is marked above, and the table shows why.';
+      $('twoReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- tab 3 pick ----------
+  let whyPicked = null;
+  document.querySelectorAll('#sec-why .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (whyPicked) return;
+      whyPicked = btn.dataset.why;
+      btn.classList.add('chosen');
+      document.querySelectorAll('#sec-why .pick').forEach(b => b.disabled = true);
+      $('whyVerdict').textContent = whyPicked === 'own'
+        ? 'Right. Handling it another way was the most common answer, at 34 percent.'
+        : 'The most common answer was that victims dealt with it another way or considered it a private matter, at 34 percent. Your pick is marked above.';
+      $('whyReveal').style.display = 'block';
+      animateBars($('whyReveal'));
+    });
+  });
+
+  // ---------- tab 4 hierarchy simulator ----------
+  const INCIDENTS = [
+    {
+      text: 'An offender forces open the back door of a house, threatens the resident with a knife and takes her wallet, then drives off in her car from the driveway.',
+      offenses: [
+        { name: 'Robbery', counted: true },
+        { name: 'Motor vehicle theft', counted: true },
+        { name: 'Burglary', counted: false },
+      ],
+      why: 'Robbery sits highest on the list of the three, so it is the one scored. Motor vehicle theft is one of the two standing exceptions and is always counted in addition. The burglary, a completed unlawful entry, disappears. Note the detail that decides it: the car was taken from the driveway. Had the offender forced entry into a garage to take the vehicle, the FBI handbook says to count the whole thing as burglary and not as motor vehicle theft at all.'
+    },
+    {
+      text: 'A man punches another man outside a bar, breaking his jaw. While the victim waits for an ambulance, the offender picks up the phone the victim dropped and walks away with it.',
+      offenses: [
+        { name: 'Aggravated assault', counted: true },
+        { name: 'Larceny-theft', counted: false },
+      ],
+      why: 'Aggravated assault outranks larceny-theft, so the theft is never counted. This is the ordinary case and the reason the rule mattered: the national statistics recorded one offense where two occurred. Notice also that this is theft rather than robbery, because the phone was not taken from the victim by force or threat.'
+    },
+    {
+      text: 'During an argument a man kills his neighbor, then sets the neighbor’s house on fire to destroy the evidence.',
+      offenses: [
+        { name: 'Criminal homicide', counted: true },
+        { name: 'Arson', counted: true },
+      ],
+      why: 'Both are counted. Homicide is the top of the hierarchy, and arson is the other standing exception to the rule, so it is scored in addition rather than discarded. Sometimes the hierarchy rule costs nothing at all, which is worth knowing before you assume every old statistic is badly wrong.'
+    },
+    {
+      text: 'An offender breaks into an apartment at night, rapes the resident, and takes jewelry from the bedroom on the way out.',
+      offenses: [
+        { name: 'Rape', counted: true },
+        { name: 'Burglary', counted: false },
+        { name: 'Larceny-theft', counted: false },
+      ],
+      why: 'Rape is second only to homicide, so it alone is scored and two further offenses vanish. This is the pattern that most troubled researchers: the more serious and complicated the incident, the more information the old system threw away. Under NIBRS all three offenses are recorded in a single linked incident, along with victim, offender, weapon, and property detail, which is how anyone can now ask how often burglaries escalate.'
+    },
+  ];
+
+  const incEl = $('incidents');
+  const state = INCIDENTS.map(inc => ({ sel: new Set(), done: false }));
+  INCIDENTS.forEach((inc, i) => {
+    const d = document.createElement('div');
+    d.className = 'incident';
+    d.innerHTML = '<div class="inum">Incident ' + (i+1) + '</div>' +
+      '<p class="itext">' + inc.text + '</p>' +
+      '<div class="offlist">' + inc.offenses.map((o, j) =>
+        '<button class="off" type="button" data-i="' + i + '" data-j="' + j + '">' +
+          '<span class="box">&#10003;</span><span>' + o.name + '</span>' +
+          '<span class="tagz counted">counted</span><span class="tagz lost">dropped</span>' +
+        '</button>').join('') + '</div>' +
+      '<button class="gbtn" type="button" data-reveal="' + i + '">Show what the summary system counted</button>' +
+      '<div class="iresult" id="ir' + i + '"></div>';
+    incEl.appendChild(d);
+  });
+
+  function toggleOff(i, j){
+    if (state[i].done) return;
+    const btn = incEl.querySelector('[data-i="'+i+'"][data-j="'+j+'"]');
+    if (state[i].sel.has(j)) { state[i].sel.delete(j); btn.classList.remove('on'); }
+    else { state[i].sel.add(j); btn.classList.add('on'); }
+  }
+  function revealInc(i){
+    if (state[i].done) return;
+    state[i].done = true;
+    const inc = INCIDENTS[i];
+    inc.offenses.forEach((o, j) => {
+      const btn = incEl.querySelector('[data-i="'+i+'"][data-j="'+j+'"]');
+      btn.disabled = true;
+      btn.classList.add(o.counted ? 'correct' : 'dropped');
+    });
+    const right = inc.offenses.every((o, j) => o.counted === state[i].sel.has(j));
+    const counted = inc.offenses.filter(o => o.counted).length;
+    const res = $('ir' + i);
+    res.innerHTML = '<p class="verdict">' + (right ? 'You matched the rule exactly.' : 'Not quite. Here is what the rule did.') + '</p>' +
+      '<p class="teach">' + inc.why + '</p>' +
+      '<p class="srcnote">Summary UCR counted ' + counted + ' of ' + inc.offenses.length + ' offenses. NIBRS records all ' + inc.offenses.length + '.</p>';
+    res.style.display = 'block';
+    incEl.querySelector('[data-reveal="'+i+'"]').disabled = true;
+    if (state.every(s => s.done)) {
+      const sum = INCIDENTS.reduce((a, inc) => a + inc.offenses.filter(o => o.counted).length, 0);
+      const nib = INCIDENTS.reduce((a, inc) => a + inc.offenses.length, 0);
+      $('hSum').textContent = sum;
+      $('hNib').textContent = nib;
+      $('hLost').textContent = nib - sum;
+      $('hierWrap').style.display = 'block';
+    }
+  }
+  incEl.addEventListener('click', e => {
+    const off = e.target.closest('.off');
+    if (off) { toggleOff(Number(off.dataset.i), Number(off.dataset.j)); return; }
+    const rev = e.target.closest('[data-reveal]');
+    if (rev) revealInc(Number(rev.dataset.reveal));
+  });
+
+  // ---------- tab 5 scenarios ----------
+  const SCENS = [
+    {
+      q: 'You want the most reliable long-run trend in American lethal violence since 1960.',
+      best: 'ucr',
+      v: '<strong>Police data.</strong> Homicide is the one offense with almost no dark figure, because bodies are hard to hide from official notice, and the UCR has recorded it nationally since 1930. The victim survey cannot measure it at all. This is why nearly every serious argument about whether American violence is rising or falling gets settled with homicide numbers.'
+    },
+    {
+      q: 'You want to know how many sexual assaults happened last year, not how many were reported.',
+      best: 'ncvs',
+      v: '<strong>The victim survey.</strong> With only 23.6 percent of rape and sexual assault victimizations reported to police, police records capture roughly a quarter of what the survey finds. The survey is not perfect here either, since it depends on a stranger asking a painful question and getting an honest answer, and researchers actively debate whether even it undercounts. But police data are not a candidate.'
+    },
+    {
+      q: 'You want to know how many high school students used marijuana in the past month.',
+      best: 'self',
+      v: '<strong>A self-report survey.</strong> Drug use has no complaining victim, so it enters police data only when someone is caught, which measures enforcement more than behavior. The victim survey does not ask about it either, since there is no victimization to report. Long-running self-report studies of students exist precisely to fill this gap.'
+    },
+    {
+      q: 'You want to map which blocks in a city have the most robberies so a city council can target streetlights.',
+      best: 'ucr',
+      v: '<strong>Police data.</strong> The victim survey is a national sample, so it cannot tell you anything about a particular block, or usually even a particular city. Incident-based police records carry location detail. The catch is that you are mapping reported robberies, and reporting itself varies across neighborhoods, so what you produce is partly a map of who calls the police.'
+    },
+    {
+      q: 'You want to know whether burglaries more often turn violent when someone is home.',
+      best: 'nibrs',
+      v: '<strong>NIBRS specifically.</strong> This question needs several offenses linked to one incident, which is exactly what the old summary system destroyed: under the hierarchy rule the violent offense was scored and the burglary vanished, so the connection was unrecoverable. Incident-based reporting keeps offenses, victims, and circumstances tied together. The victim survey can also speak to this, and agreement between the two would be the strongest answer.'
+    },
+  ];
+  const LABELS = { ucr: 'Police data (UCR/NIBRS)', ncvs: 'Victim survey (NCVS)', self: 'Self-report survey', nibrs: 'NIBRS incident detail' };
+  const scensEl = $('scens');
+  let scenDone = 0;
+  SCENS.forEach((sc, i) => {
+    const d = document.createElement('div');
+    d.className = 'scen';
+    d.innerHTML = '<div class="scenq">' + sc.q + '</div>' +
+      '<div class="pickrow">' + Object.keys(LABELS).map(k =>
+        '<button class="pick" data-s="'+i+'" data-k="'+k+'" type="button">' + LABELS[k] + '</button>').join('') + '</div>' +
+      '<div class="scenv" id="sv'+i+'"></div>';
+    scensEl.appendChild(d);
+  });
+  function answerScen(i, k){
+    const btns = scensEl.querySelectorAll('[data-s="'+i+'"]');
+    if (btns[0].disabled) return;
+    btns.forEach(b => { b.disabled = true; if (b.dataset.k === k) b.classList.add('chosen'); });
+    const el = $('sv'+i);
+    el.innerHTML = SCENS[i].v;
+    el.style.display = 'block';
+    scenDone++;
+    if (scenDone === SCENS.length) $('pickWrap').style.display = 'block';
+  }
+  scensEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-s]');
+    if (b) answerScen(Number(b.dataset.s), b.dataset.k);
+  });
+
+  window.__S = {
+    activate,
+    lockV: () => window.__lockV(),
+    pickTwo: (k) => { const b = document.querySelector('#sec-two .pick[data-pick="'+k+'"]'); if (b) b.click(); },
+    pickWhy: (k) => { const b = document.querySelector('#sec-why .pick[data-why="'+k+'"]'); if (b) b.click(); },
+    toggleOff, revealInc, answerScen,
+    state: () => ({ twoPicked, whyPicked, scenDone, incs: state.map(s => s.done) })
+  };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
+:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
+:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+
+  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+
+  /* 2. Accessible names for inputs and selects that lack one. */
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    /* table grid inputs: row text plus column header */
+    var td = el.closest('td');
+    if (td) {
+      var tr = td.closest('tr'), table = td.closest('table');
+      if (tr && table) {
+        var rowLabel = textOf(tr.cells[0], 80);
+        var ths = table.querySelectorAll('thead th');
+        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
+        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
+      }
+    }
+    /* guess boxes: the question line names the slider */
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    /* otherwise the nearest previous element with real text */
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+
+  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
+  document.querySelectorAll('.cki').forEach(function (row) {
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    var label = row.querySelector('.ckt');
+    if (label) row.setAttribute('aria-label', textOf(label, 160));
+    row.addEventListener('keydown', function (e) {
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
+    });
+    row.addEventListener('click', function () {
+      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
+    });
+  });
+
+  /* 4. Canvas simulations get a text alternative. */
+  document.querySelectorAll('canvas').forEach(function (c) {
+    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
+      c.setAttribute('role', 'img');
+      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

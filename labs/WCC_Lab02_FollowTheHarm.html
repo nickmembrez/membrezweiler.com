@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Follow the Harm · White-Collar Crime · Crime Lab 2</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+
+  .sysgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .sys { border: 1px solid var(--border); border-radius: 11px; padding: 12px 14px; }
+  .sysname { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; }
+  .sysrow { font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin-top: 5px; }
+  .syslab { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-right: 6px; min-width: 78px; }
+  .syslab.gate { color: var(--warn); }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Follow the Harm <span class="sub">White-Collar Crime · Crime Lab 2 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>There is no national count of white-collar crime. There are a handful of general counting systems, plus a separate set of enforcement records at every regulatory agency with a statute to enforce, and none of them is required to talk to the others.</strong> Simpson (2013) calls this the data problem, and it is the reason every prevalence claim about white-collar crime has to be read with the question: counted where, by whom, and after what? This lab gives you a map of the systems, then asks you to take one harm and follow it through every system that could record it. You will find that each system has a gate, that most gates are decisions made by someone other than the victim, and that a harm can be real, large, and unlawful and still appear nowhere. Work in pairs, but each of you submits your own response sheet at the end of class.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-map" type="button">The counting systems</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-trace" type="button">Trace a harm</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-numbers" type="button">The numbers disagree</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-public" type="button">Ask the public</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: MAP -->
+    <div class="section active" id="sec-map">
+      <div class="card">
+        <h2>Eight kinds of places a white-collar harm could be counted</h2>
+        <p class="lede">Each entry below names a kind of system, what it counts, who decides whether an event enters it, and what it cannot see. Seven of them are single systems. The sixth, a regulator's enforcement records, stands for dozens: every federal and state regulator keeps its own enforcement records, in its own format, under its own statute, and no two of them combine. Read all eight before you trace anything. The middle line of each entry, the gate, is the one that matters most.</p>
+        <div class="sysgrid" id="sysgrid"></div>
+        <div class="guessbox">
+          <p class="gq">Quick check. Which of these systems can record a victimization without anyone reporting it to an authority?</p>
+          <div class="pickrow">
+            <button class="pick" data-qc="nibrs" type="button">NIBRS</button>
+            <button class="pick" data-qc="ftc" type="button">FTC Consumer Sentinel</button>
+            <button class="pick" data-qc="survey" type="button">A victimization survey</button>
+            <button class="pick" data-qc="tracker" type="button">Violation Tracker</button>
+          </div>
+          <p class="verdict" id="qcVerdict"></p>
+        </div>
+        <div class="veiled" id="qcReveal">
+          <p class="teach"><strong>Only the survey.</strong> The National Crime Victimization Survey, its Identity Theft Supplement, and one-off surveys like the 2010 National Public Survey on White Collar Crime ask a sample of people what happened to them, whether or not they ever told anyone. Every other system on this page waits for someone to act: a victim to file, an investigator to open a case, a prosecutor to charge, an agency to assess a penalty. That is why survey counts of white-collar victimization are always much larger than the counts in any official system, and why the core NCVS, which does not ask about fraud at all, leaves the largest category of white-collar victimization unmeasured most years.</p>
+        </div>
+        <p class="srcnote">Sources for this tab: FBI, Crime in the Nation and NIBRS offense definitions (Group A offense codes 26A through 26G, 270, 510, 250, 09B); Bureau of Justice Statistics, NCVS methodology and the Identity Theft Supplement; FTC, Consumer Sentinel Network Data Book 2024 and 2025 testimony; FBI IC3, 2025 Internet Crime Report; TRAC, Federal Prosecution of White-Collar Crimes Receiving Less and Less Attention (May 23, 2025); Good Jobs First, Violation Tracker documentation; agency enforcement database documentation (HHS-OIG, DOL WHD, EPA ECHO, SEC, CFPB). Retrieved September 2026.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: TRACE -->
+    <div class="section" id="sec-trace">
+      <div class="card">
+        <h2>Pick one harm and follow it</h2>
+        <p class="lede">Six harms are below. Each is a composite drawn from real enforcement cases of the kind you sorted in Lab 1. Choose one. Then, for each of the eight kinds of system, decide whether the harm <strong>could</strong> be recorded there at all. For the regulator's enforcement records, think of the specific agency that has jurisdiction over your harm. When you have made all eight calls, the reference answers appear, each with the gate the harm would have to pass. Trace a second harm if there is time; the response sheet asks about one.</p>
+        <div class="pickrow" id="harmPick"></div>
+        <div id="traceWrap" class="veiled">
+          <div class="ev" id="traceHead"></div>
+          <div id="traceRows"></div>
+          <div class="veiled" id="traceSummary">
+            <div class="statrow">
+              <div class="stat ok"><div class="v" id="tsCould">0 of 8</div><div class="l">Systems that could record this harm (reference)</div></div>
+              <div class="stat"><div class="v" id="tsAgree">0 of 8</div><div class="l">Your calls that matched the reference</div></div>
+              <div class="stat warn"><div class="v" id="tsGates">0</div><div class="l">Separate gates, each a decision by someone other than the victim</div></div>
+            </div>
+            <p class="teach" id="tsNote"></p>
+            <p class="teach"><strong>What this means for a prevalence claim.</strong> To count this harm nationally, you would have to query every system that could hold it, know that each one records a different unit (a complaint, an offense, a case, a penalty), know that the same event can appear in three of them and be counted three times or in none of them and be counted zero times, and still have no way to see the events that never passed any gate. Simpson (2013) describes the field as living with this. And the count of eight understates it: the regulator's enforcement records on this page stand for dozens of separate agency systems, so a harm that touches two statutes can sit in two regulators' records that never meet. The lab's point is that you now know exactly where the missing cases go.</p>
+            <div class="pickrow" style="margin-top:12px"><button class="gbtn secondary" id="traceAgain" type="button">Trace another harm</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: NUMBERS -->
+    <div class="section" id="sec-numbers">
+      <div class="card">
+        <h2>Same harm, different counts</h2>
+        <p class="lede">When two systems count the same kind of harm, the numbers do not agree, and the gap is not an error. It is the gates. Guess before each reveal.</p>
+
+        <h3>Identity theft in one year</h3>
+        <p class="lede">The Bureau of Justice Statistics asked a national sample of people age 16 and over whether anyone had misused their personal information in the past 12 months. About 23.9 million people said yes, roughly one in ten, with $16.4 billion in losses. The FTC's Consumer Sentinel Network counts the identity theft reports people file with the FTC.</p>
+        <div class="guessbox">
+          <p class="gq">For every 100 people the survey says experienced identity theft, how many identity theft reports did the FTC receive in a comparable year?</p>
+          <div class="gr">
+            <input type="range" id="idSlider" min="1" max="100" step="1" value="50">
+            <span class="gval" id="idVal">50</span>
+            <button class="gbtn" id="idLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="idVerdict"></p>
+        </div>
+        <div class="veiled" id="idReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Survey: people who experienced identity theft (2021)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">23.9M</span></div>
+            <div class="brow"><span class="blabel">FTC: identity theft reports filed (2024)</span><div class="btrack"><div class="bfill" style="width:0%" data-w="4.6%"></div></div><span class="bval">1.1M</span></div>
+            <div class="brow"><span class="blabel">Survey: victims who told the police (2021)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="7%"></div></div><span class="bval">about 7%</span></div>
+          </div>
+          <p class="teach"><strong>About 5 reports per 100 victims.</strong> Two thirds of victims called their bank or card company. Seven percent told the police. A smaller share filed with the FTC. The bank is not a counting system anyone publishes, so the largest single destination for identity theft reports is a place the public numbers never see. The gate here is the victim's own judgment about who can fix the problem, and the answer is rarely a government agency.</p>
+          <p class="srcnote">Sources: Bureau of Justice Statistics, Victims of Identity Theft, 2021 (NCJ 306474, October 2023): 23.9 million persons age 16 or older, 9 percent of the population, $16.4 billion in total losses, about 7 percent reported to law enforcement, 67 percent contacted a credit card company or bank. FTC, Consumer Sentinel Network Data Book 2024: 1.1 million identity theft reports, 18 percent of 6.47 million total reports. The years differ by three; the ratio is an order-of-magnitude comparison, not a precise rate.</p>
+        </div>
+
+        <h3>Fraud, from the victim to the courtroom</h3>
+        <p class="lede">Four systems count fraud, and each counts a different thing. Guess the last one before you look.</p>
+        <div class="guessbox">
+          <p class="gq">In fiscal year 2024, how many white-collar crime prosecutions did federal prosecutors file nationwide, across every U.S. Attorney's office and every white-collar statute?</p>
+          <div class="gr">
+            <input type="range" id="prSlider" min="1000" max="60000" step="500" value="20000">
+            <span class="gval" id="prVal">20,000</span>
+            <button class="gbtn" id="prLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="prVerdict"></p>
+        </div>
+        <div class="veiled" id="prReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Survey: households with a white-collar victimization in a year (2010)</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">24 of 100</span></div>
+            <div class="brow"><span class="blabel">FTC: fraud reports filed (2025)</span><div class="btrack"><div class="bfill" style="width:0%" data-w="60%"></div></div><span class="bval">about 3.0M</span></div>
+            <div class="brow"><span class="blabel">FBI IC3: internet crime complaints (2025)</span><div class="btrack"><div class="bfill" style="width:0%" data-w="20%"></div></div><span class="bval">1,008,597</span></div>
+            <div class="brow"><span class="blabel">TRAC: federal white-collar prosecutions filed (FY 2024)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="0.9%"></div></div><span class="bval">4,332</span></div>
+          </div>
+          <p class="teach"><strong>4,332.</strong> The bars are on different scales and count different units, which is the lesson. The survey counts households. The FTC counts reports, and 62 percent of its fraud reports involve no money lost. IC3 counts complaints. TRAC counts cases a federal prosecutor chose to file, and that number fell from 10,909 in fiscal 1995 to 4,332 in fiscal 2024, with fiscal 2025 projected at 3,862, the lowest on record. Every step from the top bar to the bottom bar is a gate, and the last gate, the prosecutor's decision, is the one that changes most with politics.</p>
+          <p class="srcnote">Sources: NW3C, The 2010 National Public Survey on White Collar Crime (24 percent of households victimized in the prior 12 months, p. 8). FTC testimony to the Joint Economic Committee, March 25, 2026 (about 3 million fraud reports and $15.9 billion in reported losses for 2025, up from 2.6 million and more than $12 billion in 2024). FBI IC3, 2025 Internet Crime Report (1,008,597 complaints, $20.9 billion in losses). TRAC, Federal Prosecution of White-Collar Crimes Receiving Less and Less Attention, May 23, 2025 (FY 2024: 4,332; FY 1995: 10,909; FY 2025 projection: 3,862). Bar lengths are illustrative; the units are not comparable.</p>
+        </div>
+
+        <h3>Wage theft: estimated versus recovered</h3>
+        <p class="lede">In Lab 1 you met the Economic Policy Institute's estimate that minimum wage violations alone take more than $15 billion a year from workers. The Wage and Hour Division is the federal agency that recovers it.</p>
+        <div class="guessbox">
+          <p class="gq">In fiscal year 2025, how much in back wages did the Wage and Hour Division recover for workers, across all violations, nationwide?</p>
+          <div class="pickrow">
+            <button class="pick" data-wt="a" type="button">About $260 million</button>
+            <button class="pick" data-wt="b" type="button">About $1.2 billion</button>
+            <button class="pick" data-wt="c" type="button">About $4 billion</button>
+            <button class="pick" data-wt="d" type="button">About $15 billion</button>
+          </div>
+          <p class="verdict" id="wtVerdict"></p>
+        </div>
+        <div class="veiled" id="wtReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">$15B+</div><div class="l">Estimated annual minimum wage violations alone (EPI, ten largest states, extrapolated)</div></div>
+            <div class="stat"><div class="v">$259M</div><div class="l">Back wages recovered by WHD in FY 2025, for about 177,000 workers, the most since 2019</div></div>
+            <div class="stat"><div class="v">611</div><div class="l">WHD investigators in May 2025, one for every 278,000 covered workers</div></div>
+          </div>
+          <p class="teach"><strong>Less than two cents on the dollar, and that is a good year.</strong> The estimate and the recovery are not measuring the same thing. The estimate is a survey-based projection of what workers were owed. The recovery is what one agency with 611 investigators got back through the cases it could open. The gate is capacity. Recovered wages are the number that appears in Violation Tracker and in agency reports, so when someone says wage theft is a small problem because the recoveries are small, they are reading the gate as if it were the harm.</p>
+          <p class="srcnote">Sources: Economic Policy Institute, Employers Steal Billions from Workers' Paychecks Each Year (2017). U.S. Department of Labor, Wage and Hour Division news release, January 8, 2026 (more than $259 million in back wages for nearly 177,000 workers in FY 2025). Workplace Justice Lab, Rutgers University and Northwestern University, May 2025 (611 investigators, one per 278,000 workers).</p>
+        </div>
+
+        <h3>Environmental crime: how many defendants?</h3>
+        <div class="guessbox">
+          <p class="gq">EPA's criminal enforcement program covers every federal environmental statute for the whole country. In fiscal year 2025, how many defendants did it charge?</p>
+          <div class="gr">
+            <input type="range" id="epSlider" min="50" max="5000" step="50" value="1000">
+            <span class="gval" id="epVal">1,000</span>
+            <button class="gbtn" id="epLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="epVerdict"></p>
+        </div>
+        <div class="veiled" id="epReveal">
+          <div class="statrow">
+            <div class="stat"><div class="v">156</div><div class="l">Defendants charged by EPA criminal enforcement in FY 2025, the most since 2016</div></div>
+            <div class="stat"><div class="v">187</div><div class="l">New criminal cases opened</div></div>
+            <div class="stat ok"><div class="v">65 yrs</div><div class="l">Total incarceration imposed across all defendants sentenced</div></div>
+          </div>
+          <p class="teach"><strong>156, and EPA calls that a strong year.</strong> The agency's own language is that criminal enforcement is reserved for the most egregious and intentional violations. Everything else is a civil penalty, a consent decree, or a notice of violation, and those live in ECHO, the database you will use in Lab 9. A student who searched federal criminal dockets for environmental crime would conclude it barely exists. A student who searched ECHO would find hundreds of thousands of facilities with a violation history. Both would be reading the system, not the harm.</p>
+          <p class="srcnote">Source: U.S. Environmental Protection Agency, Enforcement and Compliance Assurance Annual Results for FY 2025: Criminal Enforcement (187 cases opened, 156 defendants charged, 65 years of incarceration, over $600 million in fines, restitution, and court-ordered relief, and over $1 billion in forfeitures).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PUBLIC -->
+    <div class="section" id="sec-public">
+      <div class="card">
+        <h2>What the public reports, and what it knows</h2>
+        <p class="lede">The one system that does not wait for a gate is the survey. The 2010 National Public Survey on White Collar Crime, your Meeting B reading, asked a national sample of households what had happened to them. Michel, Cochran, and Heide (2016), your Meeting A reading, asked what people know.</p>
+        <div class="guessbox">
+          <p class="gq">Of the white-collar victimizations that households reported in the 2010 survey, what share reached a crime control agency of any kind (police, a prosecutor, a regulator)?</p>
+          <div class="gr">
+            <input type="range" id="pbSlider" min="0" max="100" step="1" value="40">
+            <span class="gval" id="pbVal">40%</span>
+            <button class="gbtn" id="pbLock" type="button">Lock in my guess</button>
+          </div>
+          <p class="verdict" id="pbVerdict"></p>
+        </div>
+        <div class="veiled" id="pbReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Households with at least one victimization in 12 months</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="24%"></div></div><span class="bval">24.0%</span></div>
+            <div class="brow"><span class="blabel">Victimizations reported to any entity</span><div class="btrack"><div class="bfill" style="width:0%" data-w="54.7%"></div></div><span class="bval">54.7%</span></div>
+            <div class="brow"><span class="blabel">Reports that went to a credit card company</span><div class="btrack"><div class="bfill" style="width:0%" data-w="30.9%"></div></div><span class="bval">30.9%</span></div>
+            <div class="brow"><span class="blabel">Reports that went to the police</span><div class="btrack"><div class="bfill" style="width:0%" data-w="18.8%"></div></div><span class="bval">18.8%</span></div>
+            <div class="brow"><span class="blabel">Victimizations that reached any crime control agency</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="11.7%"></div></div><span class="bval">11.7%</span></div>
+          </div>
+          <p class="teach"><strong>About 12 in 100.</strong> Nearly half of victimizations were never reported to anyone. Of the ones that were, the most common destination was a credit card company, which publishes nothing. Fewer than one in eight victimizations reached any agency that could count it as crime. The three most common victimizations in the survey were credit card fraud, price misrepresentation, and unnecessary repairs, which are also three harms that no police department records as a rule.</p>
+          <p class="teach"><strong>What people know.</strong> Michel, Cochran, and Heide built the first validated scale of public knowledge about white-collar crime and gave it to 408 respondents. Knowledge was low. Respondents held what the authors call myths about the frequency, the cost, and the physical harm of white-collar crime relative to street crime. Put the two studies together. The public experiences white-collar victimization at a rate of roughly one household in four each year, reports almost none of it to the state, and then, asked in the abstract, underestimates how much of it there is. The counting systems and the public's beliefs reinforce each other.</p>
+          <p class="srcnote">Sources: Huff, R., Desilets, C., and Kane, J. (2010). The 2010 National Public Survey on White Collar Crime. National White Collar Crime Center (24 percent of households and 17 percent of individuals victimized in the prior 12 months; 54.7 percent of household victimizations reported to any entity; 11.7 percent reached a crime control agency; credit card companies 30.9 percent and police 18.8 percent of reports; pp. 8, 14 to 16). Michel, C., Cochran, J. K., and Heide, K. M. (2016). Public knowledge about white-collar crime: An exploratory study. Crime, Law and Social Change, 65(1-2), 67-91.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE SHEET -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 2 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your trace into one block of text, and paste that text into the Lab 2 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq">
+          <div class="qt">Your name</div>
+          <input type="text" id="rName" placeholder="First and last name">
+        </div>
+        <div class="rq">
+          <div class="qt">1. The harm you traced. Name it. Say which systems could record it and what gate each one had. Then say how many separate databases a researcher would have to query to find every recorded instance, and what that researcher would still miss.</div>
+          <div class="qh">Four to six sentences.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Pick one comparison from The numbers disagree. Explain the gap between the two numbers using three words from this lab: the unit each system counts, the gate an event must pass, and the coverage of the system. Do not explain the gap as underreporting alone.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Simpson (2013) describes the data problem as a limit on what the field can know. Based on this lab, what would a national count of white-collar crime have to do that no current system does? Say whether you think it is achievable and why.</div>
+          <div class="qh">Three to five sentences. Cite Simpson by page where you can.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. For the case you are leaning toward, say which of the eight kinds of system it would appear in, name the specific regulator where one applies, and say which primary document you have found so far came out of which system. If you have not chosen yet, answer for one of your two candidates.</div>
+          <div class="qh">Two to four sentences. Part 2 of the project asks this question at length.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap">
+          <textarea id="outText" readonly aria-label="Assembled submission text"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your clicks and answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+
+  // ---------- systems ----------
+  const SYS = [
+    { k: 'rate', name: 'The FBI crime rate', unit: 'Offenses known to police in the violent and property crime totals: homicide, rape, robbery, aggravated assault, burglary, larceny-theft, motor vehicle theft, arson.', gate: 'A police report, and the offense must be one of the eight index offenses.', miss: 'Every fraud, embezzlement, bribery, and regulatory violation. Negligent manslaughter is collected but excluded from the violent crime total.' },
+    { k: 'nibrs', name: 'NIBRS', unit: 'Incidents reported to participating police agencies, including fraud (false pretenses, credit card, impersonation, welfare, wire, identity theft, hacking), embezzlement, bribery, counterfeiting, and negligent manslaughter.', gate: 'A victim reports to local police, and the police record it. Most white-collar victims never call the police.', miss: 'Anything handled by a federal agency or a regulator instead of police, and anything the victim took to a bank, an employer, or nobody.' },
+    { k: 'ncvs', name: 'The National Crime Victimization Survey', unit: 'Self-reported personal and property victimization from a national household sample, whether or not it was reported to anyone.', gate: 'None for reporting. The gate is the questionnaire: the core survey does not ask about fraud.', miss: 'Fraud, except in the periodic Identity Theft Supplement and a one-time 2017 fraud supplement. Harms to organizations. Harms the victim does not know about.' },
+    { k: 'ftc', name: 'FTC Consumer Sentinel', unit: 'Consumer complaints about fraud, identity theft, and other consumer problems, filed with the FTC or forwarded by partner agencies and companies.', gate: 'The consumer files a report. In 2024, 62 percent of fraud reports involved no money lost.', miss: 'Victims who called their bank instead. Harms to workers, patients, investors, or the environment. Anything the victim never recognized as fraud.' },
+    { k: 'ic3', name: 'FBI Internet Crime Complaint Center', unit: 'Complaints about internet-enabled crime filed online with the FBI, with reported dollar losses.', gate: 'The victim files a complaint. The FBI estimates only a fraction of victims do.', miss: 'Offline fraud. Complaints filed with the FTC instead. Losses never reported.' },
+    { k: 'reg', name: 'A regulator\'s enforcement records', unit: 'Cases, audits, inspections, penalties, and recoveries recorded by whichever agency has jurisdiction, each in its own system: HHS-OIG and CMS for health care, DOL WHD for wages, OSHA for workplace safety, EPA ECHO for the environment, the SEC for securities, the CFPB and the OCC for consumer finance and banking, FMCSA for trucking, the FTC for consumer protection, and fifty state attorneys general and state agencies for state law. This one entry stands for all of them.', gate: 'A complaint, a whistleblower, an audit flag, or a directed investigation opens a case at the one agency with jurisdiction, and that agency has the staff to work it.', miss: 'Everything the agency did not have capacity to investigate. Each regulator sees only its own statute and publishes in its own format. No regulator\'s records combine with another\'s, and no one is responsible for adding them up.' },
+    { k: 'trac', name: 'Federal prosecutions (TRAC)', unit: 'Criminal cases filed by U.S. Attorneys, classified by lead charge, compiled from Justice Department case-tracking data by Syracuse University\'s TRAC.', gate: 'A prosecutor decides to charge. Fewer than a quarter of white-collar referrals were prosecuted in FY 2025.', miss: 'Every civil resolution, deferred and non-prosecution agreement, declination, and state case. Corporate defendants are a small fraction of filings.' },
+    { k: 'vt', name: 'Violation Tracker', unit: 'Penalties and settlements against companies, compiled by Good Jobs First from more than 400 federal and state agencies and court records.', gate: 'An agency or court assessed a penalty and published it, and the defendant is a company rather than an individual.', miss: 'Individual offenders. Violations that produced no penalty. Harms that were never investigated.' },
+  ];
+  const grid = $('sysgrid');
+  SYS.forEach(s => {
+    const d = document.createElement('div'); d.className = 'sys';
+    d.innerHTML = '<div class="sysname">' + s.name + '</div><div class="sysrow"><span class="syslab">Counts</span>' + s.unit + '</div><div class="sysrow"><span class="syslab gate">Gate</span>' + s.gate + '</div><div class="sysrow"><span class="syslab">Cannot see</span>' + s.miss + '</div>';
+    grid.appendChild(d);
+  });
+  let qcPicked = null;
+  document.querySelectorAll('#sec-map .pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (qcPicked) return;
+      qcPicked = btn.dataset.qc; btn.classList.add('chosen');
+      document.querySelectorAll('#sec-map .pick').forEach(b => { b.disabled = true; if (b.dataset.qc === 'survey') b.classList.add('answer'); });
+      $('qcVerdict').textContent = qcPicked === 'survey' ? 'Right. Only a survey counts what nobody reported.' : 'The answer is a victimization survey. Read the note below for why the others cannot.';
+      $('qcReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- trace ----------
+  // ref: Y could be recorded, N cannot. gate: text.
+  const HARMS = [
+    { title: 'A nurse practitioner bills Medicare for 40 home visits a week she never made',
+      text: 'Over two years the claims total about $1.4 million. Medicare pays them. No patient notices, because no patient is billed.',
+      ref: { rate: ['N', 'Health care fraud is not an index offense.'], nibrs: ['Y', 'Only if someone reports it to local police, which almost never happens; Medicare fraud goes to federal agents.'], ncvs: ['N', 'The victim is a federal program, not a household.'], ftc: ['N', 'No consumer paid anything, so no consumer complains. Medicare beneficiaries can report to HHS-OIG, not the FTC.'], ic3: ['N', 'Not internet-enabled crime as IC3 defines it.'], reg: ['Y', 'CMS claims data can flag the billing pattern in an audit, or a coworker can call the HHS-OIG hotline. Either opens a case.'], trac: ['Y', 'Only if HHS-OIG refers it and a U.S. Attorney charges health care fraud. In the 2025 takedown, 324 defendants nationwide.'], vt: ['N', 'Violation Tracker records penalties against companies; an individual practitioner does not appear unless a company is named.'] },
+      note: 'This harm is invisible to every victim-driven system because there is no victim who paid. It appears only if the payer\'s own data or a coworker opens the gate, which is why health care fraud enforcement depends so heavily on whistleblowers and data analytics.' },
+    { title: 'A restaurant owner keeps the servers\' credit card tips',
+      text: 'Tips paid by card are deducted from paychecks as a "processing fee" of 3 percent, then the rest is held back for weeks. Over a year, 40 servers lose about $90,000.',
+      ref: { rate: ['N', 'Wage theft is not an index offense.'], nibrs: ['Y', 'A server could report it to police as theft or embezzlement, and a few do. Police almost always refer it to the labor department.'], ncvs: ['N', 'The NCVS asks about theft of household property, not wages withheld by an employer.'], ftc: ['N', 'Workers are not consumers for the FTC\'s purposes.'], ic3: ['N', 'Not internet-enabled.'], reg: ['Y', 'A worker complaint or a directed investigation opens a WHD case, and the back wages recovered appear in the WHD enforcement database. Tip violations were the subject of a 2018 statutory change that made them a civil penalty matter.'], trac: ['N', 'The FLSA has a criminal provision that is almost never used. Wage theft does not appear in federal prosecution counts.'], vt: ['Y', 'Violation Tracker includes WHD back wage recoveries against employers, so the restaurant would appear once the case closed.'] },
+      note: 'Two systems could record this harm and both are civil. The harm is real, the money is gone, and the word crime never attaches to it in any database.' },
+    { title: 'A chief financial officer inflates revenue for three straight quarters to hit targets',
+      text: 'The company is publicly traded. The overstatement is about 12 percent of revenue. Shareholders lose roughly $300 million when the restatement is announced.',
+      ref: { rate: ['N', 'Securities fraud is not an index offense.'], nibrs: ['N', 'Local police have no role. In principle a report could be filed; in practice this goes to the SEC and the FBI.'], ncvs: ['N', 'Shareholders are not asked about investment losses.'], ftc: ['N', 'The FTC has no jurisdiction over securities.'], ic3: ['N', 'Not internet-enabled crime.'], reg: ['Y', 'A whistleblower, an auditor, or the SEC\'s own screening opens an investigation. An SEC enforcement action appears in the litigation releases and accounting enforcement releases.'], trac: ['Y', 'Only if the SEC refers it and a U.S. Attorney charges securities fraud. Most SEC actions end in civil settlement with no criminal case.'], vt: ['Y', 'An SEC penalty against the company appears in Violation Tracker.'] },
+      note: 'Three systems could hold this harm and all three depend on the SEC opening a case. If the SEC declines, a $300 million loss to shareholders is recorded nowhere except the company\'s own restatement.' },
+    { title: 'A 71-year-old man pays $9,000 in gift cards to a caller claiming to be Microsoft support',
+      text: 'The caller had remote access to his computer for three hours. He tells his daughter a week later.',
+      ref: { rate: ['N', 'Fraud is not an index offense.'], nibrs: ['Y', 'If he calls the local police, the incident is recorded as false pretenses or impersonation. Most victims of this scam do not call the police.'], ncvs: ['N', 'The core survey does not ask about fraud. He would be counted only in the one-time 2017 fraud supplement or, if his identity was misused, the Identity Theft Supplement.'], ftc: ['Y', 'If he or his daughter files at ReportFraud.ftc.gov, it is a Consumer Sentinel report. Tech support scams are a named category.'], ic3: ['Y', 'If he files with the FBI online, it is an IC3 complaint. Tech and customer support scams cost reported victims $2.13 billion in 2025.'], reg: ['Y', 'A state attorney general consumer complaint database would record it if he filed there instead.'], trac: ['N', 'Individual overseas scammers are almost never charged. A prosecution would appear only if a domestic money mule or call center were charged.'], vt: ['N', 'No company penalty, so no entry.'] },
+      note: 'This harm could appear in four systems, and each requires the victim to choose that system. Nothing links them. He could file in all four and be counted four times, or in none and be counted zero times. The most likely outcome is that his daughter calls the bank.' },
+    { title: 'A trucking company falsifies drivers\' hours-of-service logs, and a driver who has been awake for 20 hours kills a family of four',
+      text: 'The company\'s dispatch records show the practice was routine for two years.',
+      ref: { rate: ['N', 'Manslaughter by negligence is collected by the FBI but excluded from the violent crime total. The falsified logs are not an index offense.'], nibrs: ['Y', 'The deaths are recorded as negligent manslaughter (09B) by the responding police agency. The two years of falsified logs are not.'], ncvs: ['N', 'The NCVS does not measure homicide, and the survivors are not asked about it.'], ftc: ['N', 'Not a consumer matter.'], ic3: ['N', 'Not internet-enabled.'], reg: ['Y', 'FMCSA records the crash and any hours-of-service violations found in the post-crash investigation in its safety measurement data. The falsification appears only if the investigation finds it.'], trac: ['Y', 'Falsified federal records can be charged as false statements, and the deaths can support state charges. Federal criminal cases against carriers for log falsification are rare but do occur.'], vt: ['Y', 'An FMCSA civil penalty against the company would appear.'] },
+      note: 'The deaths are counted. The two years of corporate conduct that produced them are counted only if a post-crash investigation looks back, and even then as a regulatory violation. Compare Didion Milling in Lab 1: the paperwork is what reaches a courtroom.' },
+    { title: 'A bank charges 2 million customers a monthly fee its own account agreement does not permit',
+      text: 'The fee is $6.95. Over three years the bank collects about $500 million. A few thousand customers complain.',
+      ref: { rate: ['N', 'Not an index offense.'], nibrs: ['N', 'No police agency records a bank fee dispute.'], ncvs: ['N', 'Not asked.'], ftc: ['Y', 'Consumers can file with the FTC, but bank complaints are routed to the CFPB, whose public Consumer Complaint Database records each one with the bank\'s response. Either way the gate is the customer noticing and filing.'], ic3: ['N', 'Not internet-enabled crime.'], reg: ['Y', 'The CFPB or the OCC opens an examination or enforcement action, often triggered by complaint volume. A consent order appears in the CFPB enforcement database.'], trac: ['N', 'Unauthorized fees are handled civilly. No criminal case is filed.'], vt: ['Y', 'A CFPB or OCC penalty appears in Violation Tracker.'] },
+      note: 'A $500 million harm to two million people, recorded in three systems, none criminal, and all three dependent on a few thousand customers noticing a $6.95 line item. This is what the Wells Fargo case looked like from inside the counting systems before 2016.' },
+  ];
+  const SYSKEYS = SYS.map(s => s.k);
+  let current = null, calls = {}, traces = [];
+  const pickWrap = $('harmPick');
+  HARMS.forEach((h, i) => {
+    const b = document.createElement('button'); b.className = 'pick'; b.type = 'button'; b.dataset.h = i; b.textContent = h.title;
+    b.addEventListener('click', () => startTrace(i));
+    pickWrap.appendChild(b);
+  });
+  function startTrace(i){
+    current = i; calls = {};
+    pickWrap.querySelectorAll('.pick').forEach(b => { b.classList.toggle('chosen', Number(b.dataset.h) === i); b.disabled = true; });
+    const h = HARMS[i];
+    $('traceHead').innerHTML = '<div class="evhead"><span class="evnum">YOUR HARM</span><span class="evtitle">' + h.title + '</span></div><div class="evtext">' + h.text + '</div>';
+    let rows = '';
+    SYS.forEach(s => {
+      rows += '<div class="ev"><div class="drow" style="margin-top:0"><span class="dlabel" style="min-width:230px">' + s.name + '</span>' +
+        '<div class="yn"><button class="ynb" data-sys="' + s.k + '" data-a="Y" type="button">Could be recorded</button>' +
+        '<button class="ynb" data-sys="' + s.k + '" data-a="N" type="button">Cannot be</button></div>' +
+        '<div class="ref" id="tref-' + s.k + '"></div></div></div>';
+    });
+    $('traceRows').innerHTML = rows;
+    $('traceSummary').style.display = 'none';
+    $('traceWrap').style.display = 'block';
+    $('traceWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  $('traceRows').addEventListener('click', e => {
+    const b = e.target.closest('[data-sys]'); if (!b) return;
+    const k = b.dataset.sys, a = b.dataset.a; if (calls[k]) return;
+    calls[k] = a;
+    $('traceRows').querySelectorAll('[data-sys="' + k + '"]').forEach(x => { x.disabled = true; if (x.dataset.a === a) x.classList.add('sel'); });
+    if (SYSKEYS.every(kk => calls[kk])) revealTrace();
+  });
+  function revealTrace(){
+    const h = HARMS[current]; let could = 0, agree = 0;
+    SYS.forEach(s => {
+      const [r, gate] = h.ref[s.k];
+      if (r === 'Y') could++;
+      if (calls[s.k] === r) agree++;
+      const el = $('tref-' + s.k);
+      el.innerHTML = (r === 'Y' ? '<span class="tag yes">could be recorded</span>' : '<span class="tag no">cannot be</span>') + gate + '<strong>' + (calls[s.k] === r ? ' You agreed.' : ' You called it the other way.') + '</strong>';
+      el.style.display = 'block';
+    });
+    $('tsCould').textContent = could + ' of 8';
+    $('tsAgree').textContent = agree + ' of 8';
+    $('tsGates').textContent = String(could);
+    $('tsNote').innerHTML = '<strong>Why this harm is here.</strong> ' + h.note;
+    $('traceSummary').style.display = 'block';
+    traces.push({ title: h.title, could, agree, calls: Object.assign({}, calls) });
+  }
+  $('traceAgain').addEventListener('click', () => {
+    pickWrap.querySelectorAll('.pick').forEach(b => { b.disabled = false; b.classList.remove('chosen'); });
+    $('traceWrap').style.display = 'none'; current = null; calls = {};
+    pickWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // ---------- numbers ----------
+  function slider(sid, vid, lid, fmt, verdictId, revealId, answerFn){
+    const s = $(sid), v = $(vid), l = $(lid);
+    s.addEventListener('input', () => { v.textContent = fmt(Number(s.value)); });
+    l.addEventListener('click', () => {
+      if (l.disabled) return; l.disabled = true; s.disabled = true;
+      $(verdictId).textContent = answerFn(Number(s.value));
+      $(revealId).style.display = 'block'; animateBars($(revealId));
+    });
+  }
+  slider('idSlider', 'idVal', 'idLock', n => String(n), 'idVerdict', 'idReveal', g => {
+    const a = 5; return 'You guessed ' + g + ' per 100. The comparison gives about ' + a + ' per 100 (1.1 million reports against 23.9 million victims). ' + (Math.abs(g - a) <= 3 ? 'Close.' : g > a ? 'You were ' + (g - a) + ' high.' : 'You were ' + (a - g) + ' low.');
+  });
+  slider('prSlider', 'prVal', 'prLock', n => n.toLocaleString(), 'prVerdict', 'prReveal', g => {
+    const a = 4332; return 'You guessed ' + g.toLocaleString() + '. TRAC counted 4,332 in fiscal 2024. ' + (Math.abs(g - a) <= 1000 ? 'Within a thousand.' : g > a ? 'You were ' + (g - a).toLocaleString() + ' high.' : 'You were ' + (a - g).toLocaleString() + ' low.');
+  });
+  slider('epSlider', 'epVal', 'epLock', n => n.toLocaleString(), 'epVerdict', 'epReveal', g => {
+    const a = 156; return 'You guessed ' + g.toLocaleString() + '. EPA charged 156 defendants in fiscal 2025. ' + (Math.abs(g - a) <= 100 ? 'Within a hundred.' : g > a ? 'You were ' + (g - a).toLocaleString() + ' high.' : 'You were ' + (a - g) + ' low.');
+  });
+  slider('pbSlider', 'pbVal', 'pbLock', n => n + '%', 'pbVerdict', 'pbReveal', g => {
+    const a = 11.7; return 'You guessed ' + g + ' percent. The survey found 11.7 percent. ' + (Math.abs(g - a) <= 5 ? 'Within five points.' : g > a ? 'You were ' + Math.round(g - a) + ' points high.' : 'You were ' + Math.round(a - g) + ' points low.');
+  });
+  let wtPicked = null;
+  document.querySelectorAll('#sec-numbers .pick[data-wt]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (wtPicked) return; wtPicked = btn.dataset.wt; btn.classList.add('chosen');
+      document.querySelectorAll('#sec-numbers .pick[data-wt]').forEach(b => { b.disabled = true; if (b.dataset.wt === 'a') b.classList.add('answer'); });
+      $('wtVerdict').textContent = wtPicked === 'a' ? 'Right. About $259 million.' : 'The answer is about $259 million, in a year the agency called its best since 2019.';
+      $('wtReveal').style.display = 'block';
+    });
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 2 · FOLLOW THE HARM', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('TRACES');
+    if (!traces.length) lines.push('(no harm traced)');
+    traces.forEach((t, i) => {
+      lines.push((i + 1) + '. ' + t.title);
+      lines.push('   Reference: could be recorded in ' + t.could + ' of 8 kinds of system. Your calls matched ' + t.agree + ' of 8.');
+      lines.push('   Your calls: ' + SYS.map(s => s.name + ' = ' + (t.calls[s.k] === 'Y' ? 'could' : 'cannot')).join('; '));
+    });
+    lines.push('');
+    lines.push('QUESTION 1 (the harm you traced)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (unit, gate, coverage)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (a national count)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n');
+    $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 2 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 2 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 2 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+
+  window.__S = { activate, startTrace, traces: () => traces };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

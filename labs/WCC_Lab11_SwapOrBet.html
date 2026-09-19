@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swap or Bet · White-Collar Crime · Crime Lab 11</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .codes .ynb { font-size: 12.5px; padding: 5px 10px; }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .ynb.sel.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .ynb:disabled:not(.sel):not(.answer) { opacity: 0.55; }
+  .tl { display: grid; grid-template-columns: 170px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  @media (max-width: 640px) { .tl { grid-template-columns: 1fr; gap: 4px; } }
+  .tld { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .tlw { font-size: 13.5px; font-weight: 700; }
+  .tlw .tag { margin-left: 6px; }
+  .tlt { font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 3px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Swap or Bet <span class="sub">White-Collar Crime · Crime Lab 11 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>A contract that pays $1 if the Cowboys beat the Eagles on Sunday and nothing if they do not is, under the Commodity Exchange Act, a swap, and under the Texas Penal Code, a bet. Which word applies decides who regulates it, whether an 18-year-old in Wichita Falls can buy it, and whether anyone has committed a crime.</strong> In 2025 and 2026 that question moved from a law review note to a fight between one federal agency and most of the states: cease-and-desist orders, nine federal suits by the agency against states, a divided appeals court, a $36 billion state lawsuit, and an emergency order telling a company to keep operating in a state that had ordered it to stop. This lab has you classify a dozen real products under the competing definitions, follow who decided what and when, and then ask the question the readings ask: when a government chooses the definition that lets an industry operate, and the industry is built to keep people playing, whose crime is it?</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-defs" type="button">Two definitions</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sort" type="button">Sort twelve products</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-who" type="button">Who decides</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-scc" type="button">State-corporate crime</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: DEFS -->
+    <div class="section active" id="sec-defs">
+      <div class="card">
+        <h2>The same contract, three ways</h2>
+        <p class="lede">An event contract on a prediction market is priced between $0 and $1 and pays $1 if the event happens; ten contracts bought at 35 cents return $6.50 in profit if the buyer is right (Saunders 2026, p. 654). Whether that is a derivative or a wager depends on which statute you read.</p>
+        <div class="defs">
+          <div class="def"><div class="who">Federal: a swap</div><div class="hinge">The Commodity Exchange Act defines a swap to include any agreement "that provides for any purchase, sale, payment, or delivery ... that is dependent on the occurrence, nonoccurrence, or the extent of the occurrence of an event or contingency associated with a potential financial, economic, or commercial consequence" (7 U.S.C. 1a(47)(A)(ii)). Swaps trade on designated contract markets under the exclusive jurisdiction of the Commodity Futures Trading Commission (7 U.S.C. 2(a)(1)(A)). Kalshi, Crypto.com, and the exchanges behind Polymarket's U.S. business, Robinhood, DraftKings, and FanDuel are designated contract markets or trade through one.</div></div>
+          <div class="def"><div class="who">Federal: the special rule for event contracts</div><div class="hinge">Congress let the Commission prohibit event contracts that "involve" activity unlawful under state or federal law, terrorism, assassination, war, "gaming," or similar activity it finds "contrary to the public interest" (7 U.S.C. 7a-2(c)(5)(C)(i)); the Commission's Rule 40.11 lists the same categories (Saunders 2026, p. 653). Whether a sports contract "involves gaming," and whether the Commission has to act before a state can, is the whole dispute.</div></div>
+          <div class="def"><div class="who">Texas: a bet</div><div class="hinge">"'Bet' means an agreement to win or lose something of value solely or partially by chance," excluding insurance and prizes to contestants (Texas Penal Code 47.01(1)). A person commits an offense if he "makes a bet on the partial or final result of a game or contest or on the performance of a participant in a game or contest," or on "the result of any political nomination, appointment, or election" (47.02(a)(1)-(2)); a Class C misdemeanor for the bettor, a Class A misdemeanor for whoever takes bets as a business (47.03). Texas licenses no sportsbooks.</div></div>
+          <div class="def"><div class="who">New York: gambling</div><div class="hinge">"A person engages in gambling when he stakes or risks something of value upon the outcome of a contest of chance or a future contingent event not under his control or influence" (N.Y. Penal Law 225.00(2)). Read literally, that covers every event contract, including the ones on interest rates and elections. New York licenses mobile sportsbooks, taxes them at 51 percent of revenue, and requires bettors to be 21; Kalshi takes customers at 18.</div></div>
+        </div>
+        <p class="teach"><strong>Why it matters who wins the word.</strong> If the contract is a swap, the exchange answers to one federal agency, pays no state gaming tax, faces no state licensing, sells in all fifty states including the ones with no legal sports betting, and sets its own age at 18. If it is a bet, the same product is a licensed, taxed, 21-and-over activity in about forty states and a crime in Texas. The product does not change. The 2024 case that opened the door was about elections: a federal judge held that a contract on who wins an election does not "involve" gaming or unlawful activity, the D.C. Circuit let trading start in October 2024, and the Commission dropped its appeal in May 2025 (Saunders 2026, pp. 660-661). Sports contracts followed within months.</p>
+        <div class="guessbox">
+          <p class="gq">Since Kalshi began listing sports contracts, what share of its total trading volume has been sports (July 2024 to April 2026)?</p>
+          <div class="pickrow">
+            <button class="pick" data-v="20" type="button">About 20 percent</button>
+            <button class="pick" data-v="40" type="button">About 40 percent</button>
+            <button class="pick" data-v="60" type="button">About 60 percent</button>
+            <button class="pick" data-v="80" type="button">About 80 percent</button>
+          </div>
+          <p class="verdict" id="vVerdict"></p>
+        </div>
+        <div class="veiled" id="vReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">80%</div><div class="l">of Kalshi's volume since July 2024 has been sports; 39 percent of Polymarket's</div></div>
+            <div class="stat"><div class="v">$24B</div><div class="l">combined monthly volume on the two in April 2026, up from under $5 billion in September 2025</div></div>
+            <div class="stat"><div class="v">$14B</div><div class="l">average monthly handle of all legal U.S. sportsbooks in 2025, for comparison</div></div>
+            <div class="stat"><div class="v">18</div><div class="l">minimum age to trade on Kalshi; 21 to bet with a licensed sportsbook in most states</div></div>
+          </div>
+          <p class="teach"><strong>The market that Congress described as price discovery about "financial, economic, or commercial" contingencies is, on its largest platform, four-fifths sports.</strong> By spring 2026 the prediction markets' monthly volume was larger than the licensed sportsbooks' handle. That is the economic fact behind the legal fight: the states are not defending a definition, they are defending a licensed, taxed industry and the revenue from it, and the exchanges are defending a product that exists because the other definition applies.</p>
+          <p class="srcnote">Sources: 7 U.S.C. 1a(47), 2(a)(1)(A), 7a-2(c)(5)(C); 17 C.F.R. 40.11; Texas Penal Code 47.01-47.03; N.Y. Penal Law 225.00; Saunders, J. (2026). Bad bets: Examining the legality of sports-related prediction markets. North Carolina Journal of Law and Technology, 27(4), 649-682, at the pages cited; Pew Research Center, "Trading volume on prediction markets has soared in recent months," May 27, 2026, using data from The Block.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SORT -->
+    <div class="section" id="sec-sort">
+      <div class="card">
+        <h2>Twelve products</h2>
+        <p class="lede">For each product, decide which definitions it falls under: a swap on a federally designated exchange, a bet or gambling under the Texas and New York statutes on the first tab, both, or neither. The reference then adds two things: how the Commission's June 2026 proposed rule would treat it, and where a person in Texas could legally buy it today. Several of these have the same answer; the point is to notice where the definitions diverge and where they do not.</p>
+        <div id="sortList"></div>
+        <p class="progress" id="sProgress">0 of 12 sorted.</p>
+        <div class="veiled" id="sDone">
+          <p class="teach"><strong>What the sort shows.</strong> Nearly everything is both. The federal definition asks whether a payment depends on an event with an economic consequence, which every contract satisfies; the state definitions ask whether value is risked on a contest or a contingent event, which every contract also satisfies. The one product that is a bet and not a swap is the sportsbook wager, because it is not traded on a designated contract market: the identical prediction in a different building. The definitions do not distinguish the products. They distinguish the sellers, and the question of which seller gets to exist is decided on the next tab.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: WHO -->
+    <div class="section" id="sec-who">
+      <div class="card">
+        <h2>Two years of decisions</h2>
+        <p class="lede">The events below are the record through early September 2026. Before you read it, guess one count.</p>
+        <div class="guessbox">
+          <p class="gq">By the end of June 2026, how many states had the Commodity Futures Trading Commission sued in federal court to stop them from enforcing their gambling laws against prediction markets?</p>
+          <div class="pickrow">
+            <button class="pick" data-n="0" type="button">None</button>
+            <button class="pick" data-n="2" type="button">Two</button>
+            <button class="pick" data-n="9" type="button">Nine</button>
+            <button class="pick" data-n="30" type="button">Thirty</button>
+          </div>
+          <p class="verdict" id="nVerdict"></p>
+        </div>
+        <div class="veiled" id="nReveal">
+          <div id="timeline"></div>
+          <p class="teach"><strong>Nine, and the count matters less than the direction.</strong> A federal regulator whose statute lets it prohibit contracts that involve gaming chose instead to sue the states that tried to, to invoke an emergency power last used in 1980 to keep an exchange trading in a state that had sued it, and to propose a rule under which most sports contracts are permitted. Forty-four state attorneys general told the Commission in July that it has no such authority; the Third Circuit said, two to one, that it does; the Southern District of New York and a district court in Ohio said it does not. In Texas, which licenses no sports betting, the attorney general joined none of the multistate filings, the lieutenant governor asked a Senate committee in March 2026 to study the "loophole" for the 2027 session, and Kalshi operates. The split is headed for the Supreme Court; nothing had been filed there as of this writing.</p>
+          <p class="srcnote">Sources: KalshiEX LLC v. Flaherty, No. 25-1922 (3d Cir. Apr. 6, 2026), as summarized by Paul, Weiss and by Skadden; Massachusetts Attorney General, press release of January 20, 2026; Office of the New York Attorney General, press release of July 31, 2026, and reporting by CNBC and Covers; CFTC proposed rule of June 10, 2026, as summarized by Greenberg Traurig and SBC Americas; CFTC emergency order of August 11, 2026, as reported by PYMNTS; RotoWire prediction markets legal timeline (retrieved September 2026) for the district court and state actions; Texas Tribune, May 1, 2026, on Texas officials. Dates for district court rulings and state suits are as reported; check the docket before citing any of them in the case project.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SCC -->
+    <div class="section" id="sec-scc">
+      <div class="card">
+        <h2>Kramer, Michalowski, and Kauzlarich</h2>
+        <p class="lede">State-corporate crime, in the definition the three authors trace to 1990, is illegal or socially injurious action that results from a mutually reinforcing interaction between the policies and practices of institutions of political governance and those of institutions of economic production. Two forms: state-initiated, where the government directs or participates in the harm, and state-facilitated, where the government fails to restrain harm it has the power and the duty to restrain. Their integrated model asks, at three levels (the institutional environment, the organization, the individual), about three catalysts: the motivation for the conduct, the opportunity structure that makes it possible, and the operationality of controls that could stop it. Michalowski and Brown applied the same model to environmental rollbacks in Lab 9. Sort the six statements below by which form of state-corporate crime they describe, if any.</p>
+        <div id="sccList"></div>
+        <p class="progress" id="cProgress">0 of 6 sorted.</p>
+        <div class="veiled" id="cDone">
+          <p class="teach"><strong>The model applied.</strong> Motivation, at the institutional level, is the revenue and the lobbying on both sides: states defending a taxed industry, exchanges and their investors defending an untaxed one; at the organizational level, a regulator whose chairman has said the agency's job is not to stand in the way of innovation. Opportunity is the definition: two statutes, one word, and a court split that lets the product exist while the question is open. Control is what the special rule was for, and the Commission's decision not to use it is the state-facilitated half; the emergency order and the suits against states are closer to state-initiated. Whether any of it is crime depends, as it did in Lab 9, on which definition of crime you chose in Lab 1: nothing here is illegal under the federal statute as the Third Circuit read it, and all of it is illegal under the state statutes as New York and Massachusetts read them.</p>
+          <p class="srcnote">Sources: Kramer, R. C., Michalowski, R. J., and Kauzlarich, D. (2002). The origins and development of the concept and theory of state-corporate crime. Crime and Delinquency, 48(2), 263-282 (library); the definition and the two forms are as stated in the article and in Kramer and Michalowski (1990); add page numbers from the assigned copy. If the Jackpot Justice preprint (Pitman, Membrez-Weiler, Kibler, and Michel) is assigned in its place, use its framework for this tab. Schüll, N. D. (2012). Addiction by Design: Machine Gambling in Las Vegas, Introduction (library).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Schüll: the product is the design</h2>
+        <p class="lede">Schüll's introduction describes the "machine zone," the state machine gamblers seek in which time, money, and the outside world fall away, and shows that the zone is engineered: the speed of play, the continuity of one game into the next, the removal of every interruption, and the industry's own measure of success, time on device. The question for a prediction market app is which of its features are the same engineering. For each feature, say which policy problem it raises first: addiction and consumer protection, the integrity of the game, or age and access.</p>
+        <div id="designList"></div>
+        <p class="progress" id="dProgress">0 of 5 matched.</p>
+        <div class="veiled" id="dDone">
+          <p class="teach"><strong>Read the Commission's proposal against Schüll.</strong> The June 2026 proposal would bar contracts on injuries, officiating calls, and single in-game actions, because one person could decide them; it says nothing about the speed of the app, the continuity of markets during a game, combination contracts, or the age of the customer. Integrity of the contest is a market-design problem the Commission recognizes. Time on device is the problem Schüll describes, and it is the one the federal framework has no category for, because the framework was written for hedgers and speculators, not players. The states' frameworks have that category, and no jurisdiction.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 11 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your sorting record into one block of text, and paste that text into the Lab 11 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your sort. Pick two products that you classified the same way and that the law treats differently in Texas today, and explain what does the work: the definition, the seller, or the forum. Then say which definition you would adopt if you were writing the statute, and what it would have to say to separate a hedge from a wager.</div>
+          <div class="qh">Four to six sentences. Cite Saunders by page.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. The timeline. The Commission had, from 2010, the power to prohibit contracts that involve gaming, and in 2026 it sued states, issued an emergency order, and proposed to permit most sports contracts. Using Kramer, Michalowski, and Kauzlarich, say whether this is state-facilitated or state-initiated, and at which level and catalyst of their model the decisive fact sits.</div>
+          <div class="qh">Four to six sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Schüll and the app. Name one feature of a prediction market app that Schüll's account would predict is doing the most work to keep a user trading, say what evidence you would need to show it, and say which regulator, if any, could require the evidence under the definitions as they stand.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Did the definition of the conduct in your case decide who had jurisdiction over it (a security or a commodity, an employee or a contractor, a drug or a supplement, a bank or a fintech)? Say which definition won, who chose it, and what enforcement that choice made possible or foreclosed.</div>
+          <div class="qh">Three to five sentences. This is material for Part 2 and Part 4.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the products and the record</h2>
+      <p class="srcnote">The twelve products are described from the exchanges' own listings and from the complaints and press statements cited on the third tab; contract names are paraphrased and prices are illustrative. The legal record on the third tab is current to early September 2026 and will not be by the time you read it: check the Third Circuit, Southern District of New York, and Supreme Court dockets, and the Commission's rulemaking page, before the lab. Statutes are quoted from the current Texas Penal Code and New York Penal Law and from Title 7 of the U.S. Code.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function guess(sel, key, right, verdictId, revealId, yes, no, after){
+    let picked = null;
+    document.querySelectorAll(sel).forEach(btn => btn.addEventListener('click', () => {
+      if (picked) return; picked = btn.dataset[key]; btn.classList.add('chosen');
+      document.querySelectorAll(sel).forEach(b => { b.disabled = true; if (b.dataset[key] === right) b.classList.add('answer'); });
+      $(verdictId).textContent = picked === right ? yes : no;
+      $(revealId).style.display = 'block'; if (after) after();
+    }));
+    return () => picked;
+  }
+  const gV = guess('#sec-defs .pick[data-v]', 'v', '80', 'vVerdict', 'vReveal', 'Right. About 80 percent.', 'About 80 percent. See below.');
+
+  // ---------- sort ----------
+  const OPTS = [['S', 'Swap on a federal exchange'], ['B', 'Bet under state law'], ['BOTH', 'Both'], ['N', 'Neither']];
+  const ITEMS = [
+    { t: 'Who will win the World Series?', d: 'A futures-style contract listed on Kalshi on each team, priced by the market, paying $1 if the team wins.', ref: 'BOTH', cftc: 'Permitted under the June 2026 proposal: a tournament outcome settled on league data that no single participant can determine.', tx: 'Available in Texas on Kalshi and through Robinhood; the same prediction placed with an offshore sportsbook is a Class C misdemeanor for the bettor.', why: 'A payment dependent on an event with a commercial consequence, on a designated contract market: a swap. Something of value risked on the result of a contest: a bet under Texas 47.02(a)(1) and gambling under New York 225.00(2).' },
+    { t: 'Cowboys to beat the Eagles, Sunday', d: 'A single-game winner contract, the prediction market equivalent of a moneyline bet.', ref: 'BOTH', cftc: 'Permitted under the proposal: a win-loss result.', tx: 'Available in Texas on prediction markets; illegal from any other seller.', why: 'Both, on the same reasoning as the first item. Massachusetts\' complaint lists exactly these, moneyline, spread, and total contracts, as the products it calls unlicensed sports wagering.' },
+    { t: 'Cowboys to win by more than 3.5 points', d: 'A point-spread contract; a companion contract settles on whether the combined score is over 44.5.', ref: 'BOTH', cftc: 'Permitted: point differentials and totals are named in the proposal as generally allowable.', tx: 'Available in Texas on prediction markets.', why: 'Both. The spread and the total are the sportsbook\'s core products, reproduced as contracts on a margin of victory and a sum of scores.' },
+    { t: 'Quarterback to throw for more than 249.5 yards', d: 'A player statistical contract, the equivalent of a player prop.', ref: 'BOTH', cftc: 'Permitted in the proposal as "individual and team statistical performance," with a recommendation that exchanges share information with leagues.', tx: 'Available in Texas on prediction markets.', why: 'Both; Texas 47.02(a)(1) reaches bets "on the performance of a participant in a game or contest" by name. The proposal distinguishes a season or game statistic, which a player cannot easily throw, from a single action, which one can.' },
+    { t: 'A combination contract: three outcomes must all happen', d: 'A contract that pays only if three separate game results all occur, priced by multiplying; the prediction market equivalent of a parlay, and a large driver of Kalshi\'s 2025-2026 growth.', ref: 'BOTH', cftc: 'Not addressed as a category in the proposal; each leg is a permitted contract.', tx: 'Available in Texas on prediction markets.', why: 'Both. Parlays are the sportsbooks\' most profitable product because bettors misjudge compound probabilities; Schüll\'s question, on the next tab, is what a product built on that misjudgment is for.' },
+    { t: 'The same contracts, still trading during the game', d: 'Markets that stay open in play, so that a user can buy and sell the winner contract as the score changes.', ref: 'BOTH', cftc: 'The proposal disfavors contracts on discrete in-game actions (a single pitch, a single shot) but does not address continuous trading of outcome contracts during play.', tx: 'Available in Texas on prediction markets.', why: 'Both. In-play betting is the sportsbook product most associated with harm in the gambling research, because it removes the pause between decisions; as a swap it is simply a liquid market.' },
+    { t: 'Will the Federal Reserve cut rates at its September meeting?', d: 'A contract on a monetary policy decision, the kind of contract prediction markets were built for.', ref: 'BOTH', cftc: 'Permitted, and outside the gaming definition entirely; the Commission cites this kind of contract as price discovery.', tx: 'Available in Texas. No state has tried to stop it.', why: 'A swap, plainly. Also, read literally, gambling under New York 225.00(2): value risked "upon the outcome of a future contingent event not under his control or influence." No state enforces its statute this way, which tells you the fight is about sports revenue rather than about the definition.' },
+    { t: 'Who will win the U.S. Senate seat in Texas in November?', d: 'An election contract; the product the 2024 KalshiEX v. CFTC case was about.', ref: 'BOTH', cftc: 'Permitted; the proposal puts elections outside its definition of gaming.', tx: 'Available in Texas. Texas 47.02(a)(2) makes betting on "the result of any political nomination, appointment, or election" an offense, and Texas has not enforced it against the exchanges.', why: 'Both. The federal court in 2024 held that an election contract does not "involve" gaming or unlawful activity in the sense of the special rule (Saunders 2026, pp. 660-661); Texas\' statute names election betting by name. The two findings do not contradict each other. One is about the Commission\'s power to prohibit; the other is about what Texas defines as a crime.' },
+    { t: 'Will a named film win Best Picture?', d: 'An awards contract.', ref: 'BOTH', cftc: 'Permitted; award contests are outside the proposal\'s gaming definition, along with elections.', tx: 'Available in Texas.', why: 'Both under the literal statutes, and a case where the Commission drew its line by the nature of the contest rather than by the structure of the contract: an award is decided by a vote, not by athletic ability, luck, or skill in a game.' },
+    { t: 'Will the high temperature in Dallas tomorrow exceed 100 degrees?', d: 'A weather contract, settled on the National Weather Service reading.', ref: 'BOTH', cftc: 'Permitted; weather derivatives are a long-standing hedging product.', tx: 'Available in Texas.', why: 'Both under the literal statutes, and the item that shows why the New York definition cannot be read literally: a farmer or a utility buying this contract is hedging, and the same contract in the hands of a person who likes to bet on the weather is a wager. The statute cannot tell them apart; the law of derivatives never tried to.' },
+    { t: 'Will a named player be listed as injured before the playoffs?', d: 'A contract of the kind the Commission\'s proposal singles out; not a standard listing.', ref: 'BOTH', cftc: 'Disfavored: the proposal says injury contracts "create perverse financial incentives" and raise confidentiality problems, and would be subject to prohibition.', tx: 'Not offered.', why: 'Both under the statutes, and the clearest case for the special rule: a contract that one person, the player or someone near him, can settle. The Commission proposes to use its power here and nowhere else in sports, which is the pattern Kramer, Michalowski, and Kauzlarich\'s model asks you to explain.' },
+    { t: 'Cowboys to beat the Eagles, placed with a licensed New Jersey sportsbook', d: 'The same prediction as item 2, as a moneyline bet on a state-licensed app, taxed and limited to customers 21 and over.', ref: 'B', cftc: 'Outside the Commission\'s jurisdiction; not traded on a designated contract market.', tx: 'Illegal in Texas; legal in New Jersey and about forty other states.', why: 'A bet only. Nothing about the prediction, the price, or the payout differs from item 2. What differs is the seller and the room it is sold in, and that difference is the entire legal distinction between a regulated derivative and regulated gambling.' },
+  ];
+  const sAns = ITEMS.map(() => null); const sEl = $('sortList');
+  ITEMS.forEach((it, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">PRODUCT ' + (i + 1) + '</span><span class="evtitle">' + esc(it.t) + '</span></div><div class="evtext">' + esc(it.d) + '</div>' +
+      '<div class="codes">' + OPTS.map(o => '<button class="ynb" data-si="' + i + '" data-sk="' + o[0] + '" type="button">' + esc(o[1]) + '</button>').join('') + '</div><p class="verdict" id="sv-' + i + '"></p><div class="evnote" id="sn-' + i + '"></div>';
+    sEl.appendChild(d);
+  });
+  sEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-si]'); if (!b) return;
+    const i = Number(b.dataset.si); if (sAns[i]) return; sAns[i] = b.dataset.sk;
+    sEl.querySelectorAll('[data-si="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.sk === ITEMS[i].ref) x.classList.add('answer'); });
+    $('sv-' + i).innerHTML = '<span class="tag ' + (sAns[i] === ITEMS[i].ref ? 'yes' : 'no') + '">' + (sAns[i] === ITEMS[i].ref ? 'Matches the reference' : 'Reference: ' + OPTS.find(o => o[0] === ITEMS[i].ref)[1]) + '</span>';
+    const n = $('sn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(ITEMS[i].why) + '<br><br><strong>Under the June 2026 proposal.</strong> ' + esc(ITEMS[i].cftc) + '<br><br><strong>In Texas today.</strong> ' + esc(ITEMS[i].tx); n.style.display = 'block';
+    const done = sAns.filter(Boolean).length; $('sProgress').textContent = done + ' of 12 sorted.' + (done === 12 ? ' Read the note below.' : ''); if (done === 12) $('sDone').style.display = 'block';
+  });
+
+  // ---------- timeline ----------
+  const TL = [
+    ['Sept. to Oct. 2024', 'D.D.C. and D.C. Circuit', 'KalshiEX v. CFTC: election contracts do not "involve" gaming or unlawful activity; the appeals court declines to stop trading before the November election.', 'Exchanges'],
+    ['Early 2025', 'Kalshi, Crypto.com, Robinhood', 'Sports event contracts listed nationwide, including in states with no legal sports betting.', 'Exchanges'],
+    ['Spring 2025', 'Nevada, New Jersey, Ohio, Maryland, Illinois, Montana, and others', 'Cease-and-desist orders to Kalshi and others under state gambling law.', 'States'],
+    ['May 2025', 'CFTC', 'Drops its appeal in the election-contract case.', 'Exchanges'],
+    ['2025', 'D.N.J., D. Nev., D. Md.', 'Preliminary injunctions for Kalshi in New Jersey and Nevada; denied in Maryland (KalshiEX v. Martin), which found no preemption; Nevada later reconsiders.', 'Split'],
+    ['Sept. 2025', 'Massachusetts Attorney General', 'Sues Kalshi in state court for unlicensed sports wagering.', 'States'],
+    ['Jan. 20, 2026', 'Massachusetts court', 'Preliminary injunction: Kalshi may not take sports contracts from Massachusetts customers without a state license.', 'States'],
+    ['Jan. 29 and Feb. 17, 2026', 'CFTC Chairman Selig', 'Withdraws prior proposed bans and advisories; says the agency will sue any state regulator that interferes with a federally licensed exchange.', 'Exchanges'],
+    ['Mar. 10, 2026', 'S.D. Ohio', 'Denies Kalshi an injunction: sports event contracts are not swaps.', 'States'],
+    ['Apr. 2 to June 24, 2026', 'CFTC', 'Sues nine states, from Arizona, Connecticut, and Illinois in April to Kentucky in June, and seeks orders blocking their enforcement.', 'Exchanges'],
+    ['Apr. 6, 2026', 'Third Circuit, 2-1', 'KalshiEX v. Flaherty: sports event contracts are swaps; the CEA preempts New Jersey\'s gambling law on a designated contract market; Judge Roth dissents, calling the products gambling.', 'Exchanges'],
+    ['June 10, 2026', 'CFTC', 'Proposed rule: sports contracts on results, spreads, totals, and statistics generally permitted; injuries, officiating, single in-game actions, and pre-college sports disfavored; elections and awards not gaming. Comments closed July 27.', 'Exchanges'],
+    ['July 9, 2026', 'S.D.N.Y., Judge Torres', 'Denies Kalshi an injunction: New York\'s gambling laws apply and are not preempted.', 'States'],
+    ['July 2026', '44 state attorneys general', 'Joint letter to the Commission: it lacks authority to preempt state sports wagering law by rule. Texas does not sign.', 'States'],
+    ['July 31, 2026', 'New York Governor and Attorney General', 'Sue Kalshi as an "illegal, unlicensed gambling business," seeking treble gains, $100,000 per offer, restitution: more than $36 billion. Removed to federal court.', 'States'],
+    ['Aug. 11, 2026', 'CFTC', 'Emergency order under Section 8a(9), a power the agency had not used since 1980, directing Kalshi to keep operating nationwide under the Act\'s core principles.', 'Exchanges'],
+    ['Aug. 13 and 27, 2026', 'Washington (King County) and Connecticut courts', 'Washington orders Kalshi to geofence most sports contracts on pain of $120,000 a day; a federal judge in Connecticut denies Kalshi an injunction against the state.', 'States'],
+    ['Sept. 2026', 'Texas', 'No enforcement; the attorney general has joined no multistate filing; the lieutenant governor has asked a Senate committee to recommend legislation for 2027; Kalshi operates.', 'Open'],
+  ];
+  const CUT = { Exchanges: 'no', States: 'yes', Split: 'arg', Open: 'arg' };
+  function buildTL(){ $('timeline').innerHTML = TL.map(r => '<div class="tl"><div class="tld">' + esc(r[0]) + '</div><div class="tlb"><div class="tlw">' + esc(r[1]) + ' <span class="tag ' + CUT[r[3]] + '">' + esc(r[3] === 'Exchanges' ? 'for the exchanges' : r[3] === 'States' ? 'for the states' : r[3]) + '</span></div><div class="tlt">' + esc(r[2]) + '</div></div></div>').join(''); }
+  const gN = guess('#sec-who .pick[data-n]', 'n', '9', 'nVerdict', 'nReveal', 'Right. Nine states.', 'Nine states, from Arizona in April to Kentucky in June. See below.', buildTL);
+
+  // ---------- scc ----------
+  const FORMS = [['INIT', 'State-initiated'], ['FAC', 'State-facilitated'], ['NONE', 'Not state-corporate crime as defined']];
+  const SCC = [
+    { t: 'From 2010 the Commission had statutory power to prohibit event contracts that involve gaming. Through 2025 and 2026 it did not use it against sports contracts, and in June 2026 proposed a rule under which most are permitted.', ref: 'FAC', why: 'The definition of state-facilitated crime: a regulator with the power and the duty to restrain a harm declines to. Whether the harm is a crime depends on the definition of harm; the readings use a social injury standard, under which the gambling-harm literature supplies the injury.' },
+    { t: 'The Commission sued nine states to stop them enforcing their own gambling laws, and issued an emergency order requiring an exchange to keep operating in a state that had sued it.', ref: 'INIT', why: 'Closer to state-initiated: the government is not standing aside but acting to keep the product on the market against another government\'s law. The model\'s institutional-level motivation and opportunity are both visible: a policy commitment to the industry and a statute that can be read to authorize it.' },
+    { t: 'New York licenses mobile sportsbooks, taxes their revenue at 51 percent, and sued Kalshi for offering the same bets without a license, seeking $36 billion.', ref: 'NONE', why: 'Not state-corporate crime as defined; it is a state enforcing its law against a corporation. It is also a state defending its own revenue, which is the institutional-level motivation on the other side. The model does not require that only one side has one.' },
+    { t: 'Texas, which prohibits sports betting and election betting by statute, has taken no action against exchanges offering both to Texans, and its attorney general joined none of the multistate filings.', ref: 'FAC', why: 'State-facilitated at the state level: a government with the power to enforce a criminal statute against a corporation, and a statute that names the conduct, choosing not to. The Texas Tribune reported that the attorney general\'s office declined to explain and cited privilege.' },
+    { t: 'A prediction market lists combination contracts, keeps markets open during games, and takes customers at 18.', ref: 'NONE', why: 'Corporate conduct, not state-corporate crime by itself; it becomes state-corporate when a government\'s policy makes it possible, which is what the first, second, and fourth statements describe. The model\'s organizational level asks why the firm builds the product this way; Schüll answers that on the next part of this tab.' },
+    { t: 'Forty-four state attorneys general tell the Commission in a joint letter that it has no authority to preempt state wagering law by rule.', ref: 'NONE', why: 'Governments contesting a definition. The model treats this as the operationality of control at the institutional level: whether any control exists depends on which government wins the word, and the letter is one side trying to keep its control operational.' },
+  ];
+  const cAns = SCC.map(() => null); const cEl = $('sccList');
+  SCC.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">STATEMENT ' + (i + 1) + '</span></div><div class="evtext">' + esc(s.t) + '</div><div class="codes">' + FORMS.map(f => '<button class="ynb" data-ci="' + i + '" data-ck="' + f[0] + '" type="button">' + esc(f[1]) + '</button>').join('') + '</div><p class="verdict" id="cv-' + i + '"></p><div class="evnote" id="cn-' + i + '"></div>';
+    cEl.appendChild(d);
+  });
+  cEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ci]'); if (!b) return;
+    const i = Number(b.dataset.ci); if (cAns[i]) return; cAns[i] = b.dataset.ck;
+    cEl.querySelectorAll('[data-ci="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.ck === SCC[i].ref) x.classList.add('answer'); });
+    $('cv-' + i).innerHTML = '<span class="tag ' + (cAns[i] === SCC[i].ref ? 'yes' : 'no') + '">' + (cAns[i] === SCC[i].ref ? 'Matches the reference' : 'Reference: ' + FORMS.find(f => f[0] === SCC[i].ref)[1]) + '</span>';
+    const n = $('cn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(SCC[i].why); n.style.display = 'block';
+    const done = cAns.filter(Boolean).length; $('cProgress').textContent = done + ' of 6 sorted.' + (done === 6 ? ' Read the note below.' : ''); if (done === 6) $('cDone').style.display = 'block';
+  });
+
+  // ---------- design ----------
+  const PROBS = [['ADD', 'Addiction and consumer protection'], ['INT', 'Integrity of the contest'], ['AGE', 'Age and access']];
+  const DESIGN = [
+    { t: 'Markets stay open during the game, and the app pushes a notification when the price of a contract the user holds moves.', ref: 'ADD', why: 'Continuity and the removal of the pause between decisions: the two features Schüll identifies as the core of machine design. The notification restarts play from outside the app.' },
+    { t: 'Combination contracts that multiply three or four outcomes into one price, sold beside the single contracts.', ref: 'ADD', why: 'A product whose margin depends on a systematic misjudgment of compound probability, the same reason sportsbooks push parlays. Schüll\'s point is that the design is built on what the player will not notice.' },
+    { t: 'A contract on whether a named player will be injured, or on a single pitch or shot.', ref: 'INT', why: 'The one category the Commission proposes to bar: an outcome one person can decide. This is the problem the federal framework recognizes, because manipulation is a market problem.' },
+    { t: 'Account opening at 18, with identity verification but no state-level exclusion list.', ref: 'AGE', why: 'The states\' 21-and-over rules and self-exclusion registries are gambling-law tools; a designated contract market has neither obligation. New York\'s suit names the age issue directly.' },
+    { t: 'The app calls positions "trades," shows a portfolio, and reports gains as a percentage return.', ref: 'ADD', why: 'Schüll\'s machine zone depends on the reframing of loss as play; here loss is reframed as investment. The vocabulary is the same one that decided the legal question, which is not a coincidence.' },
+  ];
+  const dAns = DESIGN.map(() => null); const dEl = $('designList');
+  DESIGN.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">FEATURE ' + (i + 1) + '</span></div><div class="evtext">' + esc(s.t) + '</div><div class="codes">' + PROBS.map(p => '<button class="ynb" data-di="' + i + '" data-dk="' + p[0] + '" type="button">' + esc(p[1]) + '</button>').join('') + '</div><p class="verdict" id="dv-' + i + '"></p><div class="evnote" id="dn-' + i + '"></div>';
+    dEl.appendChild(d);
+  });
+  dEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-di]'); if (!b) return;
+    const i = Number(b.dataset.di); if (dAns[i]) return; dAns[i] = b.dataset.dk;
+    dEl.querySelectorAll('[data-di="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.dk === DESIGN[i].ref) x.classList.add('answer'); });
+    $('dv-' + i).innerHTML = '<span class="tag ' + (dAns[i] === DESIGN[i].ref ? 'yes' : 'no') + '">' + (dAns[i] === DESIGN[i].ref ? 'Matches the reference' : 'Reference: ' + PROBS.find(p => p[0] === DESIGN[i].ref)[1]) + '</span>';
+    const n = $('dn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(DESIGN[i].why); n.style.display = 'block';
+    const done = dAns.filter(Boolean).length; $('dProgress').textContent = done + ' of 5 matched.' + (done === 5 ? ' Read the note below.' : ''); if (done === 5) $('dDone').style.display = 'block';
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 11 · SWAP OR BET', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('GUESSES: sports share ' + (gV() ? gV() + '% (ref 80%)' : 'not answered') + '; states sued ' + (gN() ? gN() + ' (ref 9)' : 'not answered'));
+    lines.push('');
+    lines.push('TWELVE PRODUCTS (your sort / reference)'); ITEMS.forEach((it, i) => lines.push((i + 1) + '. ' + it.t + ': ' + (sAns[i] || 'not sorted') + ' / ' + it.ref));
+    lines.push('');
+    lines.push('STATE-CORPORATE CRIME (your form / reference)'); SCC.forEach((s, i) => lines.push((i + 1) + '. ' + (cAns[i] || 'not sorted') + ' / ' + s.ref));
+    lines.push('');
+    lines.push('DESIGN FEATURES (your problem / reference)'); DESIGN.forEach((s, i) => lines.push((i + 1) + '. ' + (dAns[i] || 'not matched') + ' / ' + s.ref));
+    lines.push('');
+    lines.push('QUESTION 1 (your sort)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (the timeline)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (Schüll and the app)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 11 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 11 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 11 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, sAns, cAns, dAns };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>
