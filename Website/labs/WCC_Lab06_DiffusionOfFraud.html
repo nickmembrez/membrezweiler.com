@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion of Fraud · White-Collar Crime · Crime Lab 6</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .netwrap svg { width: 100%; height: auto; display: block; background: var(--wash); border-radius: 10px; }
+  .simgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+  @media (max-width: 760px) { .simgrid { grid-template-columns: 1fr; } }
+  .simgrid svg { width: 100%; height: auto; display: block; background: var(--wash); border-radius: 10px; }
+  .simgrid h3 { margin-bottom: 8px; }
+  .tablewrap { overflow-x: auto; }
+  .runlog { border-collapse: collapse; width: 100%; font-size: 13px; }
+  .runlog th, .runlog td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; white-space: nowrap; }
+  .runlog th { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .ynb.sel.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .ynb:disabled:not(.sel):not(.answer) { opacity: 0.55; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Diffusion of Fraud <span class="sub">White-Collar Crime · Crime Lab 6 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Between January 1986 and December 1988, 230 people put about $11.5 million into the oil and gas wells of a small California company that started as a legitimate business and ended as a fraud.</strong> Baker and Faulkner asked a question criminologists had mostly skipped: not how the fraud technique spread among swindlers, but how the fraud spread among its victims. Half the investors came in through someone they knew; half answered a cold call or a mailing. Almost none of them told anyone else, and when they grew suspicious, two-thirds never said so to anyone. This lab puts you inside that process. You will see the case, run a model of the diffusion with the levers Fountain's principals and investors actually had, sort the antecedents of CEO wrongdoing that Schnatterly, Gangloff, and Tuschke reviewed, and test Vaughan's claim that mistake, misconduct, and disaster come out of the same organizational machinery. The organizing point is Baker and Faulkner's own: the factors that made the business succeed while it was legitimate are the factors that made the fraud succeed once it was not.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-case" type="button">Fountain Oil and Gas</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sim" type="button">Run the diffusion</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-ceo" type="button">The CEO's triangle</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-vaughan" type="button">Mistake, misconduct, disaster</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: CASE -->
+    <div class="section active" id="sec-case">
+      <div class="card">
+        <h2>An intermediate fraud</h2>
+        <p class="lede">Clinard's term for a fraud committed in or by a business that began as legitimate is intermediate fraud, as against a pre-planned fraud, where the business exists only to steal. Fountain Oil and Gas was run by three brothers from Westlake Village, in Ventura County. The eldest had sold oil and gas leases for years. The company drilled in the Sacramento Valley, organized each well as a separate limited partnership, and sold units to individual investors with a full prospectus that spelled out the risks and stated that the units could not be resold. It struck gas in November 1986. The first alleged misappropriation of investor money came at the end of that year. Money raised for one well was diverted to other wells, to company expenses, and to the president's personal purchases. Contractors went unpaid and filed 39 liens; a federal court put the company in receivership in March 1989; the Ventura County District Attorney's forensic accountant found enough to indict. In 1992 the president was convicted of grand theft by embezzlement, unlicensed sale of securities, excessive taking of funds, and filing false tax returns, and sentenced to five years and eight months; his brothers were convicted of using false statements in the sale of a security and received 16 months and 365 days in county jail.</p>
+        <div class="statrow">
+          <div class="stat"><div class="v">230</div><div class="l">investors, all individuals, 95 percent in California</div></div>
+          <div class="stat"><div class="v">$11.5M</div><div class="l">raised; about $48,000 per investor, in three wells on average</div></div>
+          <div class="stat"><div class="v">36</div><div class="l">months from first investor (January 1986) to last (December 1988)</div></div>
+          <div class="stat warn"><div class="v">2 of 3</div><div class="l">investors surveyed lost their entire investment</div></div>
+        </div>
+        <p class="teach"><strong>Who invested.</strong> Mostly men (77 percent), white (94 percent), average age 53, median household income $83,750 in 1988, professionals and business owners: the profile of an early adopter in any diffusion study. Three of four had never invested in natural resources before. Investors who came in late did not differ from those who came in early in age, occupation, or experience, which Baker and Faulkner take to mean there were no late adopters at all; the diffusion was cut off before it reached them (pp. 1190, 1198).</p>
+        <p class="srcnote">Source: Baker, W. E., and Faulkner, R. R. (2003). Diffusion of fraud: Intermediate economic crime and investor dynamics. Criminology, 41(4), 1173-1206 (case history pp. 1183-1188; investor characteristics p. 1190; periods pp. 1190-1192). The article's file name in the course folder says 2006; the citation is 2003.</p>
+      </div>
+
+      <div class="card">
+        <h2>How they heard about it</h2>
+        <p class="lede">Diffusion theory sorts channels into social networks (a tie to the seller, or a tie to someone who already bought) and impersonal methods (direct mail, advertising, telemarketing). In the 1991 national Fraud Victimization Survey, about 30 percent of 1,911 fraud incidents involved social networks and 70 percent impersonal methods; for fraudulent business ventures the split was 24 to 77 (Table 1, p. 1179). Baker and Faulkner surveyed 72 of Fountain's investors, a 30 percent sample that did not differ from the rest on amount invested or timing.</p>
+        <div class="guessbox">
+          <p class="gq">What share of Fountain's investors came in through a social tie, to the company or to a prior investor?</p>
+          <div class="pickrow">
+            <button class="pick" data-h="25" type="button">About 25 percent</button>
+            <button class="pick" data-h="50" type="button">About 50 percent</button>
+            <button class="pick" data-h="75" type="button">About 75 percent</button>
+            <button class="pick" data-h="90" type="button">About 90 percent</button>
+          </div>
+          <p class="verdict" id="hVerdict"></p>
+        </div>
+        <div class="veiled" id="hReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Telemarketing cold call</span><div class="btrack"><div class="bfill" style="width:0%" data-w="100%"></div></div><span class="bval">38%</span></div>
+            <div class="brow"><span class="blabel">Preexisting tie to a prior investor (direct)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="50%"></div></div><span class="bval">19%</span></div>
+            <div class="brow"><span class="blabel">Preexisting tie to the company (principals, salespeople, employees)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="55%"></div></div><span class="bval">21%</span></div>
+            <div class="brow"><span class="blabel">Compound tie (friend of a friend, broker who knew a salesperson)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="26%"></div></div><span class="bval">10%</span></div>
+            <div class="brow"><span class="blabel">Direct sales, no prior tie (cold contact)</span><div class="btrack"><div class="bfill" style="width:0%" data-w="18%"></div></div><span class="bval">7%</span></div>
+            <div class="brow"><span class="blabel">Direct mail and advertising</span><div class="btrack"><div class="bfill" style="width:0%" data-w="16%"></div></div><span class="bval">6%</span></div>
+          </div>
+          <p class="teach"><strong>Half and half.</strong> Social ties brought in 50 percent (21 to the company, 19 direct to a prior investor, 10 compound), impersonal methods the other 50, and the single largest channel was the cold call, made from purchased lists of affluent people, investors in other speculative ventures, and buyers of big-ticket items. One investor: "The telemarketer got my name from a list of yacht and airplane owners" (Figure 5 and pp. 1192-1193). The company also dressed the part: a prestigious office with maps and core samples, a president with a Lamborghini, a Rolls Royce, and 20 suits at $2,500 each, and a petroleum geologist one investor called "a guru-type guy" (p. 1199).</p>
+        </div>
+        <div class="guessbox" style="margin-top:14px">
+          <p class="gq">Fountain asked 61 percent of its investors to refer the company to people they knew, and many said they were pressured to. What share of investors referred anyone at all?</p>
+          <div class="pickrow">
+            <button class="pick" data-r="5" type="button">About 5 percent</button>
+            <button class="pick" data-r="24" type="button">About 24 percent</button>
+            <button class="pick" data-r="50" type="button">About 50 percent</button>
+            <button class="pick" data-r="75" type="button">About 75 percent</button>
+          </div>
+          <p class="verdict" id="rVerdict"></p>
+        </div>
+        <div class="veiled" id="rReveal">
+          <p class="teach"><strong>24 percent, one referral each, and only after being asked.</strong> One respondent in 72 put someone in touch with Fountain without a request from the company. The reasons for not referring (Table 3, p. 1195): too risky, might not work out for others (31 percent of mentions); a private matter, "I keep these things to myself" (30 percent); "I didn't trust Fountain" (23 percent); never considered it (14 percent). A physician who lost more than $200,000 explained the mix: he would not involve his colleagues, he found the principals "a little slimy," and "my greed and their smooth superficial successful exterior overcame my suspicions" (p. 1194).</p>
+          <p class="teach"><strong>Why the network was there and not used.</strong> Baker and Faulkner give two reasons. The units could not be resold, so unlike a stock, which investors talk up to raise the price, a Fountain well was a congestible good: telling others could only crowd you out of the next one (pp. 1197-1198). And financial transactions happen inside a culture of privacy and self-reliance, so investors who were geographically concentrated and demographically alike, and therefore very likely to know one another, did not know one another as investors. One discovered a friend and colleague had invested only at the receiver's meeting: "You got screwed, too?" (p. 1200).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Who lost, and who said anything</h2>
+        <div class="bars">
+          <div class="brow"><span class="blabel">First invested in 1986: lost entire investment</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="48%"></div></div><span class="bval">48% (10 of 21)</span></div>
+          <div class="brow"><span class="blabel">First invested in 1987</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="61%"></div></div><span class="bval">61% (19 of 31)</span></div>
+          <div class="brow"><span class="blabel">First invested in 1988</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="95%"></div></div><span class="bval">95% (19 of 20)</span></div>
+        </div>
+        <p class="teach"><strong>The two-stage pattern in the losses.</strong> Only one exploratory well in seven pays, so some investors would have lost money in an honest company. But the loss rate climbs from 48 to 61 to 95 percent by year of entry, tracking the period in which the diversions took place, and the 1988 wells were not worse: four produced gas, including the company's biggest producer (Table 4 and note 3, pp. 1195-1196). The people recruited last, when the company most needed new money, were the people with almost no chance of getting any back.</p>
+        <div class="statrow">
+          <div class="stat warn"><div class="v">38%</div><div class="l">did not know Fountain had committed fraud until the survey letter; they thought it was "just a failed business"</div></div>
+          <div class="stat"><div class="v">84%</div><div class="l">eventually became suspicious</div></div>
+          <div class="stat warn"><div class="v">2 of 3</div><div class="l">of the suspicious never talked to anyone about it</div></div>
+          <div class="stat warn"><div class="v">73%</div><div class="l">never contacted police or any authority</div></div>
+        </div>
+        <p class="teach"><strong>Closed awareness.</strong> Those who did talk mostly talked to family, not to other investors. The reasons for not going to the authorities: did not know it was fraud (38 percent), "felt powerless" (25 percent), feared they would "look bad" (15 percent). Baker and Faulkner's conclusion is the one the model on the next tab is built around: Fountain had encouraged investors to talk to each other while it was legitimate, and once it turned, the fact that they did not is what kept the fraud alive. "I didn't talk to anyone about my suspicions," one investor said, "because there's no one to talk to" (pp. 1196-1197, 1201).</p>
+        <p class="srcnote">Source: Baker and Faulkner (2003), Figure 5 (p. 1194), Table 3 (p. 1195), Table 4 (p. 1195), and pp. 1192-1201 as cited. Percentages are of the 72 investors surveyed.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: SIM -->
+    <div class="section" id="sec-sim">
+      <div class="card">
+        <h2>A model of the diffusion</h2>
+        <p class="lede">The model below is a simplification built to approximate the Fountain figures, not the data themselves. There are 400 potential investors in 16 overlapping social circles, alike in the way Fountain's investors were alike. Each month for 36 months the company recruits through three channels: the principals' own ties (fixed), cold calls to purchased lists (you set how many calls a month), and referrals, where an investor who is asked refers one person they know with the probability you set. Recruitment is slower in the startup months and faster after the gas strike in month 11. The diversions begin at the end of year one, and an investor's chance of losing everything follows the year they entered (48, 61, or 95 percent). From month 20, investors begin to grow suspicious. A suspicious investor tells another investor they happen to know with the probability you set, and only if they know that person is an investor. When enough investors are talking to each other, a complaint is filed and the company goes into receivership; otherwise the liens close it in month 39. Run the three named settings, then at least one of your own. Every run is logged for your submission.</p>
+        <div class="pickrow">
+          <button class="gbtn" data-preset="obs" type="button">Fountain as observed</button>
+          <button class="gbtn" data-preset="aff" type="button">Affinity fraud</button>
+          <button class="gbtn" data-preset="open" type="button">Open awareness</button>
+        </div>
+        <div class="guessbox" style="margin-top:12px">
+          <p class="gq">Cold calls per month: <span id="v-tm">30</span></p>
+          <div class="gr"><input type="range" id="p-tm" min="0" max="60" step="5" value="30"><span class="gval" id="g-tm">30</span></div>
+          <p class="gq" style="margin-top:12px">Chance an investor who is asked refers someone: <span id="v-ref">24</span> percent</p>
+          <div class="gr"><input type="range" id="p-ref" min="0" max="100" step="4" value="24"><span class="gval" id="g-ref">24%</span></div>
+          <p class="gq" style="margin-top:12px">Chance a suspicious investor tells another investor: <span id="v-talk">33</span> percent</p>
+          <div class="gr"><input type="range" id="p-talk" min="0" max="100" step="3" value="33"><span class="gval" id="g-talk">33%</span></div>
+          <div class="pickrow" style="margin-top:12px"><button class="gbtn" id="runBtn" type="button">Run 39 months</button><span class="progress" id="runLabel" style="margin:0">Setting: Fountain as observed</span></div>
+        </div>
+        <div class="veiled" id="simOut">
+          <div class="statrow">
+            <div class="stat"><div class="v" id="o-n">0</div><div class="l">investors by the end</div></div>
+            <div class="stat"><div class="v" id="o-cap">$0</div><div class="l">raised at $48,000 each</div></div>
+            <div class="stat warn"><div class="v" id="o-exp">0</div><div class="l">month the fraud was exposed (39 means the liens closed it)</div></div>
+            <div class="stat warn"><div class="v" id="o-lost">0</div><div class="l">investors who lost everything</div></div>
+          </div>
+          <h3 style="margin-top:14px">The network at the end</h3>
+          <p class="evsrc" style="margin-bottom:8px">Each cluster of dots is one social circle; the faint lines are the ties people have to one another, including a few across circles. The three circles at the top left are the ones the principals themselves belong to. Pick one thing to see at a time. Hover over any dot for that person's history.</p>
+          <div class="pickrow" style="margin:6px 0 10px">
+            <button class="ynb sel" data-view="channel" type="button">How they came in</button>
+            <button class="ynb" data-view="outcome" type="button">Who lost everything</button>
+            <button class="ynb" data-view="talk" type="button">Who was talking</button>
+          </div>
+          <div class="netwrap"><svg id="netSvg" viewBox="0 0 1000 600" role="img" aria-label="Network of potential investors"></svg></div>
+          <p class="evsrc" id="netLegend"></p>
+          <div class="simgrid">
+            <div>
+              <h3>New investors by month</h3>
+              <svg id="adoptSvg" viewBox="0 0 400 220" role="img" aria-label="Bar chart of new investors per month"></svg>
+            </div>
+            <div>
+              <h3>Channels and losses</h3>
+              <div class="bars" id="chBars"></div>
+              <div class="bars" id="cohBars" style="margin-top:10px"></div>
+            </div>
+          </div>
+          <p class="teach" id="simNote"></p>
+        </div>
+        <h3 style="margin-top:18px">Run log</h3>
+        <div class="tablewrap"><table class="runlog" id="runLog"><thead><tr><th>Run</th><th>Setting</th><th>Calls</th><th>Refer</th><th>Talk</th><th>Investors</th><th>Exposed</th><th>Lost all</th><th>Year 3 entrants</th><th>Year 3 lost</th></tr></thead><tbody></tbody></table></div>
+        <p class="srcnote">Model parameters were set so that the observed setting lands near Baker and Faulkner's figures: about half of investors through ties, a referral rate of 24 percent conditional on being asked, loss rates by year of entry from Table 4, exposure late in year three. Random draws differ on every run, so two runs of the same setting will not match; run a setting more than once before drawing a conclusion from it.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: CEO -->
+    <div class="section" id="sec-ceo">
+      <div class="card">
+        <h2>Pressure, opportunity, rationalization, applied to the top of the firm</h2>
+        <p class="lede">Schnatterly, Gangloff, and Tuschke reviewed the management research on CEO wrongdoing published since 2005 and sorted its findings with Cressey's triangle from Lab 3. Their definitions: pressure "reflects the necessity to commit wrongdoing ('have to')," opportunity "suggests the ability to commit wrongdoing with the belief that the act will not be detected ('can do')," and rationalization "is the ability to explain an act of wrongdoing as morally justifiable ('it's okay')" (p. 2409). Each side has internal sources, inside the firm, and external ones. Ten findings from the review are below. For each, pick the side of the triangle the authors file it under. The reference gives the page.</p>
+        <div id="ceoList"></div>
+        <p class="progress" id="cProgress">0 of 10 sorted.</p>
+        <div class="veiled" id="cDone">
+          <p class="teach"><strong>What the sort shows.</strong> The pressure findings are almost all about money that flows to the CEO or expectations that flow at the CEO: options, pay gaps, analysts, activist owners. The opportunity findings are about who can see what: ownership stakes, complex firms, boards that are friendly or inexpert. The rationalization findings are the thinnest, which the authors say outright; management research measures pressure and opportunity from the outside and has only begun on the mind of the person at the top. Put this next to Lab 5: the accounts you coded there are the visible residue of the side of the triangle the management literature can least observe.</p>
+          <p class="teach"><strong>Back to diffusion.</strong> One of the review's external rationalization findings is Baker and Faulkner's Type 1 diffusion in action: options backdating spread among firms between 1996 and 2005 through board interlocks, directors who sat on more than one board and carried the practice with them (p. 2418). The fraud among Fountain's victims spread through purchased lists and a few family ties; the technique among perpetrators spread through the network of the people who govern corporations.</p>
+          <p class="srcnote">Source: Schnatterly, K., Gangloff, K. A., and Tuschke, A. (2018). CEO wrongdoing: A review of pressure, opportunity, and rationalization. Journal of Management, 44(6), 2405-2432, at the pages cited on each item.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: VAUGHAN -->
+    <div class="section" id="sec-vaughan">
+      <div class="card">
+        <h2>Three outcomes, one machinery</h2>
+        <p class="lede">Vaughan's review takes the sociology of organizations and asks how things go wrong in them as a matter of routine. Her abstract states the claim: "routine nonconformity, mistake, misconduct, and disaster are systematically produced by the interconnection between environment, organizations, cognition, and choice" (p. 271). The three outcomes are distinguished by whether a rule or law was violated on behalf of organizational goals (misconduct), whether the adverse outcome was unexpected and its harm contained (mistake), or whether it was large in scale, public, and unexpected (disaster). The distinctions matter to lawyers and regulators, who respond to each differently. Vaughan's point is that they are produced by the same structures, so that an organization built to avoid one is not thereby protected from the others, and one outcome often arrives with another. Sort the five events below by the category that fits the outcome itself, then read the reference on what else was present and what the legal system chose to name.</p>
+        <div id="vList"></div>
+        <p class="progress" id="vProgress">0 of 5 sorted.</p>
+        <div class="veiled" id="vDone">
+          <p class="teach"><strong>Fountain at three levels.</strong> Environment: an informal capital market with no institutional investors, an oil price of $1.70 per thousand cubic feet, a one-in-seven hit rate, and an industry in which, as one experienced investor put it, diverting funds between wells is common and "fine if the DAs do not become aware of it" (p. 1188). Organization: a family firm of 15 to 20 people in which the same three brothers sold the units, controlled the accounts, and decided which well got the money, with each well walled off as a separate partnership so that no investor could see across them. Cognition and choice: investors who read a prospectus that told them they could lose everything, saw a Lamborghini, and treated the outcome as a failed business rather than a crime. None of these is unusual. That is the argument.</p>
+          <p class="srcnote">Source: Vaughan, D. (1999). The dark side of organizations: Mistake, misconduct, and disaster. Annual Review of Sociology, 25, 271-305 (abstract p. 271; assigned pp. 271-280 and 287-292). The event outcomes are from the court records and agency reports cited under each event.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 6 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers, your run log, and your sorting record into one block of text, and paste that text into the Lab 6 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your runs. Compare the three named settings and your own. Which lever changed the number of people who lost everything the most, and through what mechanism in the model? Say which of Baker and Faulkner's findings that lever corresponds to.</div>
+          <div class="qh">Three to five sentences. Use numbers from your run log.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Fountain's investors had a network and did not use it, either to recruit or to warn. Explain why, using the two reasons Baker and Faulkner give, and say what would be different in an affinity fraud, where the seller belongs to the community being sold to.</div>
+          <div class="qh">Three to five sentences. Cite the article by page.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Pick one antecedent from the CEO's triangle tab and find it, or its absence, in your case project: the compensation, the ownership, the board, the industry. Say which side of the triangle it feeds and what document shows it.</div>
+          <div class="qh">Three to five sentences. Name the document.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project, at Vaughan's three levels. Give one fact from your documents at each level, environment, organization, and cognition or choice, and say which of the three categories fits your case's outcome, which one the legal system named, and whether another was present.</div>
+          <div class="qh">Four to six sentences. This is material for the organizational explanation in Part 3.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the model and the sources</h2>
+      <p class="srcnote">The Fountain figures are from Baker and Faulkner (2003) at the pages cited on the first tab. The diffusion model is the lab's own construction and is described on its tab; its parameters were chosen to reproduce the observed channel mix, referral rate, loss rates by year, and timing, and no result from it should be cited as a finding of the article. The CEO wrongdoing items are from Schnatterly, Gangloff, and Tuschke (2018) at the pages cited. The event outcomes on the fourth tab are from the Rogers Commission report (1986), the Boeing deferred prosecution agreement (N.D. Tex., January 7, 2021), the BP guilty plea (E.D. La., November 15, 2012), the Wells Fargo resolution (February 21, 2020), and Baker and Faulkner for Fountain.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  animateBars($('sec-case'));
+
+  // ---------- case guesses ----------
+  let hPicked = null, rPicked = null;
+  document.querySelectorAll('#sec-case .pick[data-h]').forEach(btn => btn.addEventListener('click', () => {
+    if (hPicked) return; hPicked = btn.dataset.h; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-case .pick[data-h]').forEach(b => { b.disabled = true; if (b.dataset.h === '50') b.classList.add('answer'); });
+    $('hVerdict').textContent = hPicked === '50' ? 'Right. Half came in through a social tie.' : 'Half came in through a social tie and half through impersonal methods. See below.';
+    $('hReveal').style.display = 'block'; animateBars($('hReveal'));
+  }));
+  document.querySelectorAll('#sec-case .pick[data-r]').forEach(btn => btn.addEventListener('click', () => {
+    if (rPicked) return; rPicked = btn.dataset.r; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-case .pick[data-r]').forEach(b => { b.disabled = true; if (b.dataset.r === '24') b.classList.add('answer'); });
+    $('rVerdict').textContent = rPicked === '24' ? 'Right. 24 percent, and each made exactly one referral.' : 'Only 24 percent referred anyone, and each made exactly one referral. See below.';
+    $('rReveal').style.display = 'block';
+  }));
+
+  // ---------- simulation ----------
+  function makeNet(N, K){
+    const nodes = [], per = N / K;
+    for (let i = 0; i < N; i++) nodes.push({ id: i, c: Math.floor(i / per), t: [] });
+    const add = (a, b) => { if (a === b || nodes[a].t.includes(b)) return; nodes[a].t.push(b); nodes[b].t.push(a); };
+    for (let i = 0; i < N; i++) {
+      const c = nodes[i].c, base = c * per;
+      add(i, base + ((i - base + 1) % per)); add(i, base + ((i - base + 2) % per));
+      add(i, base + Math.floor(Math.random() * per));
+      if (Math.random() < 0.3) add(i, Math.floor(Math.random() * N));
+    }
+    return nodes;
+  }
+  function runModel(p, nodes){
+    const N = nodes.length; const st = nodes.map(() => ({ inv: 0, ch: null, lost: false, susp: 0, aware: false, referred: false }));
+    const adopt = new Array(40).fill(0); let exposed = 0; const links = [];
+    const invest = (i, m, ch) => { if (st[i].inv) return; st[i].inv = m; st[i].ch = ch; const y = m <= 12 ? 0 : m <= 24 ? 1 : 2; st[i].lost = Math.random() < [0.48, 0.61, 0.95][y]; adopt[m]++; };
+    for (let m = 1; m <= 39; m++) {
+      if (exposed) break;
+      if (m <= 36) {
+        const mult = m <= 10 ? 0.7 : 1.5;
+        let tries = 0; while (tries < 5 && Math.random() < 0.6 * mult) { tries++; const pool = nodes.filter(n => n.c <= 2 && !st[n.id].inv); if (!pool.length) break; invest(pool[Math.floor(Math.random() * pool.length)].id, m, 'tie'); }
+        for (let k = 0; k < p.tm; k++) { const i = Math.floor(Math.random() * N); if (!st[i].inv && Math.random() < 0.10 * mult) invest(i, m, 'tm'); }
+        for (let k = 0; k < 4; k++) { const i = Math.floor(Math.random() * N); if (!st[i].inv && Math.random() < 0.18 * mult) invest(i, m, 'mail'); }
+        for (let i = 0; i < N; i++) { const s = st[i]; if (!s.inv || s.referred || s.inv === m) continue; if (Math.random() < 0.61 / 3) { s.referred = true; if (Math.random() < p.ref) { const cand = nodes[i].t.filter(j => !st[j].inv); if (cand.length) { const j = cand[Math.floor(Math.random() * cand.length)]; if (Math.random() < 0.8 * mult) invest(j, m, 'wom'); } } } }
+      }
+      if (m >= 20) {
+        for (let i = 0; i < N; i++) { const s = st[i]; if (!s.inv || s.susp) continue; const base = s.lost ? 0.04 : 0.01; if (Math.random() < base + (m - 20) * 0.002) s.susp = m; }
+        for (let i = 0; i < N; i++) { const s = st[i]; if (!s.inv || !s.susp) continue; if (Math.random() < p.talk / 8) { const inv = nodes[i].t.filter(j => st[j].inv && j !== i); if (inv.length && Math.random() < 0.3) { const j = inv[Math.floor(Math.random() * inv.length)]; st[j].aware = true; s.aware = true; if (!st[j].susp) st[j].susp = m; links.push([i, j, m]); } } }
+        let awareN = 0; for (let i = 0; i < N; i++) if (st[i].aware) awareN++;
+        if (awareN >= 16) exposed = m;
+      }
+    }
+    if (!exposed) exposed = 39;
+    const inv = st.filter(s => s.inv); const by = f => inv.filter(f).length;
+    return { st, links, n: inv.length, exposed, adopt, ch: { tie: by(s => s.ch === 'tie'), wom: by(s => s.ch === 'wom'), tm: by(s => s.ch === 'tm'), mail: by(s => s.ch === 'mail') },
+      coh: [0, 1, 2].map(y => { const c = inv.filter(s => (s.inv <= 12 ? 0 : s.inv <= 24 ? 1 : 2) === y); return { n: c.length, lost: c.filter(s => s.lost).length }; }), lost: by(s => s.lost), susp: by(s => s.susp), aware: by(s => s.aware) };
+  }
+  const PRESETS = { obs: { name: 'Fountain as observed', tm: 30, ref: 24, talk: 33 }, aff: { name: 'Affinity fraud', tm: 5, ref: 80, talk: 33 }, open: { name: 'Open awareness', tm: 30, ref: 24, talk: 90 } };
+  let setting = 'Fountain as observed';
+  const sliders = ['tm', 'ref', 'talk'];
+  function showVals(){ sliders.forEach(k => { const v = $('p-' + k).value; $('v-' + k).textContent = v; $('g-' + k).textContent = k === 'tm' ? v : v + '%'; }); }
+  sliders.forEach(k => $('p-' + k).addEventListener('input', () => { setting = 'Your own'; $('runLabel').textContent = 'Setting: your own'; showVals(); }));
+  document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => {
+    const p = PRESETS[b.dataset.preset]; $('p-tm').value = p.tm; $('p-ref').value = p.ref; $('p-talk').value = p.talk; setting = p.name; $('runLabel').textContent = 'Setting: ' + p.name; showVals();
+  }));
+  const LOG = []; const nodes = makeNet(400, 16);
+  const POS = nodes.map(n => { const cx = 125 + (n.c % 4) * 250, cy = 78 + Math.floor(n.c / 4) * 145; const k = n.id % 25; const ring = k < 8 ? 24 : k < 17 ? 44 : 64; const cnt = k < 8 ? 8 : k < 17 ? 9 : 8; const idx = k < 8 ? k : k < 17 ? k - 8 : k - 17; const a = idx / cnt * Math.PI * 2 + n.c; return [cx + ring * Math.cos(a), cy + ring * Math.sin(a)]; });
+  const COL = { tie: '#840028', wom: '#b8860b', tm: '#2f5f9e', mail: '#2f5f9e' };
+  const CHNAME = { tie: 'tie to the company', wom: 'referred by an investor', tm: 'cold call', mail: 'mail or advertising' };
+  let TIES = ''; nodes.forEach(n => n.t.forEach(j => { if (j > n.id) { const [x1, y1] = POS[n.id], [x2, y2] = POS[j]; TIES += '<line x1="' + x1.toFixed(0) + '" y1="' + y1.toFixed(0) + '" x2="' + x2.toFixed(0) + '" y2="' + y2.toFixed(0) + '" stroke="#999" stroke-opacity="' + (nodes[j].c === n.c ? '0.25' : '0.1') + '" stroke-width="1"/>'; } }));
+  let view = 'channel', lastRun = null;
+  const LEGEND = {
+    channel: 'Gray: never invested. Maroon: came in through a tie to the company. Gold: referred by an investor they knew. Blue: cold call, mail, or advertising.',
+    outcome: 'Gray: never invested. Green: invested and got something back. Maroon: invested and lost everything.',
+    talk: 'Gray: never invested. Pale blue: invested, never suspicious. Amber: became suspicious but told no other investor. Gold with a dark outline: talked to another investor, and the gold lines are those conversations. Exposure happens when enough of those lines exist.'
+  };
+  function nodeTitle(i, s){
+    if (!s.inv) return 'Person ' + (i + 1) + ': never invested.';
+    return 'Person ' + (i + 1) + ': invested in month ' + s.inv + ' (' + CHNAME[s.ch] + '); ' + (s.lost ? 'lost everything' : 'got something back') + (s.susp ? '; suspicious from month ' + s.susp : '; never suspicious') + (s.aware ? '; talked to another investor.' : '.');
+  }
+  function drawNet(r){
+    let svg = TIES;
+    if (view === 'talk') r.links.forEach(l => { const [x1, y1] = POS[l[0]], [x2, y2] = POS[l[1]]; svg += '<line x1="' + x1.toFixed(0) + '" y1="' + y1.toFixed(0) + '" x2="' + x2.toFixed(0) + '" y2="' + y2.toFixed(0) + '" stroke="#b8860b" stroke-width="3" stroke-linecap="round"/>'; });
+    nodes.forEach((n, i) => {
+      const s = r.st[i]; const [x, y] = POS[i]; let fill = '#c9c4bd', stroke = 'none', sw = 0, rad = 6;
+      if (s.inv) {
+        if (view === 'channel') fill = COL[s.ch];
+        else if (view === 'outcome') fill = s.lost ? '#840028' : '#2e7d4f';
+        else { if (s.aware) { fill = '#e0a800'; stroke = '#1a1a1a'; sw = 2; rad = 7; } else if (s.susp) fill = '#d98c2b'; else fill = '#a9c2dc'; }
+      }
+      svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + rad + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + sw + '"><title>' + esc(nodeTitle(i, s)) + '</title></circle>';
+    });
+    $('netSvg').innerHTML = svg; $('netLegend').textContent = LEGEND[view];
+  }
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { view = b.dataset.view; document.querySelectorAll('[data-view]').forEach(x => x.classList.toggle('sel', x === b)); if (lastRun) drawNet(lastRun); }));
+  function draw(r){
+    lastRun = r;
+    const p = { tm: Number($('p-tm').value), ref: Number($('p-ref').value), talk: Number($('p-talk').value) };
+    $('o-n').textContent = r.n; $('o-cap').textContent = '$' + (r.n * 48000 / 1e6).toFixed(1) + 'M'; $('o-exp').textContent = r.exposed; $('o-lost').textContent = r.lost + ' (' + Math.round(100 * r.lost / Math.max(1, r.n)) + '%)';
+    drawNet(r);
+    const max = Math.max(4, ...r.adopt); let bars = '';
+    for (let m = 1; m <= 39; m++) { const h = r.adopt[m] / max * 170; bars += '<rect x="' + (10 + (m - 1) * 10) + '" y="' + (185 - h) + '" width="8" height="' + h + '" fill="' + (m > r.exposed ? '#c9c4bd' : (m <= 12 ? '#2f5f9e' : m <= 24 ? '#b8860b' : '#840028')) + '"/>'; }
+    bars += '<line x1="10" y1="185" x2="400" y2="185" stroke="#888" stroke-width="1"/>';
+    [1, 12, 24, 36].forEach(m => { bars += '<text x="' + (14 + (m - 1) * 10) + '" y="200" font-size="10" fill="#666" text-anchor="middle">' + m + '</text>'; });
+    bars += '<text x="14" y="214" font-size="10" fill="#666">Blue year 1, gold year 2, maroon year 3, gray after exposure. Peak month: ' + max + '</text>';
+    $('adoptSvg').innerHTML = bars;
+    const chs = [['Tie to the company', r.ch.tie, 'good'], ['Referred by an investor', r.ch.wom, 'warn'], ['Cold call', r.ch.tm, ''], ['Mail and advertising', r.ch.mail, '']];
+    $('chBars').innerHTML = chs.map(c => '<div class="brow"><span class="blabel">' + c[0] + '</span><div class="btrack"><div class="bfill ' + c[2] + '" style="width:' + Math.round(100 * c[1] / Math.max(1, r.n)) + '%"></div></div><span class="bval">' + c[1] + ' (' + Math.round(100 * c[1] / Math.max(1, r.n)) + '%)</span></div>').join('');
+    $('cohBars').innerHTML = r.coh.map((c, y) => '<div class="brow"><span class="blabel">Entered in year ' + (y + 1) + ': lost everything</span><div class="btrack"><div class="bfill warn" style="width:' + (c.n ? Math.round(100 * c.lost / c.n) : 0) + '%"></div></div><span class="bval">' + c.lost + ' of ' + c.n + '</span></div>').join('');
+    const late = r.coh[2];
+    $('simNote').innerHTML = '<strong>Read the run.</strong> ' + r.n + ' people invested and ' + r.lost + ' lost everything. The fraud was exposed in month ' + r.exposed + (r.exposed === 39 ? ', which means no group of investors ever compared notes; the contractors\' liens ended it.' : ', when ' + r.aware + ' investors were talking to one another.') + ' By then ' + r.susp + ' investors were suspicious. ' + late.n + ' people entered in year three, and ' + late.lost + ' of them lost everything; that group is the one the exposure month controls. Compare the share who came in through referrals (' + Math.round(100 * r.ch.wom / Math.max(1, r.n)) + ' percent) with Baker and Faulkner\'s 29 percent through a prior investor.';
+    $('simOut').style.display = 'block';
+    LOG.push({ i: LOG.length + 1, setting, tm: p.tm, ref: p.ref, talk: p.talk, n: r.n, exp: r.exposed, lost: r.lost, y3: late.n, y3l: late.lost });
+    const tb = $('runLog').querySelector('tbody'); const row = LOG[LOG.length - 1];
+    tb.insertAdjacentHTML('beforeend', '<tr><td>' + row.i + '</td><td>' + esc(row.setting) + '</td><td>' + row.tm + '</td><td>' + row.ref + '%</td><td>' + row.talk + '%</td><td>' + row.n + '</td><td>' + row.exp + '</td><td>' + row.lost + ' (' + Math.round(100 * row.lost / Math.max(1, row.n)) + '%)</td><td>' + row.y3 + '</td><td>' + row.y3l + '</td></tr>');
+  }
+  $('runBtn').addEventListener('click', () => { const p = { tm: Number($('p-tm').value), ref: Number($('p-ref').value) / 100, talk: Number($('p-talk').value) / 100 }; draw(runModel(p, nodes)); });
+
+  // ---------- CEO ----------
+  const CEO = [
+    { t: 'Stock options make up a large share of the CEO\'s pay, and research consistently associates options with fraudulent financial reporting and even product safety problems.', ref: 'P', src: 'internal', pg: 'p. 2412', why: 'Compensation structure is the review\'s first internal pressure: the CEO "is incentivized to commit wrongdoing to inflate the stock price so as to increase his or her compensation."' },
+    { t: 'The firm is performing well, and high performance raises what shareholders expect next quarter.', ref: 'P', src: 'internal', pg: 'pp. 2412-2413', why: 'Both Harris and Bromiley and Mishina and colleagues find high-performing firms engaging in misconduct; Chen describes a feedback loop in which "the better the firm performs, the more the shareholders expect."' },
+    { t: 'Activist and institutional owners press the firm with proposals, and security analysts have issued buy or sell recommendations.', ref: 'P', src: 'external', pg: 'pp. 2413-2414', why: 'External pressure: activist owners increase the likelihood of financial wrongdoing, and only a "hold" recommendation applies little pressure. Takeover defenses that shield managers reduce it.' },
+    { t: 'The CEO holds a large ownership stake in the firm.', ref: 'O', src: 'internal', pg: 'p. 2414', why: 'Power is opportunity. Ramdani and van Witteloostuijn find CEOs with a significant ownership stake more likely to engage in wrongdoing, because a large stake lets the CEO overrule the board and ignore controls.' },
+    { t: 'The firm is diversified across unrelated businesses, so that outsiders cannot easily follow money moving between divisions.', ref: 'O', src: 'internal', pg: 'p. 2414', why: 'Information asymmetry is opportunity: "the harder it is to clearly observe the CEO\'s behavior, the greater the CEO\'s opportunity to commit fraud." Unrelated diversification allows borrowing and lending between divisions that outsiders cannot see. Compare Fountain\'s wells, each a separate partnership.' },
+    { t: 'The board includes an independent director with financial expertise and an audit committee that meets often.', ref: 'O', src: 'internal', pg: 'p. 2415', why: 'This reduces opportunity. An independent financial expert on the board is negatively related to financial misconduct, and passive boards with few audit committee meetings increase the likelihood of fraud. The same finding in reverse.' },
+    { t: 'The directors and the CEO have served together for many years and have become friends.', ref: 'O', src: 'internal', pg: 'p. 2415', why: 'Opportunity, with a caveat the authors flag. Long shared tenure builds friendship ties that reduce monitoring; but long tenure also teaches directors enough to ask informed questions. "The effect of tenure is still unclear."' },
+    { t: 'The CEO is young, has little functional experience, and does not hold a business degree.', ref: 'R', src: 'inherent', pg: 'pp. 2416-2417', why: 'The review files demographics under rationalization, as traits that make a CEO more or less able to explain wrongdoing to himself; Troy and colleagues find younger CEOs with less experience and no business degree more likely to rationalize fraud. The authors note this partly contradicts earlier reviews.' },
+    { t: 'The firm\'s culture prizes bold moves and above-normal returns.', ref: 'R', src: 'internal', pg: 'p. 2417', why: 'Internal rationalization. Higher-risk-oriented firms foster corrupt behavior because a focus on outcomes widens the acceptable means; innovativeness, by contrast, is negatively related to wrongdoing.' },
+    { t: 'The practice in question, backdating stock option grants, is already widespread in the industry and has spread from firm to firm through directors who sit on several boards.', ref: 'R', src: 'external', pg: 'p. 2418', why: 'External rationalization: "the ability to rationalize is easier if \'everyone is doing it.\'" Options backdating spread between 1996 and 2005 via board interlocks. This is diffusion of a fraud technique among perpetrators, Baker and Faulkner\'s Type 1.' },
+  ];
+  const cAns = CEO.map(() => null);
+  const cEl = $('ceoList');
+  const SIDES = [['P', 'Pressure'], ['O', 'Opportunity'], ['R', 'Rationalization']];
+  CEO.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">FINDING ' + (i + 1) + '</span></div><div class="evtext">' + esc(c.t) + '</div>' +
+      '<div class="drow"><span class="dlabel">Side of the triangle</span><div class="yn">' + SIDES.map(s => '<button class="ynb" data-ci="' + i + '" data-ck="' + s[0] + '" type="button">' + s[1] + '</button>').join('') + '</div><span class="ref" id="cr-' + i + '"></span></div>';
+    cEl.appendChild(d);
+  });
+  cEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-ci]'); if (!b) return;
+    const i = Number(b.dataset.ci); if (cAns[i]) return; cAns[i] = b.dataset.ck;
+    cEl.querySelectorAll('[data-ci="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.ck === CEO[i].ref) x.classList.add('answer'); });
+    const r = $('cr-' + i); r.style.display = 'block';
+    r.innerHTML = '<span class="tag ' + (cAns[i] === CEO[i].ref ? 'yes' : 'no') + '">' + (cAns[i] === CEO[i].ref ? 'Matches' : 'Reference: ' + SIDES.find(s => s[0] === CEO[i].ref)[1]) + '</span> <strong>' + esc(CEO[i].src) + ', ' + esc(CEO[i].pg) + '.</strong> ' + esc(CEO[i].why);
+    const done = cAns.filter(Boolean).length; $('cProgress').textContent = done + ' of 10 sorted.' + (done === 10 ? ' Read the note below.' : '');
+    if (done === 10) $('cDone').style.display = 'block';
+  });
+
+  // ---------- Vaughan ----------
+  const VE = [
+    { t: 'Space Shuttle Challenger, January 28, 1986', text: 'The shuttle broke apart 73 seconds after launch, killing seven. The Rogers Commission found the cause in an O-ring seal that failed in cold weather, and found that engineers\' concerns about the seals had been known inside NASA and its contractor for years and were argued the night before launch. No one was charged with a crime. Vaughan\'s own 1996 study of the decision found no rule broken: the flight-readiness process had been followed, and the anomalies had been redefined as acceptable, launch by launch.', src: 'Report of the Presidential Commission on the Space Shuttle Challenger Accident (1986); Vaughan, The Challenger Launch Decision (1996).', ref: 'D', why: 'A disaster produced without misconduct, which is Vaughan\'s central case: the normalization of deviance turned a signal of danger into a routine, inside a culture and structure that worked as designed. She uses it to argue that conformity, not rule-breaking, can produce the worst outcome.' },
+    { t: 'Fountain Oil and Gas, 1986 to 1989', text: 'A legitimate oil and gas company diverted investor funds between wells, to expenses, and to its president\'s personal purchases from late 1986 on. Contractors filed 39 liens; a court put the company in receivership; the three principals were convicted in 1992 of embezzlement and securities offenses. Two-thirds of investors lost everything.', src: 'Baker and Faulkner (2003), pp. 1187-1188, 1195-1196.', ref: 'M', why: 'Misconduct: rules and laws violated on behalf of organizational goals, and later for personal ones. Notice how much of the machinery was ordinary: separate partnerships per well are standard industry practice, the diversion of funds is common in the industry, and a string of dry holes is an expected outcome. The mistake and the misconduct were laid over each other, which is why the forensic accountant could not say which investors lost money for which reason (p. 1195).' },
+    { t: 'Wells Fargo sales practices, 2002 to 2016', text: 'Employees opened millions of accounts and products in customers\' names without authorization under sales goals set by the bank. About 5,300 employees were fired over five years. In February 2020 the bank agreed to pay $3 billion to resolve criminal and civil investigations, admitting in a statement of facts that it had collected millions in fees on unauthorized accounts and had known about the practice since 2002; no individual was criminally charged, and the former chief executive was fined $17.5 million and banned from banking by the OCC.', src: 'U.S. Department of Justice, deferred prosecution agreement and statement of facts, February 21, 2020; OCC consent order, January 2020.', ref: 'M', why: 'Misconduct on behalf of organizational goals, and the clearest case of the three levels working together: an environment that rewarded cross-selling ratios, an organization whose goals and incentives made the ratios the job, and thousands of individual choices that each looked small. Vaughan would ask what the sales targets did to the definition of a normal day.' },
+    { t: 'Boeing 737 MAX, October 2018 and March 2019', text: 'Two crashes, Lion Air 610 and Ethiopian Airlines 302, killed 346 people. The flight-control software involved, MCAS, had been described incompletely to the FAA\'s Aircraft Evaluation Group, and pilots had not been told about it. In January 2021 Boeing entered a deferred prosecution agreement on one count of conspiracy to defraud the United States, paying $2.5 billion including a $243.6 million criminal penalty; the agreement attributed the deception to two technical pilots. The later history of the case is covered in Week 11.', src: 'United States v. The Boeing Company, deferred prosecution agreement, N.D. Tex., January 7, 2021.', ref: 'D', why: 'A disaster, by scale and public harm, that the legal system also treated as misconduct: the charged crime was a fraud on the regulator, not the deaths. Vaughan\'s categories do not exclude each other; the assignment of an outcome to a category is itself an organizational and legal act. Which category a case lands in decides who is punished and for what.' },
+    { t: 'Deepwater Horizon, April 20, 2010', text: 'The rig exploded and sank, killing 11 workers, and the Macondo well released oil into the Gulf of Mexico for 87 days. In November 2012 BP pleaded guilty to 11 felony counts of misconduct or neglect of ship officers, one felony count of obstruction of Congress, and misdemeanor Clean Water Act and Migratory Bird Treaty Act counts, and agreed to $4 billion in criminal fines and penalties. Government investigators found that a negative-pressure test had been misread and that cost and schedule pressures shaped decisions on the well.', src: 'United States v. BP Exploration and Production Inc., guilty plea, E.D. La., November 15, 2012; National Commission on the BP Deepwater Horizon Oil Spill (2011).', ref: 'D', why: 'A disaster with misconduct attached, including a felony for what was said to Congress afterward. The misread pressure test is a mistake in Vaughan\'s sense, an unexpected wrong reading within the rules; the schedule pressure is environment and organization; the plea is the legal system choosing which parts of the sequence to name as crime. All three categories are present in one event.' },
+  ];
+  const vAns = VE.map(() => null);
+  const vEl = $('vList');
+  const OUT = [['K', 'Mistake'], ['M', 'Misconduct'], ['D', 'Disaster']];
+  VE.forEach((v, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">EVENT ' + (i + 1) + '</span><span class="evtitle">' + esc(v.t) + '</span></div><div class="evtext">' + esc(v.text) + '</div><div class="evsrc">Source: ' + esc(v.src) + '</div>' +
+      '<div class="drow"><span class="dlabel">Vaughan\'s category for the outcome</span><div class="yn">' + OUT.map(o => '<button class="ynb" data-vi="' + i + '" data-vk="' + o[0] + '" type="button">' + o[1] + '</button>').join('') + '</div></div><p class="verdict" id="vv-' + i + '"></p><div class="evnote" id="vn-' + i + '"></div>';
+    vEl.appendChild(d);
+  });
+  vEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-vi]'); if (!b) return;
+    const i = Number(b.dataset.vi); if (vAns[i]) return; vAns[i] = b.dataset.vk;
+    vEl.querySelectorAll('[data-vi="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.vk === VE[i].ref) x.classList.add('answer'); });
+    $('vv-' + i).innerHTML = '<span class="tag ' + (vAns[i] === VE[i].ref ? 'yes' : 'no') + '">' + (vAns[i] === VE[i].ref ? 'Matches the reference' : 'Reference: ' + OUT.find(o => o[0] === VE[i].ref)[1]) + '</span>';
+    const n = $('vn-' + i); n.innerHTML = '<strong>What else was present.</strong> ' + esc(VE[i].why); n.style.display = 'block';
+    const done = vAns.filter(Boolean).length; $('vProgress').textContent = done + ' of 5 sorted.' + (done === 5 ? ' Read the note below.' : '');
+    if (done === 5) $('vDone').style.display = 'block';
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 6 · DIFFUSION OF FRAUD', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('FOUNTAIN GUESSES: share via social ties ' + (hPicked ? hPicked + '% (reference 50%)' : 'not answered') + '; share who referred ' + (rPicked ? rPicked + '% (reference 24%)' : 'not answered'));
+    lines.push('');
+    lines.push('RUN LOG (setting; calls per month; refer %; talk %; investors; month exposed; lost all; year-3 entrants; year-3 lost)');
+    if (!LOG.length) lines.push('(no runs)'); LOG.forEach(r => lines.push(r.i + '. ' + r.setting + '; ' + r.tm + '; ' + r.ref + '%; ' + r.talk + '%; ' + r.n + '; ' + r.exp + '; ' + r.lost + '; ' + r.y3 + '; ' + r.y3l));
+    lines.push('');
+    lines.push('CEO TRIANGLE (your side / reference)'); CEO.forEach((c, i) => lines.push((i + 1) + '. ' + (cAns[i] || 'not sorted') + ' / ' + c.ref));
+    lines.push('');
+    lines.push('MISTAKE, MISCONDUCT, DISASTER (your category / reference)'); VE.forEach((v, i) => lines.push((i + 1) + '. ' + v.t + ': ' + (vAns[i] ? OUT.find(o => o[0] === vAns[i])[1] : 'not sorted') + ' / ' + OUT.find(o => o[0] === v.ref)[1]));
+    lines.push('');
+    lines.push('QUESTION 1 (your runs)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (the unused network)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (CEO triangle in your case)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (three levels in your case)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 6 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 6 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 6 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  showVals();
+  window.__S = { activate, LOG, cAns, vAns, runModel, nodes };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

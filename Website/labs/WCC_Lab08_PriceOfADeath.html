@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Price of a Death · White-Collar Crime · Crime Lab 8</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .chartwrap svg { width: 100%; height: auto; display: block; background: var(--wash); border-radius: 10px; }
+  .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .codes .ynb { font-size: 12.5px; padding: 5px 10px; }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .ynb.sel.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .ynb:disabled:not(.sel):not(.answer) { opacity: 0.55; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Price of a Death <span class="sub">White-Collar Crime · Crime Lab 8 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>In 2024, 5,070 people were killed at work in the United States, about 14 a day. When a federal safety inspector investigates one of those deaths and finds the employer broke the law, the median penalty is $16,550.</strong> That number is not a fine for the death. The Occupational Safety and Health Act does not price deaths; it prices violations, and a death is evidence that a violation may have occurred. This lab works through what that means. You will see the penalty schedule, guess the penalties in six recent fatality cases before you see them, compute the price per death in the largest corporate violence cases of the last twenty years and set it against the value the same government assigns to a statistical life when it writes regulations, and then use Benson and Simpson's opportunity framework to explain why the victims of these crimes are the workers and the sanctions are the smallest in the course.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-law" type="button">What the law prices</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-cases" type="button">Six deaths, six penalties</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-price" type="button">The price per death</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-opp" type="button">Opportunity and violence</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: LAW -->
+    <div class="section active" id="sec-law">
+      <div class="card">
+        <h2>The schedule</h2>
+        <p class="lede">The Occupational Safety and Health Act of 1970 lets OSHA cite an employer for each violation of a standard and propose a civil penalty per violation, capped by statute and adjusted for inflation. The 2025 amounts stayed in effect for 2026 because the fall 2025 government shutdown kept the Bureau of Labor Statistics from producing the inflation figure the adjustment requires. The criminal provision has not changed since 1970 except for the general federal fine statute.</p>
+        <div class="statrow">
+          <div class="stat"><div class="v">$16,550</div><div class="l">maximum per serious or other-than-serious violation</div></div>
+          <div class="stat"><div class="v">$165,514</div><div class="l">maximum per willful or repeated violation (willful minimum $11,823)</div></div>
+          <div class="stat"><div class="v">$16,550</div><div class="l">per day for failure to abate, generally capped at 30 days</div></div>
+          <div class="stat warn"><div class="v">6 months</div><div class="l">maximum imprisonment for a willful violation that causes a worker's death, a misdemeanor; fine up to $10,000 under the Act, up to $500,000 for an organization under the general fine statute</div></div>
+        </div>
+        <p class="teach"><strong>Two comparisons the AFL-CIO makes every year.</strong> Harassing a wild burro on federal land carries up to a year in prison under the Wild Free-Roaming Horses and Burros Act; a willful safety violation that kills a worker carries up to six months. And since the Act took effect in 1971 there have been 144 criminal prosecutions for worker deaths under it, in a period in which hundreds of thousands of workers have died on the job. Benson and Simpson report the same pattern from a New York Times review of OSHA data: 2,197 worker deaths from willful violations between 1982 and 2002, 196 referred for prosecution, about half of those convicted, a fifth of those imprisoned, so that "the likelihood that someone will be imprisoned when a worker dies as a result of a willful safety violation is less than 1 out of 100" (p. 128).</p>
+        <div class="guessbox">
+          <p class="gq">When federal OSHA investigates a worker's death and issues citations, what is the median total penalty (fiscal year 2025)?</p>
+          <div class="pickrow">
+            <button class="pick" data-p="16550" type="button">$16,550</button>
+            <button class="pick" data-p="60000" type="button">About $60,000</button>
+            <button class="pick" data-p="165514" type="button">$165,514</button>
+            <button class="pick" data-p="500000" type="button">About $500,000</button>
+          </div>
+          <p class="verdict" id="pVerdict"></p>
+        </div>
+        <div class="veiled" id="pReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">$16,550</div><div class="l">median federal OSHA penalty in a fatality investigation, FY2025: one serious violation at the maximum</div></div>
+            <div class="stat"><div class="v">$4,678</div><div class="l">average penalty per serious violation, federal OSHA, FY2025, after reductions</div></div>
+            <div class="stat"><div class="v">1,651</div><div class="l">OSHA inspectors, federal and state, for 12 million workplaces and 155 million workers</div></div>
+            <div class="stat warn"><div class="v">191 years</div><div class="l">to inspect every workplace once at the current rate; 84 years in 1991</div></div>
+          </div>
+          <p class="teach"><strong>Why the average serious violation costs $4,678 when the maximum is $16,550.</strong> OSHA reduces proposed penalties by formula. Since July 14, 2025, an employer with 25 or fewer employees gets 70 percent off (the threshold was 10 employees before), an employer with no OSHA inspection on record gets 20 percent off, an employer inspected in the last five years with no serious, willful, or failure-to-abate findings gets 20 percent off, and an employer that fixes the hazard on the spot gets 15 percent off. The Department's stated reason: "Small employers who are working in good faith to comply with complex federal laws should not face the same penalties as large employers with abundant resources." The reductions do not depend on whether anyone died.</p>
+          <p class="srcnote">Sources: OSHA, 2026 Annual Adjustments to OSHA Civil Penalties, memorandum of May 21, 2026, and OSHA Penalties page (osha.gov/penalties); 29 U.S.C. 666(e) and 18 U.S.C. 3571; 16 U.S.C. 1338(a) (burros); AFL-CIO, Death on the Job: The Toll of Neglect, 2026 (April 27, 2026), using Bureau of Labor Statistics Census of Fatal Occupational Injuries data for 2024; U.S. Department of Labor, news release of July 14, 2025, on penalty reductions; Benson and Simpson (2009), ch. 6, p. 128, citing Barstow (2003) and Cullen et al. (2006).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CASES -->
+    <div class="section" id="sec-cases">
+      <div class="card">
+        <h2>Six recent fatality investigations</h2>
+        <p class="lede">Each of these is a federal OSHA citation issued between May 2025 and April 2026 after a worker died, from the Department of Labor's news releases. Read what happened and the violations found, then set your guess for the total proposed penalty before you reveal it. Proposed penalties are what OSHA asks for; employers have 15 business days to contest, and contested penalties are usually settled lower. The reference gives the arithmetic: how many violations of each kind, and what the same citations would have come to at the statutory maximum.</p>
+        <div id="caseList"></div>
+        <p class="progress" id="cProgress">0 of 6 revealed.</p>
+        <div class="veiled" id="cDone">
+          <div class="statrow">
+            <div class="stat"><div class="v">8</div><div class="l">workers killed in the six cases</div></div>
+            <div class="stat"><div class="v" id="c-total">$0</div><div class="l">total proposed penalties</div></div>
+            <div class="stat warn"><div class="v" id="c-median">$0</div><div class="l">median penalty per death in these six</div></div>
+            <div class="stat"><div class="v">167×</div><div class="l">ratio between the largest and smallest penalty, for one death each</div></div>
+          </div>
+          <p class="teach"><strong>What set the price.</strong> The two employers with the largest penalties, Revoli and Taylor Farms, were cited for willful and repeat violations, which carry a maximum ten times the serious maximum and which OSHA can only cite when it can show the employer knew the rule and disregarded it or had been cited for the same thing before. The four others were cited only for serious violations, so their penalties are a count of hazards found times at most $16,550, minus reductions. A death from a single hazard at an employer with no history is the $16,550 case; that is the median on the first tab, and the Hyvac pipefitter is close to it. Two deaths at U.S. Steel's Clairton plant came to $118,214 because the inspection found seven serious violations and no willful ones. The penalty measures what the inspector could document about the employer's conduct, and the number of dead is not one of the terms.</p>
+          <p class="srcnote">Sources: U.S. Department of Labor, OSHA news releases: Revoli Construction Co. Inc. (April 1, 2026); Taylor Farms New Jersey Inc. (November 24, 2025); Construction Labor Services Inc. (February 17, 2026); United States Steel Corp. and MPW Industrial Services Inc. (February 18, 2026); The Salvation Army, Orlando (May 30, 2025); Hyvac Inc. (March 4, 2026). Penalty amounts are as proposed at citation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: PRICE -->
+    <div class="section" id="sec-price">
+      <div class="card">
+        <h2>Six corporate violence cases and one government number</h2>
+        <p class="lede">When the federal government decides whether a safety regulation is worth its cost, it uses a value per statistical life: the amount people are willing to pay, in aggregate, to reduce mortality risk by one expected death. The Department of Health and Human Services' central estimate for 2025 is $13.6 million, with a range of $6.3 million to $20.7 million. The cases below are the largest criminal resolutions for deaths caused by corporations in the last twenty years. For each, the criminal penalty is divided by the number of people killed. Before you look, rank your guess: which case had the highest price per death, and which the lowest?</p>
+        <div class="guessbox">
+          <p class="gq">Which of these had the lowest criminal penalty per death?</p>
+          <div class="pickrow">
+            <button class="pick" data-l="boeing" type="button">Boeing 737 MAX, 346 deaths</button>
+            <button class="pick" data-l="pge" type="button">PG&amp;E Camp Fire, 84 deaths</button>
+            <button class="pick" data-l="ubb" type="button">Upper Big Branch mine, 29 deaths</button>
+            <button class="pick" data-l="texas" type="button">BP Texas City refinery, 15 deaths</button>
+          </div>
+          <p class="verdict" id="lVerdict"></p>
+        </div>
+        <div class="veiled" id="lReveal">
+          <div class="chartwrap"><svg id="priceSvg" viewBox="0 0 1000 400" role="img" aria-label="Criminal penalty per death by case, with the value of a statistical life marked"></svg></div>
+          <p class="evsrc">Bars: criminal penalty divided by deaths, on a logarithmic scale, so each grid line is ten times the one below. The dashed line is the HHS central value of a statistical life for 2025. Hover a bar for the figures.</p>
+          <div id="priceList"></div>
+          <p class="teach"><strong>Reading the chart.</strong> Only one case exceeds the value of a statistical life, and there the money was mostly not a penalty for the deaths: Deepwater Horizon's $4 billion included Clean Water Act and Migratory Bird Treaty Act counts for the spill and an obstruction of Congress count. Upper Big Branch comes next at $7.2 million per miner, and its $209 million was a non-prosecution agreement whose largest parts were safety investment and a research trust. PG&amp;E's $3.5 million was the statutory maximum for 84 counts of involuntary manslaughter under California law, which is why the district attorney and judge both noted that a corporation cannot be imprisoned. Boeing's $487.2 million criminal fine, with $243.6 million of it credited from the 2021 agreement, works out to about $1.4 million per passenger; the $444.5 million fund for families is compensation, not punishment, and the $455 million for compliance is money Boeing spends on itself. The chart uses the criminal fine. Change the denominator or the numerator and the ranking changes, which is the first point to make about any price per death: it is a choice about what to count, made by the people who write the agreement.</p>
+          <p class="teach"><strong>What Judge O'Connor said in November 2025.</strong> Boeing had been charged with one count of conspiracy to defraud the FAA. The 2021 deferred prosecution agreement expired; in 2024 the company agreed to plead guilty and the judge rejected the plea; in May 2025 the Justice Department agreed not to prosecute at all in exchange for the payments above, and moved to dismiss. Judge O'Connor granted the motion on November 6, 2025, because Rule 48(a) does not let a court refuse a dismissal merely because it disagrees with the prosecutor's judgment, and wrote that the agreement "fails to secure the necessary accountability to ensure the safety of the flying public." That order is your Meeting B reading. The question it leaves for the response sheet is what accountability could mean for a defendant that cannot be imprisoned, in a system where the individuals were never charged.</p>
+          <p class="srcnote">Sources: U.S. Department of Health and Human Services, ASPE, Standard Values for Regulatory Analysis, 2025 (February 2025); United States v. The Boeing Company, N.D. Tex., order of November 6, 2025, and Department of Justice non-prosecution agreement of May 2025, as reported by NPR (November 7, 2025) and CNBC (November 6, 2025); PG&amp;E plea, Butte County Superior Court, June 16, 2020 (Courthouse News Service); Alpha Natural Resources non-prosecution agreement, U.S. Attorney, S.D. W. Va., December 6, 2011; United States v. BP Exploration and Production, E.D. La., plea of November 15, 2012; United States v. BP Products North America, S.D. Tex., plea of October 2007 (Texas City, $50 million Clean Air Act fine) and OSHA settlement of $87 million (2009, failure to abate). Deaths per case are as stated in the charging documents or agreements.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: OPPORTUNITY -->
+    <div class="section" id="sec-opp">
+      <div class="card">
+        <h2>Why the victims are workers and the sanctions are small</h2>
+        <p class="lede">Benson and Simpson's chapter applies their three properties of white-collar crime to environmental and workplace offenses: specialized access, spatial separation of offender and victim, and the superficial appearance of legitimacy. For workplace deaths they add a fourth ingredient, the built-in incentive: "For most businesses, the cost of labor has a significant impact on overall profitability. Hence, there is a built-in incentive to cut labor costs whenever possible. One way of doing this is by skimping on safety and in the process endangering workers" (p. 128). Their example is McWane, the Alabama pipe maker whose "McWane way" cut Tyler Pipe's workforce by nearly two-thirds, ran two 12-hour shifts, eliminated safety inspectors and maintenance crews, and between 1995 and 2003 recorded at least 4,600 injuries, nine deaths, and more than 400 federal safety violations, more than its six major competitors combined (pp. 128-129). Match each mechanism below to the property it illustrates.</p>
+        <div id="oppList"></div>
+        <p class="progress" id="oProgress">0 of 5 matched.</p>
+        <div class="veiled" id="oDone">
+          <p class="teach"><strong>Put the tabs together.</strong> The first tab showed a penalty schedule that prices violations and not deaths, a criminal provision that tops out at six months, and a reduction formula that discounts by employer size and history. The second showed that in practice the price of a death is the number of hazards an inspector can document times $16,550, unless the employer was caught knowing. The third showed that even the largest cases resolve for less per death than the government itself says a life is worth when it writes a rule. Benson and Simpson's framework explains the pattern from the offender's side: the harm is done inside legitimate production, far from the people who decide, on people who often cannot prove what happened to them, by employers who can maintain the appearance of compliance. Tombs and Whyte, your other Meeting A reading, take the argument one step further and ask whether a legal form that reliably produces this pattern, and cannot be imprisoned when it does, should exist at all.</p>
+          <p class="srcnote">Source: Benson, M. L., and Simpson, S. S. (2009). White-Collar Crime: An Opportunity Perspective. Routledge, ch. 6, pp. 127-131; Tombs, S., and Whyte, D. (2015). The Corporate Criminal: Why Corporations Must Be Abolished. Routledge, ch. 1.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 8 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your guesses into one block of text, and paste that text into the Lab 8 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your six guesses. Where were you furthest off, high or low, and what in the case explains the actual penalty: the kind of violations, the employer's history, the count of hazards, or the size of the employer? Say what the penalty would have been at the statutory maximum and why it was not.</div>
+          <div class="qh">Three to five sentences. Use the numbers from the second tab.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. The price per death. Pick one of the six corporate cases and recompute its price per death with a different numerator or denominator (total payments instead of criminal fine; injured added to killed; the fund excluded). Say which figure you would defend as the price and why, and compare it to the value of a statistical life.</div>
+          <div class="qh">Three to five sentences. Show the arithmetic.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Judge O'Connor wrote that the Boeing agreement fails to secure accountability, and then granted the dismissal. Using his order, say what accountability would require in his view, what Rule 48(a) prevented him from doing about it, and whether Benson and Simpson's framework predicts the outcome.</div>
+          <div class="qh">Four to six sentences. Cite the order by page and the chapter by page.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Did anyone die or get hurt in your case? If so, find how the harm was counted in the charging documents and the resolution, and compute the price per death or injury. If not, say what your case's penalty was divided by, and whether the denominator the prosecutors chose (victims, dollars, days, counts) makes the sanction look larger or smaller than a per-victim figure would.</div>
+          <div class="qh">Three to five sentences. This is material for Part 4.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the figures</h2>
+      <p class="srcnote">Penalty maximums are from OSHA's 2026 adjustment memorandum; the fatality-case figures are proposed penalties from Department of Labor news releases and may have been reduced in settlement since; the AFL-CIO figures are from the 2026 Death on the Job report, which compiles Bureau of Labor Statistics and OSHA data for 2024 and fiscal year 2025; the corporate cases are from the court records and agency releases cited on the third tab. The value of a statistical life is the HHS central estimate for 2025 in 2024 dollars.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function usd(n){ return '$' + Math.round(n).toLocaleString('en-US'); }
+  function short(n){ if (n >= 1e9) return '$' + (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) + 'B'; if (n >= 1e6) return '$' + (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M'; if (n >= 1e3) return '$' + Math.round(n / 1e3) + 'K'; return usd(n); }
+
+  // ---------- law guess ----------
+  let pPicked = null;
+  document.querySelectorAll('#sec-law .pick[data-p]').forEach(btn => btn.addEventListener('click', () => {
+    if (pPicked) return; pPicked = btn.dataset.p; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-law .pick[data-p]').forEach(b => { b.disabled = true; if (b.dataset.p === '16550') b.classList.add('answer'); });
+    $('pVerdict').textContent = pPicked === '16550' ? 'Right. $16,550, one serious violation at the maximum.' : 'The median is $16,550: one serious violation at the maximum. See below.';
+    $('pReveal').style.display = 'block';
+  }));
+
+  // ---------- cases ----------
+  const MAXS = 16550, MAXW = 165514;
+  const CASES = [
+    { who: 'Revoli Construction Co. Inc., Yarmouth, Massachusetts', when: 'November 18, 2025', deaths: 1, text: 'Two workers were installing pipe in a trench when backfilled sand collapsed. One was engulfed and killed; the other was buried to the waist and freed after five hours. The inspection found no cave-in protection, no safe way out of the trench, spoil piles at the edge, unsupported utilities, and damaged equipment, at a company OSHA had cited for inadequate cave-in protection in 2023 and for its safety program in 2025, with six referrals and complaints since 2016.', v: { w: 7, r: 33, s: 17, o: 0 }, pen: 4699362, src: 'OSHA national news release, April 1, 2026; Insurance Journal, April 9, 2026.', why: 'Seven willful and 33 repeat violations at up to $165,514 each is what produced $4.7 million; the 17 serious violations added at most $281,350. Repeat violations require a prior citation for the same standard, which this company had. Without the history, the same trench would have been a serious-violation case.' },
+    { who: 'Taylor Farms New Jersey Inc., Swedesboro, New Jersey', when: 'May 2025', deaths: 1, text: 'A worker cleaning and sanitizing a vegetable-processing machine was killed when it unexpectedly started. The inspection found that the plant did not follow lockout and tagout procedures, which require equipment to be de-energized and locked before anyone works on it. Sixteen willful and repeat violations were cited to Taylor Farms and three serious violations to the temporary staffing agency that employed the worker.', v: { w: 16, r: 0, s: 0, o: 0 }, pen: 1125484, src: 'U.S. Department of Labor news release, November 24, 2025.', why: 'Sixteen willful and repeat lockout violations, proposed at $1,125,484, or about $70,000 each, well under the $165,514 maximum. The staffing agency, which supplied the worker, was proposed $33,100 for three serious violations. Notice who employed the person who died and who controlled the machine.' },
+    { who: 'Construction Labor Services Inc., Mobile, Alabama', when: 'August 11, 2025', deaths: 2, text: 'Three workers repairing sewer lines in a manhole were overcome by sewage gas. One climbed out; two died. The inspection found no confined-space entry program, no procedures, no training, no atmospheric testing, and no emergency response plan.', v: { w: 0, r: 0, s: 16, o: 0 }, pen: 257707, src: 'U.S. Department of Labor news release, February 17, 2026.', why: 'Sixteen serious violations at $16,550 each would be $264,800; the proposal was $257,707. No willful violation was cited, so two deaths from the absence of an entire safety program were priced as sixteen serious hazards. The per-death figure is $128,854.' },
+    { who: 'United States Steel Corp. and MPW Industrial Services Inc., Clairton Coke Works, Pennsylvania', when: 'August 2025', deaths: 2, text: 'An explosion at the coke plant killed two employees and injured twelve. OSHA cited U.S. Steel for seven serious and one other-than-serious violation, and the cleaning contractor MPW for four serious and two other-than-serious violations, including failing to provide a relief valve on a high-pressure water system.', v: { w: 0, r: 0, s: 11, o: 3 }, pen: 179687, src: 'U.S. Department of Labor news release, February 18, 2026.', why: 'U.S. Steel was proposed $118,214 and MPW $61,473. Eleven serious violations between two employers, no willful findings, two dead and twelve hurt. At the maximum the same citations would be $231,700. The largest steelmaker in the country and the smallest contractor in this list were priced on the same schedule.' },
+    { who: 'The Salvation Army, Orlando, Florida', when: 'November 7, 2024', deaths: 1, text: 'A 54-year-old maintenance worker fell while repairing a roof leak at a donation center and died of his injuries. The inspection found a repeat fall-protection violation (the organization had been cited for the same thing in West Virginia in 2020), five serious violations including no hazard assessment and no fall-protection training, and two other-than-serious violations, one of them failing to report the death to OSHA within eight hours.', v: { w: 0, r: 1, s: 5, o: 2 }, pen: 120817, src: 'OSHA Atlanta regional news release, May 30, 2025.', why: 'One repeat violation is what lifts this case above the serious-only group: $120,817 against a maximum of $281,364 for the same citations. The repeat finding depended on a citation at a different location five years earlier. A nonprofit is priced like any employer.' },
+    { who: 'Hyvac Inc., Bal Harbour, Florida', when: 'August 28, 2025', deaths: 1, text: 'A pipefitter installing air conditioning for a mall expansion was killed when he removed an end cap from a piping system that was still pressurized. The inspection found two serious violations: failing to verify that the piping was free of stored pressure, and failing to train workers to recognize the hazard.', v: { w: 0, r: 0, s: 2, o: 0 }, pen: 28135, src: 'U.S. Department of Labor news release, March 4, 2026.', why: 'Two serious violations, $28,135, against a maximum of $33,100. This is the shape of the median fatality case: a death, one or two hazards the inspector can document, no history, no willfulness the record can prove. The penalty is 167 times smaller than Revoli\'s for the same number of dead.' },
+  ];
+  const cAns = CASES.map(() => ({ guess: null, done: false }));
+  const cEl = $('caseList');
+  const STEPS = [10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000];
+  CASES.forEach((c, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">CASE ' + (i + 1) + '</span><span class="evtitle">' + esc(c.who) + '</span></div>' +
+      '<div class="evsrc" style="margin-top:4px">' + esc(c.when) + ' · ' + c.deaths + (c.deaths === 1 ? ' death' : ' deaths') + '</div><div class="evtext">' + esc(c.text) + '</div>' +
+      '<div class="evsrc"><strong>Violations cited:</strong> ' + (c.v.w ? c.v.w + ' willful' : '') + (c.v.r ? (c.v.w ? ', ' : '') + c.v.r + ' repeat' : '') + (c.v.s ? ((c.v.w || c.v.r) ? ', ' : '') + c.v.s + ' serious' : '') + (c.v.o ? ', ' + c.v.o + ' other-than-serious' : '') + '.</div>' +
+      '<div class="guessbox" style="margin-top:10px"><p class="gq">Your guess at the total proposed penalty: <span id="cg-' + i + '">$250,000</span></p><div class="gr"><input type="range" data-i="' + i + '" min="0" max="' + (STEPS.length - 1) + '" step="1" value="4"><span class="gval" id="cgv-' + i + '"></span></div>' +
+      '<div class="pickrow" style="margin-top:8px"><button class="gbtn" data-reveal="' + i + '" type="button">Reveal the penalty</button></div><p class="verdict" id="cv-' + i + '"></p></div>' +
+      '<div class="evnote" id="cn-' + i + '"></div>';
+    cEl.appendChild(d);
+  });
+  cEl.addEventListener('input', e => { const s = e.target; if (!s.matches('input[type=range]')) return; $('cg-' + s.dataset.i).textContent = usd(STEPS[Number(s.value)]); });
+  cEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-reveal]'); if (!b) return;
+    const i = Number(b.dataset.reveal); const a = cAns[i]; if (a.done) return;
+    const box = b.closest('.ev'); const s = box.querySelector('input[type=range]'); a.guess = STEPS[Number(s.value)]; a.done = true; s.disabled = true; b.disabled = true;
+    const c = CASES[i]; const max = c.v.w * MAXW + c.v.r * MAXW + c.v.s * MAXS + c.v.o * MAXS;
+    const ratio = a.guess / c.pen; const tag = ratio > 2 ? ['no', 'You guessed high'] : ratio < 0.5 ? ['no', 'You guessed low'] : ['yes', 'Within a factor of two'];
+    $('cv-' + i).innerHTML = '<span class="tag ' + tag[0] + '">' + tag[1] + '</span> Proposed penalty: <strong>' + usd(c.pen) + '</strong>, or ' + usd(c.pen / c.deaths) + ' per death. At the statutory maximum the same citations would be ' + usd(max) + '.';
+    const n = $('cn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(c.why) + '<br><br><span class="evsrc">Source: ' + esc(c.src) + '</span>'; n.style.display = 'block';
+    const done = cAns.filter(x => x.done).length; $('cProgress').textContent = done + ' of 6 revealed.' + (done === 6 ? ' The summary is below.' : '');
+    if (done === 6) {
+      const total = CASES.reduce((t, x) => t + x.pen, 0); const per = CASES.map(x => x.pen / x.deaths).sort((p, q) => p - q); const med = (per[2] + per[3]) / 2;
+      $('c-total').textContent = short(total); $('c-median').textContent = usd(med); $('cDone').style.display = 'block';
+    }
+  });
+
+  // ---------- price per death ----------
+  const VSL = 13.6e6;
+  const PRICE = [
+    { k: 'dwh', ax: 'Deepwater Horizon', name: 'Deepwater Horizon (BP), 2010', deaths: 11, fine: 4e9, note: '$4 billion in criminal fines and penalties under a November 2012 plea to 11 counts of misconduct or neglect of ship officers, one count of obstruction of Congress, and Clean Water Act and Migratory Bird Treaty Act misdemeanors. Most of the money was for the spill, not the deaths.' },
+    { k: 'ubb', ax: 'Upper Big Branch', name: 'Upper Big Branch (Massey/Alpha), 2010', deaths: 29, fine: 209e6, note: '$209 million non-prosecution agreement of December 2011: $80 million in safety investment, $48 million for a research trust, $46.5 million in restitution ($1.5 million per family), up to $34.8 million in MSHA penalties. Massey\'s chief executive was later convicted of a misdemeanor conspiracy to violate mine safety standards and served one year.' },
+    { k: 'texas', ax: 'BP Texas City', name: 'BP Texas City refinery, 2005', deaths: 15, fine: 50e6, note: '$50 million fine under a 2007 guilty plea to one felony Clean Air Act count, at the time the largest under that statute; OSHA separately proposed $21 million in 2005 and $87 million in 2009 for failure to abate, the largest OSHA penalty in its history.' },
+    { k: 'boeing', ax: 'Boeing 737 MAX', name: 'Boeing 737 MAX, 2018 and 2019', deaths: 346, fine: 487.2e6, note: '$487.2 million criminal fine under the May 2025 non-prosecution agreement, of which $243.6 million was credited from the 2021 deferred prosecution agreement; plus $444.5 million to a fund for the families and $455 million in compliance and safety spending, for a stated total above $1.1 billion. The 2021 agreement had also included $1.77 billion to airline customers.' },
+    { k: 'revoli', ax: 'Revoli trench', name: 'Revoli Construction trench collapse, 2025', deaths: 1, fine: 4699362, note: 'The largest of the six OSHA cases on the previous tab: $4,699,362 proposed, a civil penalty, not a criminal one, and not yet final.' },
+    { k: 'pge', ax: 'PG&E Camp Fire', name: 'PG&E Camp Fire, 2018', deaths: 84, fine: 3.5e6, note: '$3.5 million fine, the statutory maximum, under a June 2020 guilty plea to 84 counts of involuntary manslaughter and one count of unlawfully starting a fire, plus $500,000 in investigation costs. No individual was charged.' },
+  ];
+  let lPicked = null;
+  document.querySelectorAll('#sec-price .pick[data-l]').forEach(btn => btn.addEventListener('click', () => {
+    if (lPicked) return; lPicked = btn.dataset.l; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-price .pick[data-l]').forEach(b => { b.disabled = true; if (b.dataset.l === 'pge') b.classList.add('answer'); });
+    $('lVerdict').textContent = lPicked === 'pge' ? 'Right. PG&E, at $41,667 per death.' : 'PG&E, at $41,667 per death: the statutory maximum for 84 counts of manslaughter. See below.';
+    drawPrice(); $('lReveal').style.display = 'block';
+  }));
+  function drawPrice(){
+    const W = 1000, H = 400, L0 = 80, R0 = 20, T0 = 20, B0 = 90; const rows = PRICE.map(p => ({ ...p, per: p.fine / p.deaths })).sort((a, b) => b.per - a.per);
+    const lo = 1e4, hi = 1e9; const y = v => T0 + (H - T0 - B0) * (1 - (Math.log10(v) - 4) / (9 - 4)); const bw = (W - L0 - R0) / rows.length;
+    let svg = '';
+    for (let e = 4; e <= 9; e++) { const v = Math.pow(10, e); svg += '<line x1="' + L0 + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - R0) + '" y2="' + y(v).toFixed(1) + '" stroke="#888" stroke-opacity="0.25"/><text x="' + (L0 - 8) + '" y="' + (y(v) + 4).toFixed(1) + '" font-size="12" fill="#666" text-anchor="end">' + short(v) + '</text>'; }
+    svg += '<line x1="' + L0 + '" y1="' + y(VSL).toFixed(1) + '" x2="' + (W - R0) + '" y2="' + y(VSL).toFixed(1) + '" stroke="#1a1a1a" stroke-dasharray="6 5" stroke-width="2"/><text x="' + (W - R0 - 4) + '" y="' + (y(VSL) - 6).toFixed(1) + '" font-size="12" fill="#1a1a1a" text-anchor="end">value of a statistical life, $13.6M</text>';
+    rows.forEach((r, i) => { const x = L0 + i * bw + bw * 0.18; const top = y(Math.max(lo, r.per)); svg += '<rect x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + (bw * 0.64).toFixed(1) + '" height="' + (H - B0 - top).toFixed(1) + '" fill="' + (r.per >= VSL ? '#2e7d4f' : '#840028') + '"><title>' + esc(r.name + ': ' + short(r.fine) + ' / ' + r.deaths + ' = ' + usd(r.per) + ' per death') + '</title></rect>';
+      svg += '<text x="' + (x + bw * 0.32).toFixed(1) + '" y="' + (top - 6).toFixed(1) + '" font-size="12" fill="#1a1a1a" text-anchor="middle">' + short(r.per) + '</text>';
+      const yr = r.name.split(', ').pop(); svg += '<text x="' + (x + bw * 0.32).toFixed(1) + '" y="' + (H - B0 + 18) + '" font-size="12" fill="#666" text-anchor="middle">' + esc(r.ax) + '</text><text x="' + (x + bw * 0.32).toFixed(1) + '" y="' + (H - B0 + 34) + '" font-size="11" fill="#666" text-anchor="middle">' + esc(yr) + ' · ' + r.deaths + ' dead</text>'; });
+    $('priceSvg').innerHTML = svg;
+    $('priceList').innerHTML = '<div class="defs">' + rows.map(r => '<div class="def"><div class="who">' + esc(r.name) + '</div><div class="hinge"><strong>' + short(r.fine) + ' for ' + r.deaths + ' deaths: ' + usd(r.per) + ' per death.</strong> ' + esc(r.note) + '</div></div>').join('') + '</div>';
+  }
+
+  // ---------- opportunity ----------
+  const PROPS = [['ACC', 'Specialized access'], ['SEP', 'Spatial separation'], ['LEG', 'Superficial appearance of legitimacy'], ['INC', 'The built-in incentive']];
+  const OPP = [
+    { t: 'Top managers who decide how much to spend on safety work at a headquarters hundreds or thousands of miles from the plant floor where the exposure happens.', ref: 'SEP', pg: 'pp. 129-130', why: 'Benson and Simpson say workplace crime has less separation than environmental crime, since offender and victim work for the same organization, but that the people making health and safety decisions are unlikely to work on the floor, and in divisional firms sit at a distant headquarters: "a physical and symbolic division of labor between the offender and victim."' },
+    { t: 'A firm provides some training and some protective equipment, enough to show an inspector, but not enough to make the work safe.', ref: 'LEG', pg: 'p. 130', why: 'The authors\' first example of maintaining "the appearance of legal compliance": limited but insufficient training or equipment, "perpetrating the illusion that health and safety provisions for employees have been met and are taken seriously."' },
+    { t: 'Workers exposed to a toxic substance are referred to company doctors who attribute their illness to smoking or drinking rather than to the workplace, and the company keeps its own medical reports to itself, as Johns-Manville did with asbestosis from the 1930s on.', ref: 'LEG', pg: 'pp. 130-131', why: 'The second appearance-of-compliance strategy: keeping knowledge of exposure from employees and using company doctors who do not "connect the dots." Specialized access is also present, since only the company holds the medical data, but the authors file the Johns-Manville case under the illusion of ignorance.' },
+    { t: 'McWane buys Tyler Pipe, cuts nearly two-thirds of the workforce, keeps production the same, moves to two 12-hour shifts, and eliminates the safety inspectors, cleaning crews, and maintenance workers.', ref: 'INC', pg: 'pp. 128-129', why: 'The built-in incentive in its purest form: labor is the largest controllable cost, and safety is a labor cost. The authors call McWane "a textbook example of the link between cutting costs and dangerous workplaces."' },
+    { t: 'The risks of working with a hazardous substance may not show up for many years and may be confounded by other risk factors, so employees may never know their illness came from the job.', ref: 'SEP', pg: 'p. 130', why: 'Separation in time rather than space: the authors treat the long latency of occupational disease as a form of the same spatial separation, since it breaks the link between the offense and the victim\'s knowledge of it. Defensible to read it as legitimacy, since latency also keeps the firm looking compliant, but the chapter places it with separation.' },
+  ];
+  const oAns = OPP.map(() => null); const oEl = $('oppList');
+  OPP.forEach((o, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">MECHANISM ' + (i + 1) + '</span></div><div class="evtext">' + esc(o.t) + '</div><div class="codes">' + PROPS.map(p => '<button class="ynb" data-oi="' + i + '" data-ok="' + p[0] + '" type="button">' + esc(p[1]) + '</button>').join('') + '</div><p class="verdict" id="ov-' + i + '"></p><div class="evnote" id="on-' + i + '"></div>';
+    oEl.appendChild(d);
+  });
+  oEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-oi]'); if (!b) return;
+    const i = Number(b.dataset.oi); if (oAns[i]) return; oAns[i] = b.dataset.ok;
+    oEl.querySelectorAll('[data-oi="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.ok === OPP[i].ref) x.classList.add('answer'); });
+    $('ov-' + i).innerHTML = '<span class="tag ' + (oAns[i] === OPP[i].ref ? 'yes' : 'no') + '">' + (oAns[i] === OPP[i].ref ? 'Matches the reference' : 'Reference: ' + PROPS.find(p => p[0] === OPP[i].ref)[1]) + '</span> ' + esc(OPP[i].pg) + '.';
+    const n = $('on-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(OPP[i].why); n.style.display = 'block';
+    const done = oAns.filter(Boolean).length; $('oProgress').textContent = done + ' of 5 matched.' + (done === 5 ? ' Read the note below.' : ''); if (done === 5) $('oDone').style.display = 'block';
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 8 · THE PRICE OF A DEATH', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('MEDIAN FATALITY PENALTY GUESS: ' + (pPicked ? usd(Number(pPicked)) + ' (reference $16,550)' : 'not answered'));
+    lines.push('LOWEST PRICE PER DEATH GUESS: ' + (lPicked || 'not answered') + ' (reference pge)');
+    lines.push('');
+    lines.push('SIX FATALITY CASES (your guess / proposed penalty / per death)');
+    CASES.forEach((c, i) => lines.push((i + 1) + '. ' + c.who.split(',')[0] + ': ' + (cAns[i].done ? usd(cAns[i].guess) : 'not revealed') + ' / ' + usd(c.pen) + ' / ' + usd(c.pen / c.deaths)));
+    lines.push('');
+    lines.push('OPPORTUNITY MATCHING (your property / reference)'); OPP.forEach((o, i) => lines.push((i + 1) + '. ' + (oAns[i] || 'not matched') + ' / ' + o.ref));
+    lines.push('');
+    lines.push('QUESTION 1 (your six guesses)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (price per death)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (the Boeing order)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 8 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 8 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 8 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, cAns, oAns };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

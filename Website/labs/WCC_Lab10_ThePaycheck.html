@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Paycheck · White-Collar Crime · Crime Lab 10</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 16px; }
+  .fgrid .rq { margin-top: 8px; }
+  .fgrid .qt { font-size: 13px; }
+  .drow input[type=text] { flex: 1; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Paycheck <span class="sub">White-Collar Crime · Crime Lab 10 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>The largest property crime in the United States, by dollars taken, is committed by employers against their own workers, and it leaves a paper trail in every pay stub.</strong> Cooper and Kroeger estimated that in the ten largest states alone, 2.4 million workers lost $8 billion a year to minimum wage violations, about $3,300 each, a quarter of their pay, and that the national figure exceeds $15 billion, before counting unpaid overtime, off-the-clock work, stolen tips, and illegal deductions. The federal agency that enforces the wage law had 611 investigators in May 2025, one for every 278,000 workers. This lab makes you the investigator. You will audit eight pay records against the Fair Labor Standards Act and Texas law and compute what each worker is owed, see how much of the theft is built into ordinary payroll design, look at who gets stolen from and how much the enforcement system recovers, and search the public record for employers in your own industry.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-rules" type="button">The rules</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-audit" type="button">Audit eight pay records</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-scale" type="button">How much and from whom</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-enf" type="button">The enforcement system</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: RULES -->
+    <div class="section active" id="sec-rules">
+      <div class="card">
+        <h2>What the Fair Labor Standards Act requires</h2>
+        <p class="lede">The FLSA of 1938 sets a federal floor. Texas has no higher minimum wage and no state overtime law, so for Texas workers the federal rules are the rules, enforced by the Wage and Hour Division of the U.S. Department of Labor and, for unpaid wages generally, by the Texas Workforce Commission under the Texas Payday Law. You will need all of the following on the next tab.</p>
+        <div class="defs">
+          <div class="def"><div class="who">Minimum wage: $7.25 an hour</div><div class="hinge">For every hour worked, paid "free and clear." Deductions for the employer's benefit (uniforms, tools, cash register shortages, breakage) cannot bring the pay for the week below $7.25 an hour. 29 U.S.C. 206; 29 C.F.R. 531.35.</div></div>
+          <div class="def"><div class="who">Overtime: one and one-half times the regular rate after 40 hours</div><div class="hinge">The regular rate is all pay for the week divided by all hours worked, including nondiscretionary bonuses, shift differentials, and commissions. A salary does not exempt anyone by itself. 29 U.S.C. 207; 29 C.F.R. 778.</div></div>
+          <div class="def"><div class="who">Hours worked: all time the employer "suffers or permits"</div><div class="hinge">Work before clocking in, work through a meal break, travel between job sites during the day, and required waiting count. A meal period can be unpaid only if it is at least about 30 minutes and the worker is completely relieved of duty. 29 C.F.R. 785.11, 785.19, 785.38.</div></div>
+          <div class="def"><div class="who">Tip credit: cash wage of $2.13 if tips make up the rest</div><div class="hinge">The employer may count up to $5.12 an hour in tips toward the minimum wage, but only if the worker's cash wage plus tips reach $7.25 for every hour in the week; if not, the employer pays the difference. Overtime for a tipped worker is computed on the full $7.25, not on $2.13. Managers cannot take from a tip pool. 29 U.S.C. 203(m)(2).</div></div>
+          <div class="def"><div class="who">Exemptions: salary and duties, both</div><div class="hinge">The executive, administrative, and professional exemptions require a salary of at least $684 a week ($35,568 a year) and duties that meet the test (for an executive: managing, directing two or more employees, authority over hiring and firing). The 2024 rule that would have raised the level to $1,128 was vacated by a federal court in Texas on November 15, 2024, and the Department formally restored the $684 level on May 14, 2026. A title is not a duty. 29 U.S.C. 213(a)(1); 29 C.F.R. 541.</div></div>
+          <div class="def"><div class="who">Employee or contractor: economic reality</div><div class="hinge">A worker is an employee if, as a matter of economic reality, they depend on the business rather than being in business for themselves: who controls the work, whether the worker can profit or lose by their own initiative and investment, the permanence of the relationship, whether the work is integral to the business. Calling someone a contractor on a form settles nothing. Since May 1, 2025, the Division has applied its older guidance (Fact Sheet 13) rather than the 2024 rule, and proposed a replacement rule in February 2026.</div></div>
+          <div class="def"><div class="who">Remedies</div><div class="hinge">Back wages for two years, three if the violation was willful (29 U.S.C. 255); an equal amount in liquidated damages, so the worker recovers double (29 U.S.C. 216(b)); civil money penalties for repeated or willful violations of up to $2,515 per violation at the 2025 level (29 U.S.C. 216(e)); criminal prosecution for willful violations, a misdemeanor, almost never used. Retaliation against a worker who complains is itself a violation.</div></div>
+          <div class="def"><div class="who">Texas Payday Law</div><div class="hinge">An employer must pay all wages due on regular paydays; a discharged worker must be paid within six days, and a worker who quits by the next regular payday. The Texas Workforce Commission takes wage claims for up to 180 days after the wages were due and can order payment and assess a penalty. Texas Labor Code ch. 61.</div></div>
+        </div>
+        <p class="srcnote">Sources: 29 U.S.C. 203, 206, 207, 213, 216, 255; 29 C.F.R. parts 531, 541, 778, 785; U.S. Department of Labor, Wage and Hour Division, Fact Sheets 13, 15, 16, 17A, 22, 23, and 56A; technical amendment restoring the 2019 salary levels, May 14, 2026 (as summarized by Littler); Field Assistance Bulletin 2025-1 on independent contractor enforcement (May 1, 2025); Texas Labor Code ch. 61 and Texas Workforce Commission, Texas Payday Law guidance.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: AUDIT -->
+    <div class="section" id="sec-audit">
+      <div class="card">
+        <h2>Eight workers, one week each</h2>
+        <p class="lede">The records below are constructed for the lab; the practices in them are the ones the Wage and Hour Division finds most often. For each worker, read the record, decide whether the law was broken, and compute the dollars owed for the week under federal law (and Texas law where noted), before any doubling. Enter your figure and check it. The reference shows the arithmetic and the rule. Your entries are logged for your submission.</p>
+        <div id="auditList"></div>
+        <p class="progress" id="aProgress">0 of 8 checked.</p>
+        <div class="veiled" id="aDone">
+          <div class="statrow">
+            <div class="stat warn"><div class="v" id="a-total">$0</div><div class="l">owed to eight workers for one week, before liquidated damages</div></div>
+            <div class="stat"><div class="v" id="a-year">$0</div><div class="l">for a year, if every week looked like this one</div></div>
+            <div class="stat"><div class="v" id="a-double">$0</div><div class="l">for two years with liquidated damages, the ordinary recovery</div></div>
+            <div class="stat"><div class="v" id="a-score">0 of 8</div><div class="l">of your figures within $2 of the reference</div></div>
+          </div>
+          <p class="teach"><strong>What the eight have in common.</strong> None of them involves an employer stealing a paycheck. Every one is a design: a cash wage set at the tip-credit floor without checking whether tips fill the gap; a bonus left out of the regular rate; a title and a salary set just under the line; a schedule that starts before the clock; a deduction policy; an automatic meal deduction; a 1099 form; a rule about returning uniforms. The record on which the worker would have to prove the theft is the employer's record, and in several of the eight it is designed to show nothing. That is why the readings treat wage theft as an organizational practice rather than a series of individual acts, and why the enforcement system on the fourth tab recovers so small a share of it.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SCALE -->
+    <div class="section" id="sec-scale">
+      <div class="card">
+        <h2>Cooper and Kroeger, 2017</h2>
+        <p class="lede">The Economic Policy Institute estimate uses the Current Population Survey for 2013 to 2015: workers whose reported weekly earnings and hours put them below the minimum wage that applied to them, in the ten most populous states, which hold about half the U.S. workforce. It counts minimum wage violations only. Guess the Texas figure before you see it.</p>
+        <div class="guessbox">
+          <p class="gq">In Texas, what share of low-wage workers (those eligible for the minimum wage and earning near it) were paid below the minimum wage in a given week?</p>
+          <div class="pickrow">
+            <button class="pick" data-t="2" type="button">About 2 percent</button>
+            <button class="pick" data-t="5" type="button">About 5 percent</button>
+            <button class="pick" data-t="11" type="button">About 11 percent</button>
+            <button class="pick" data-t="25" type="button">About 25 percent</button>
+          </div>
+          <p class="verdict" id="tVerdict"></p>
+        </div>
+        <div class="veiled" id="tReveal">
+          <div class="statrow">
+            <div class="stat warn"><div class="v">10.8%</div><div class="l">of Texas low-wage workers paid below the minimum wage in a week</div></div>
+            <div class="stat"><div class="v">265,000</div><div class="l">Texas workers affected</div></div>
+            <div class="stat warn"><div class="v">$1.165B</div><div class="l">taken from Texas workers a year</div></div>
+            <div class="stat"><div class="v">$4,400</div><div class="l">per Texas victim a year, 31.7 percent of their earnings</div></div>
+          </div>
+          <div class="bars">
+            <div class="brow"><span class="blabel">Young workers, 16 to 24</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">9.2%</span></div>
+            <div class="brow"><span class="blabel">Non-citizens</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="71%"></div></div><span class="bval">6.5%</span></div>
+            <div class="brow"><span class="blabel">Women</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="53%"></div></div><span class="bval">4.9%</span></div>
+            <div class="brow"><span class="blabel">Native-born citizens</span><div class="btrack"><div class="bfill" style="width:0%" data-w="41%"></div></div><span class="bval">3.8%</span></div>
+            <div class="brow"><span class="blabel">Men</span><div class="btrack"><div class="bfill" style="width:0%" data-w="38%"></div></div><span class="bval">3.5%</span></div>
+          </div>
+          <p class="teach"><strong>Across the ten states:</strong> 2.4 million workers, $8 billion a year, $3,300 each, 23.9 percent of their pay; 17 percent of low-wage workers affected; a poverty rate among victims of 21.4 percent against 6.9 percent for all minimum-wage-eligible workers; a third receiving public assistance. Florida, with no state enforcement body, had the highest violation rate. The national extrapolation, more than $15 billion a year for minimum wage violations alone, is the figure usually quoted; Barnes, Fine, Galvin, and colleagues put it at more than $13 billion for at least 4 million workers in 2025. The survey cannot see overtime, off-the-clock time, tips, or deductions, so the eight records on the previous tab would mostly be invisible to it.</p>
+          <p class="srcnote">Source: Cooper, D., and Kroeger, T. (2017). Employers Steal Billions from Workers' Paychecks Each Year. Economic Policy Institute, May 10, 2017 (summary and key findings, state table).</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Petrescu-Prahova and Spiller: who gets stolen from</h2>
+        <p class="lede">The 2008 Unregulated Work Survey asked 4,387 front-line workers in low-wage industries in Chicago, Los Angeles, and New York about the previous week, using a network sampling method built to reach workers ordinary surveys miss (p. 376). Petrescu-Prahova and Spiller use it to ask whether women are stolen from more than men, and why. Guess before you see Table 1.</p>
+        <div class="guessbox">
+          <p class="gq">Among these low-wage workers, what share had a minimum wage violation in the previous week?</p>
+          <div class="pickrow">
+            <button class="pick" data-u="5" type="button">About 5 percent</button>
+            <button class="pick" data-u="12" type="button">About 12 percent</button>
+            <button class="pick" data-u="27" type="button">About 27 percent</button>
+            <button class="pick" data-u="50" type="button">About 50 percent</button>
+          </div>
+          <p class="verdict" id="uVerdict"></p>
+        </div>
+        <div class="veiled" id="uReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Minimum wage violation last week, women</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="38%"></div></div><span class="bval">31.3%</span></div>
+            <div class="brow"><span class="blabel">Minimum wage violation last week, men</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="24%"></div></div><span class="bval">20.4%</span></div>
+            <div class="brow"><span class="blabel">Overtime violation, of those who worked over 40 hours, women</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="100%"></div></div><span class="bval">83.3%</span></div>
+            <div class="brow"><span class="blabel">Overtime violation, of those who worked over 40 hours, men</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="87%"></div></div><span class="bval">72.8%</span></div>
+          </div>
+          <p class="teach"><strong>26.8 percent overall, 31.3 percent of women and 20.4 percent of men (Table 1, p. 380).</strong> Among the workers who had a violation, women lost $79 a week and men $58, and because women earned less, the theft was a larger share of their pay: 22 percent against 14 percent, or $4,120 a year against $3,037 at full-time, full-year work (Table 2, p. 381). The gap is not spread evenly. Among U.S.-born workers there is no significant gender difference; the gap is concentrated among the foreign-born and is largest among undocumented workers (pp. 381-382). And when the authors add job and employer characteristics, occupation, and worker characteristics to the model, the direct gender-by-status effect falls by 83 percent, with job and employer characteristics doing more of the work than education or other worker traits (Table 4, p. 390). Their reading: "the stronger determinants of workplace violations are on the demand side" (p. 391). Where a woman works, and what her employer has set up, predicts whether she is stolen from better than who she is.</p>
+          <p class="srcnote">Source: Petrescu-Prahova, M., and Spiller, M. W. (2016). Women's wage theft: Explaining gender differences in violations of wage and hour laws. Work and Occupations, 43(4), 371-400, at the pages cited.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ENFORCEMENT -->
+    <div class="section" id="sec-enf">
+      <div class="card">
+        <h2>Six hundred and eleven investigators</h2>
+        <p class="lede">Barnes, Fine, Galvin, Round, and Shepherd counted the Wage and Hour Division's investigators from agency records and put the May 14, 2025 figure at 611, the lowest since 1973, down from 674 at the end of the previous administration and from a peak of 1,232 in 1978, when the country had a third as many workers and a quarter as many establishments. Guess the recovery before you see it.</p>
+        <div class="guessbox">
+          <p class="gq">Against an estimated $13 billion to $15 billion a year taken in minimum wage violations alone, how much did the Wage and Hour Division recover in back wages in fiscal year 2025?</p>
+          <div class="pickrow">
+            <button class="pick" data-r="60" type="button">About $60 million</button>
+            <button class="pick" data-r="259" type="button">About $260 million</button>
+            <button class="pick" data-r="1500" type="button">About $1.5 billion</button>
+            <button class="pick" data-r="5000" type="button">About $5 billion</button>
+          </div>
+          <p class="verdict" id="rVerdict"></p>
+        </div>
+        <div class="veiled" id="rReveal">
+          <div class="statrow">
+            <div class="stat"><div class="v">611</div><div class="l">investigators, May 2025; one per 278,000 workers and per 20,000 establishments</div></div>
+            <div class="stat warn"><div class="v">$259M</div><div class="l">back wages in FY2025, plus $58.7 million in civil money penalties</div></div>
+            <div class="stat"><div class="v">18%</div><div class="l">of FY2025 recoveries came from violations found in FY2025; the rest were older cases</div></div>
+            <div class="stat warn"><div class="v">≈ 2%</div><div class="l">of the low estimate of minimum wage theft, recovered</div></div>
+          </div>
+          <p class="teach"><strong>Read the ratio.</strong> $259 million against $13 billion is about two cents on the dollar, and that is for the one kind of theft the estimate can see. The recovery was up from $202 million in FY2024 while the number of cases concluded fell, which means larger cases and fewer of them. The report's other comparison: the 2024 federal budget for Wage and Hour enforcement was $315 million, and for immigration enforcement $4.5 billion, about fifteen times more, in a labor market where the workers most stolen from are the ones with the most reason not to complain. Four states have no federal investigator at all; in Maine, Maryland, and Washington there is one for every 500,000 workers. Galvin's article, your other Meeting A reading, shows that where the state fills the gap, with its own penalties, its own investigators, and worker organizations that bring cases, compliance rises; where it does not, the federal floor is the ceiling.</p>
+          <p class="srcnote">Sources: Barnes, J., Fine, J., Galvin, D. J., Round, J., and Shepherd, H. (2025). Labor investigator staffing hits 52-year low, raising the risk of wage theft. Workplace Justice Lab, Rutgers School of Management and Labor Relations, and Northwestern University, May 2025. U.S. Department of Labor, Wage and Hour Division, fiscal year 2025 enforcement data as reported by Bloomberg Law, January 8, 2026 ($259 million back wages, $58.7 million penalties; FY2024: $202 million and $35.9 million). Galvin, D. J. (2016). Deterring wage theft. Perspectives on Politics, 14(2), 324-350.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Search the record yourself</h2>
+        <p class="lede">Three public databases show what the enforcement system found. Use at least one and record what you find below. The Department of Labor's Workers Owed Wages search (webapps.dol.gov/wow) lists employers from whom the Division collected back wages it could not deliver, searchable by employer name and state. Good Jobs First's Violation Tracker (violationtracker.goodjobsfirst.org) lists wage and hour penalties by company, industry, and state. The Department's enforcement data site (enforcedata.dol.gov) has the full Wage and Hour compliance-action dataset, including findings by employer, city, and industry code, for anyone willing to download it. Pick the industry you work in or have worked in, and the county or city you live in.</p>
+        <div class="fgrid">
+          <div class="rq"><div class="qt">Database used</div><input type="text" id="s-db" placeholder="Workers Owed Wages, Violation Tracker, or enforcement data"></div>
+          <div class="rq"><div class="qt">Industry and place searched</div><input type="text" id="s-ind" placeholder="For example: restaurants, Wichita County"></div>
+          <div class="rq"><div class="qt">Employers found with findings or back wages</div><input type="text" id="s-n" placeholder="number, or none"></div>
+          <div class="rq"><div class="qt">Largest single finding (employer, amount, year)</div><input type="text" id="s-max" placeholder="Employer, $, year"></div>
+          <div class="rq"><div class="qt">Kind of violation most common in what you found</div><input type="text" id="s-kind" placeholder="overtime, minimum wage, tips, misclassification, child labor"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 10 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers, your audit figures, and your search into one block of text, and paste that text into the Lab 10 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your audit. Which of the eight records was hardest to compute, and why: the rule, the arithmetic, or a missing fact? Say what the worker would need to prove the underpayment and who holds that record.</div>
+          <div class="qh">Three to five sentences. Use your figures.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Petrescu-Prahova and Spiller find the gender gap in wage theft concentrated among undocumented workers and mostly explained by job and employer characteristics rather than by the workers themselves. Say what that implies about where an enforcement agency with 611 investigators should look, and what it implies about the argument that workers who are stolen from should simply complain.</div>
+          <div class="qh">Three to five sentences. Cite the article by page.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Wage theft takes more than all robberies, burglaries, and larcenies reported to police, and its remedy is usually the wages plus an equal amount, with no one charged. Using Lab 8's price of a death and Lab 1's definitions, say why the law treats these two kinds of taking differently and whether the difference is defensible.</div>
+          <div class="qh">Four to six sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Were workers among the people harmed in your case (as employees of the company, as contractors, as customers' employees)? If so, say how the harm to them was counted and remedied compared to the harm to investors or the government. If not, say what your search on the fourth tab found for your case's company or industry.</div>
+          <div class="qh">Three to five sentences. This is material for Part 2 and Part 4.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the records and the figures</h2>
+      <p class="srcnote">The eight pay records are constructed for the lab from the violation types the Wage and Hour Division describes in its fact sheets and finds most often; no employer or worker is real. The legal rules are as stated in the statutes and regulations cited on the first tab, at the levels in effect in September 2026. Estimates of wage theft and of enforcement capacity are from the sources cited on the third and fourth tabs; the property crime comparison in question 3 rests on the FBI's Uniform Crime Reporting estimates of losses to robbery, burglary, and larceny-theft, which came to roughly $9 billion to $10 billion a year in the last years of full reporting (Crime in the United States, 2019), and on Cooper and Kroeger's $15 billion estimate for minimum wage violations alone.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function usd(n){ return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function guess(sel, key, right, verdictId, revealId, yes, no){
+    let picked = null;
+    document.querySelectorAll(sel).forEach(btn => btn.addEventListener('click', () => {
+      if (picked) return; picked = btn.dataset[key]; btn.classList.add('chosen');
+      document.querySelectorAll(sel).forEach(b => { b.disabled = true; if (b.dataset[key] === right) b.classList.add('answer'); });
+      $(verdictId).textContent = picked === right ? yes : no;
+      $(revealId).style.display = 'block'; animateBars($(revealId));
+    }));
+    return () => picked;
+  }
+  const gT = guess('#sec-scale .pick[data-t]', 't', '11', 'tVerdict', 'tReveal', 'Right. About 11 percent.', 'About 11 percent: 10.8 percent of Texas low-wage workers in a given week. See below.');
+  const gU = guess('#sec-scale .pick[data-u]', 'u', '27', 'uVerdict', 'uReveal', 'Right. 26.8 percent.', '26.8 percent, more than one in four. See below.');
+  const gR = guess('#sec-enf .pick[data-r]', 'r', '259', 'rVerdict', 'rReveal', 'Right. $259 million.', '$259 million in back wages. See below.');
+
+  // ---------- audit ----------
+  const AUDIT = [
+    { who: 'Server, full-service restaurant', rec: 'Worked 45 hours. Paid a cash wage of $2.13 an hour for all 45 hours, $95.85. Reported tips for the week: $180.00. No overtime line on the stub.', q: 'What is the worker owed for the week?', ans: 68.53, law: 'Tip credit and overtime for tipped employees, 29 U.S.C. 203(m)(2) and 207; Fact Sheet 15.', why: 'Total wages due: 40 hours at $7.25 ($290.00) plus 5 overtime hours at $10.875 ($54.38), which is $344.38. The employer may count tips toward that, but cash plus tips came to only $95.85 + $180.00 = $275.85. Owed: $68.53. Two mistakes are stacked here: the tip credit did not check out (tips brought the worker to $6.13 an hour, not $7.25), and overtime was computed on nothing at all; for a tipped worker it must be computed on the full $7.25, with the employer\'s cash overtime rate at least $10.875 minus the $5.12 credit, $5.755 an hour.' },
+    { who: 'Warehouse picker, hourly', rec: 'Rate $12.00 an hour. Worked 52 hours; paid 52 hours at $12.00, $624.00, plus a $100.00 monthly attendance bonus that the handbook promises to anyone with no absences, paid this week.', q: 'What is the worker owed for the week?', ans: 83.54, law: 'Overtime and the regular rate, 29 U.S.C. 207; 29 C.F.R. 778.108-778.211; Fact Sheet 56A.', why: 'Straight time for all hours was paid, so what is missing is the half-time premium on 12 overtime hours. But the regular rate is not $12.00: a promised attendance bonus is nondiscretionary and must be included. Regular rate = ($624.00 + $100.00) / 52 = $13.923. Premium owed = 0.5 × $13.923 × 12 = $83.54. If you computed $72.00 you used the hourly rate and left the bonus out, which is the most common overtime error the Division finds in otherwise honest payrolls.' },
+    { who: '"Assistant manager," retail store, salaried', rec: 'Salary $600.00 a week, no overtime. Worked 55 hours. Spends most of the week running a register, stocking, and unloading trucks; the store manager sets the schedule and does the hiring. The offer letter says the salary "covers all hours worked."', q: 'What is the worker owed for the week, assuming the salary was understood to cover only a 40-hour week?', ans: 337.50, law: 'Executive exemption, 29 C.F.R. 541.100 and 541.600; salary for a fixed workweek, 29 C.F.R. 778.113; fluctuating workweek, 29 C.F.R. 778.114.', why: 'Not exempt on either test: $600 is below the $684 salary level, and the duties are not managerial. So overtime is owed for 15 hours. The amount depends on what the salary was for. If it paid for a 40-hour week, the regular rate is $600 / 40 = $15.00 and overtime is 15 × $22.50 = $337.50. If the employer can show a clear mutual understanding that the fixed salary covered all hours however many, the fluctuating workweek method applies: regular rate $600 / 55 = $10.91, premium 0.5 × $10.91 × 15 = $81.82. The offer letter sentence is there to claim the second method. The difference, $255.68 a week for this one worker, is produced entirely by a sentence in a document the employer wrote.' },
+    { who: 'Home health aide, hourly', rec: 'Rate $10.00 an hour. Paid for 38 hours, $380.00. The agency requires aides to arrive 15 minutes before each of five shifts for an unpaid "handoff" with the previous aide, and the aide drove 4 hours during the week between clients\' homes, unpaid.', q: 'What is the worker owed for the week?', ans: 68.75, law: 'Hours worked, 29 C.F.R. 785.11 and 785.38 (travel between job sites during the workday); Fact Sheet 22.', why: 'Hours actually worked: 38 + 1.25 (five handoffs) + 4 (travel between clients) = 43.25. Due: 40 × $10.00 + 3.25 × $15.00 = $400.00 + $48.75 = $448.75. Paid $380.00. Owed $68.75. Neither the handoff nor the travel between homes is optional or personal, so both are work the employer suffered or permitted. Home care is one of the industries in which the Division most often finds this pattern, and the employer\'s timekeeping shows 38 hours.' },
+    { who: 'Fast-food crew member, hourly', rec: 'Rate $7.25 an hour. Worked 30 hours, gross $217.50. Deductions on the stub: $25.00 for two uniform shirts and $15.00 for a cash register shortage on a shift the worker closed. Net $177.50.', q: 'What is the worker owed for the week?', ans: 40.00, law: 'Minimum wage paid free and clear, 29 C.F.R. 531.35; uniforms and shortages as costs for the employer\'s benefit, Fact Sheet 16.', why: 'At $7.25 there is no room for any deduction for the employer\'s benefit. Uniforms the employer requires and cash shortages are both the employer\'s costs. The $40.00 in deductions brought the week to $5.92 an hour; the worker is owed the $40.00 back. Had the rate been $9.00, the same deductions would have been lawful up to the point where the week fell to $7.25 an hour, $52.50 here, so the entire $40.00 could have been taken. The legality of the deduction depends on the wage, not on the deduction.' },
+    { who: 'Nursing assistant, hourly, automatic meal deduction', rec: 'Rate $14.00 an hour. Clocked 8.5 hours on each of five shifts, 42.5 hours. The timekeeping system automatically deducts a 30-minute unpaid meal from every shift, so the stub shows 40 hours, $560.00. On three of the five shifts the aide was called back to the floor during the meal and did not get a replacement break.', q: 'What is the worker owed for the week?', ans: 31.50, law: 'Bona fide meal periods, 29 C.F.R. 785.19; hours worked.', why: 'A meal period can be unpaid only if the worker is completely relieved of duty for it. On three shifts she was not, so 1.5 hours of deducted time was work. Hours worked: 41.5. Due: 40 × $14.00 + 1.5 × $21.00 = $560.00 + $31.50 = $591.50. Owed $31.50. Automatic deductions are lawful in themselves; the violation is the absence of a way to cancel the deduction when the break does not happen, and the Division finds it constantly in hospitals and nursing homes. Multiply $31.50 by the number of aides and the number of weeks.' },
+    { who: 'Delivery driver, paid as an independent contractor', rec: 'Paid $500.00 for the week on a 1099, no overtime, no deductions. Worked 50 hours. The company sets the shifts, assigns the routes, requires its uniform and its app, supplies the van, and forbids driving for anyone else. The driver has no investment in the business and no way to earn more except by working more hours.', q: 'If the driver is an employee, what is owed for the week?', ans: 50.00, law: 'Economic reality test, Fact Sheet 13; regular rate for a weekly wage, 29 C.F.R. 778.109.', why: 'Every factor points to employment: control, no opportunity for profit or loss, no investment, integral work, exclusivity. As an employee the $500.00 is pay for 50 hours, a regular rate of $10.00, and the half-time premium on 10 overtime hours is $50.00. As a contractor, nothing is owed and none of the FLSA applies: no minimum wage, no overtime, no unemployment insurance, no workers\' compensation, and the employer\'s share of payroll tax is gone as well. The $50.00 is the smallest part of what the 1099 saved the company.' },
+    { who: 'Cook, quit with notice; final paycheck withheld', rec: 'Rate $12.00 an hour. Worked 35 hours in the final week, $420.00 gross. Gave two weeks\' notice and left. The employer is holding the final check "until the uniform and keys are returned," now three weeks past the regular payday.', q: 'What is the worker owed?', ans: 420.00, law: 'Texas Payday Law, Texas Labor Code 61.014 (final pay due by the next regular payday for a worker who quits); FLSA minimum wage for hours worked.', why: '$420.00, due on the next regular payday after the worker quit, whatever the state of the uniform. The employer may have a claim for unreturned property; it does not have the right to hold wages against it. The Texas Workforce Commission takes this claim for 180 days from the payday, and because 35 hours were worked and nothing was paid, the same week is also a federal minimum wage violation for $253.75 (35 × $7.25), which the Division can pursue with liquidated damages. The Texas claim gets the whole $420.00; the federal claim gets the floor, doubled.' },
+  ];
+  const aAns = AUDIT.map(() => ({ v: null, done: false, ok: false }));
+  const aEl = $('auditList');
+  AUDIT.forEach((a, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">RECORD ' + (i + 1) + '</span><span class="evtitle">' + esc(a.who) + '</span></div><div class="evtext">' + esc(a.rec) + '</div>' +
+      '<div class="drow"><span class="dlabel" style="min-width:auto">' + esc(a.q) + '</span></div>' +
+      '<div class="drow"><input type="text" inputmode="decimal" id="in-' + i + '" placeholder="$ owed for the week" style="max-width:220px"><button class="gbtn" data-check="' + i + '" type="button">Check</button></div>' +
+      '<p class="verdict" id="av-' + i + '"></p><div class="evnote" id="an-' + i + '"></div>';
+    aEl.appendChild(d);
+  });
+  aEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-check]'); if (!b) return;
+    const i = Number(b.dataset.check); const st = aAns[i]; if (st.done) return;
+    const raw = $('in-' + i).value.replace(/[^0-9.]/g, ''); if (raw === '') { $('av-' + i).textContent = 'Enter a dollar figure first (0 if nothing is owed).'; return; }
+    st.v = Number(raw); st.done = true; st.ok = Math.abs(st.v - AUDIT[i].ans) <= 2; b.disabled = true; $('in-' + i).disabled = true;
+    $('av-' + i).innerHTML = '<span class="tag ' + (st.ok ? 'yes' : 'no') + '">' + (st.ok ? 'Within $2 of the reference' : 'Reference: ' + usd(AUDIT[i].ans)) + '</span> ' + (st.ok ? 'Reference ' + usd(AUDIT[i].ans) + '.' : 'You entered ' + usd(st.v) + '.') + ' <strong>Rule:</strong> ' + esc(AUDIT[i].law);
+    const n = $('an-' + i); n.innerHTML = '<strong>The arithmetic.</strong> ' + esc(AUDIT[i].why); n.style.display = 'block';
+    const done = aAns.filter(x => x.done).length; $('aProgress').textContent = done + ' of 8 checked.' + (done === 8 ? ' The total is below.' : '');
+    if (done === 8) { const tot = AUDIT.reduce((t, x) => t + x.ans, 0); $('a-total').textContent = usd(tot); $('a-year').textContent = '$' + Math.round(tot * 52).toLocaleString(); $('a-double').textContent = '$' + Math.round(tot * 52 * 2 * 2).toLocaleString(); $('a-score').textContent = aAns.filter(x => x.ok).length + ' of 8'; $('aDone').style.display = 'block'; }
+  });
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 10 · THE PAYCHECK', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('AUDIT (your figure / reference)'); AUDIT.forEach((a, i) => lines.push((i + 1) + '. ' + a.who + ': ' + (aAns[i].done ? usd(aAns[i].v) : 'not checked') + ' / ' + usd(a.ans)));
+    lines.push('');
+    lines.push('GUESSES: Texas share ' + (gT() ? gT() + '% (ref 10.8%)' : 'not answered') + '; UWS minimum wage violation ' + (gU() ? gU() + '% (ref 26.8%)' : 'not answered') + '; FY2025 back wages ' + (gR() ? '$' + gR() + 'M (ref $259M)' : 'not answered'));
+    lines.push('');
+    lines.push('SEARCH: ' + ['s-db', 's-ind', 's-n', 's-max', 's-kind'].map(id => $(id).value.trim() || '-').join('; '));
+    lines.push('');
+    lines.push('QUESTION 1 (your audit)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (who gets stolen from)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (two kinds of taking)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 10 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 10 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 10 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, aAns, AUDIT };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

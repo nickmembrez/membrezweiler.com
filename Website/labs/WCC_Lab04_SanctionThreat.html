@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Sanction Threat · White-Collar Crime · Crime Lab 4</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>The Sanction Threat <span class="sub">White-Collar Crime · Crime Lab 4 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>In 1996 Paternoster and Simpson gave 96 MBA students and executives four scenarios each, in which a manager at a company called Steelcorp commits a corporate crime, and asked how likely they would be to do the same.</strong> The details of each scenario were randomly varied: whether a supervisor gave the order, whether an employee had recently been punished for the same act, whether the act was common practice in the firm, how much money it would save. That design lets you see which features of the situation move a decision. This lab runs a version of that study on this class. You will read four scenarios with randomly assigned details, record your intentions, and then compare what moved you to what moved their sample, and to what the deterrence research says about corporate enforcement. Work alone on the first tab. The rest can be done in pairs. Each of you submits your own response sheet at the end of class.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-run" type="button">Run the study</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-found" type="button">What they found</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-works" type="button">What works, and what changed in 2025</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: RUN -->
+    <div class="section active" id="sec-run">
+      <div class="card">
+        <h2>Four scenarios, randomly assembled</h2>
+        <p class="lede">You are the manager in each scenario. Read it, then answer the four questions below it. The details in each scenario were assigned at random when this page loaded, so your four scenarios differ from the person next to you. Do not compare answers until everyone has finished. Answer as you actually would, not as you think you should; the study only works if you do.</p>
+        <div id="scen"></div>
+        <p class="progress" id="runProgress">0 of 4 scenarios answered.</p>
+        <div class="veiled" id="runDone">
+          <h3>Your own results</h3>
+          <div id="ownBars" class="bars"></div>
+          <p class="teach" id="ownNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: FOUND -->
+    <div class="section" id="sec-found">
+      <div class="card">
+        <h2>What moved Paternoster and Simpson's respondents</h2>
+        <p class="lede">Their 96 respondents produced 384 scenario judgments. The randomized details were entered as predictors, along with each respondent's own perceptions of the risks, the benefits, the shame they would feel, and whether the act violated their personal moral code.</p>
+        <div class="guessbox">
+          <p class="gq">Of everything they measured, which factor had the largest effect on a respondent's stated intention to commit the act?</p>
+          <div class="pickrow">
+            <button class="pick" data-f="formal" type="button">The perceived risk of criminal or civil punishment for the manager</button>
+            <button class="pick" data-f="ordered" type="button">Being ordered to do it by a supervisor</button>
+            <button class="pick" data-f="moral" type="button">The respondent's own belief that the act was morally wrong</button>
+            <button class="pick" data-f="career" type="button">The expected career benefit to the manager</button>
+          </div>
+          <p class="verdict" id="fVerdict"></p>
+        </div>
+        <div class="veiled" id="fReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Personal moral code says the act is wrong</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="100%"></div></div><span class="bval">t = -3.38</span></div>
+            <div class="brow"><span class="blabel">Expected career advancement</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="88%"></div></div><span class="bval">second</span></div>
+            <div class="brow"><span class="blabel">Shame and loss of self-respect</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="70%"></div></div><span class="bval">significant</span></div>
+            <div class="brow"><span class="blabel">Informal sanctions (respect of family, friends, colleagues)</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="65%"></div></div><span class="bval">significant</span></div>
+            <div class="brow"><span class="blabel">Formal sanctions directed at the manager</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="45%"></div></div><span class="bval">weaker (p &lt; .10 alone)</span></div>
+            <div class="brow"><span class="blabel">Formal sanctions directed at the firm, once individual costs are controlled</span><div class="btrack"><div class="bfill" style="width:0%" data-w="8%"></div></div><span class="bval">no effect</span></div>
+          </div>
+          <p class="teach"><strong>The respondent's own moral code.</strong> Net of every cost and benefit they measured, the belief that the act was wrong was the single best predictor of intentions, with a t-ratio of -3.38, ahead of career advancement. The authors' phrase for this is a "deontological source of conformity": people held back by a rule, not by a calculation. Their second finding follows from it. When moral inhibitions were high, the costs and benefits of the act were "virtually superfluous." Those acts sat in what they call nonmarket areas, where no price is being computed. When moral inhibitions were weak, the sanction threats and the benefits did their work.</p>
+          <p class="teach"><strong>What the randomized details did.</strong> Intentions were higher when the act would save the firm a large sum, give it a chance to challenge a disliked law, or help against foreign competition; when it was common practice within the firm; and when a supervisor ordered it. Intentions were lower when the respondent perceived a real risk of formal or informal sanctions for themselves. Two details that seemed obvious had no effect: the prospect of a promotion, and being noticed by top management. And sanctions aimed at the company deterred only by raising the perceived cost to the individual; once the individual's own risk was in the model, the firm-level sanction dropped out. Respondents were also more willing to fix prices or pay a bribe than to violate an emissions standard.</p>
+          <p class="teach"><strong>Piquero, Exum, and Simpson (2005) added a personality trait.</strong> Using the same scenario method, they found that a person's desire for control over events was itself associated with higher intentions to offend, over and above the rational choice variables. The manager who needs to be in charge of outcomes is more willing to break a rule to secure them. That is a trait, not a calculation, and it sits alongside moral belief as something the sanction threat does not reach.</p>
+          <p class="srcnote">Sources: Paternoster, R., and Simpson, S. (1996). Sanction threats and appeals to morality: Testing a rational choice model of corporate crime. Law and Society Review, 30(3), 549-583 (sample and design, pp. 557-558; Table 1A dimensions, pp. 559-560; scenario-dimension results, p. 568; individual-level results, pp. 571-572; the t = -3.376 figure and firm-level sanctions working through individual cost, p. 573; nonmarket areas, pp. 574-576; appendix scenarios, pp. 580-581). Piquero, N. L., Exum, M. L., and Simpson, S. S. (2005). Integrating the desire-for-control and rational choice in a corporate crime context. Justice Quarterly, 22(2), 252-280.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: WORKS -->
+    <div class="section" id="sec-works">
+      <div class="card">
+        <h2>What deters companies, according to 58 studies</h2>
+        <p class="lede">Schell-Busey, Simpson, Rorie, and Alper reviewed every study they could find that tested a formal legal intervention against corporate offending, and pooled the results. They sorted the interventions into four kinds: a law (a statute or regulation on its own), punitive sanctions (fines, prosecutions, and the like), regulatory policy (inspections, audits, and agency practice), and multiple treatments used together.</p>
+        <div class="guessbox">
+          <p class="gq">Which kind of intervention produced a consistent, statistically significant deterrent effect at both the individual and the company level?</p>
+          <div class="pickrow">
+            <button class="pick" data-w="law" type="button">A law on its own</button>
+            <button class="pick" data-w="pun" type="button">Punitive sanctions</button>
+            <button class="pick" data-w="reg" type="button">Regulatory policy</button>
+            <button class="pick" data-w="multi" type="button">Multiple treatments together</button>
+          </div>
+          <p class="verdict" id="wVerdict"></p>
+        </div>
+        <div class="veiled" id="wReveal">
+          <p class="teach"><strong>Multiple treatments.</strong> With one exception, the single strategies had minimal to no deterrent impact at either level. The exception was regulatory policy, which had a significant effect at the company level but not consistently across study types. Interventions that combined strategies produced a consistent, significant deterrent effect on both individual and corporate offending. The moderator analysis added a caution: older and less rigorous studies were more likely to report deterrence than newer experimental ones. The authors' conclusion is that a mix of agency interventions is likely to have the largest impact, which is the logic of the enforcement pyramid you will meet in Week 15.</p>
+          <p class="teach"><strong>Put the two readings together.</strong> Paternoster and Simpson show that a sanction aimed at the company deters only insofar as a manager inside it perceives a cost to themselves. Schell-Busey and colleagues show that a single instrument, whether a law or a penalty, rarely moves the numbers on its own. Both point the same way: deterrence of corporate crime runs through the perceived certainty of consequences for the individual decision-maker, and that certainty is built by several instruments working at once, not by a large fine.</p>
+          <p class="srcnote">Source: Schell-Busey, N., Simpson, S. S., Rorie, M., and Alper, M. (2016). What works? A systematic review of corporate crime deterrence. Criminology and Public Policy, 15(2), 387-416 (abstract and summary of findings; you have the 2017 ComplianceNet working paper version).</p>
+        </div>
+
+        <h2 style="margin-top:22px">The 2025 enforcement memorandum</h2>
+        <p class="lede">On May 12, 2025, the head of the Justice Department's Criminal Division issued a memorandum titled Focus, Fairness, and Efficiency in the Fight Against White-Collar Crime, your other Meeting B reading. It is the current statement of how federal prosecutors are told to approach corporate crime. Read it as a manager in one of the scenarios would: what does it do to the certainty and severity of the sanction you face?</p>
+        <div class="defs">
+          <div class="def"><div class="who">Priorities, in the memo's order</div><div class="hinge">Health care and procurement fraud; trade and customs fraud including tariff evasion; fraud through variable interest entities; fraud victimizing U.S. investors and markets; national security threats to the financial system; material support to terrorist organizations; complex money laundering; Controlled Substances Act and Food, Drug, and Cosmetic Act violations; bribery affecting U.S. national interests; digital asset crimes victimizing investors.</div></div>
+          <div class="def"><div class="who">Individuals first</div><div class="hinge">"It is individuals" who commit these crimes, and the Division "must focus on" prosecuting them. The memo states that "not all corporate misconduct warrants federal criminal prosecution."</div></div>
+          <div class="def"><div class="who">Self-disclosure, monitors, and duration</div><div class="hinge">A revised Corporate Enforcement and Voluntary Self-Disclosure Policy with a clearer path to declination and "additional benefits" for companies that self-report, cooperate, and remediate. Monitors imposed only "when they are necessary" and "narrowly tailored." Corporate resolution terms of no more than three years "except in exceedingly rare cases." Prosecutors to "move expeditiously."</div></div>
+        </div>
+        <div class="guessbox">
+          <p class="gq">Using Paternoster and Simpson's findings, which part of the memo would you expect to matter most to a manager deciding whether to commit one of the four scenario acts?</p>
+          <div class="pickrow">
+            <button class="pick" data-m="ind" type="button">The instruction to prioritize individuals over companies</button>
+            <button class="pick" data-m="mon" type="button">Narrower monitorships and shorter resolution terms</button>
+            <button class="pick" data-m="decl" type="button">A clearer path to declination for self-disclosing companies</button>
+            <button class="pick" data-m="list" type="button">The priority list, and what is not on it</button>
+          </div>
+          <p class="verdict" id="mVerdict"></p>
+        </div>
+        <div class="veiled" id="mReveal">
+          <p class="teach"><strong>Two answers are defensible, and the tension between them is the lesson.</strong> The individual-first instruction is the one Paternoster and Simpson's model predicts will matter, because sanctions deter through the perceived cost to the person deciding, and a policy that says the person will be charged raises that cost directly. But the priority list works the other way. A manager fixing prices in an industry that is not on the list, or violating an emissions standard, has just been told that federal attention is elsewhere, and TRAC's count shows what that looks like in practice: white-collar prosecutions fell to a projected 3,862 in fiscal 2025, the lowest on record, with a prosecution rate of 24 percent of referrals. Certainty is not set by a memo's stated intent. It is set by what the manager believes will happen, and the manager reads the whole document.</p>
+          <p class="teach"><strong>The declination path is the part that speaks to the firm, not the person.</strong> A company that discovers misconduct and reports it can now expect to avoid prosecution if it cooperates and remediates. Paternoster and Simpson's data say that matters only if it changes what the manager expects for themselves, and a company that self-reports usually does so by handing over the individuals involved. So the declination policy may raise individual certainty inside firms that adopt it, and lower it everywhere else. Whether that nets out to more or less deterrence is an empirical question that Schell-Busey's review says no single study will settle.</p>
+          <p class="srcnote">Sources: U.S. Department of Justice, Criminal Division, Memorandum from Matthew R. Galeotti, Head of the Criminal Division, Focus, Fairness, and Efficiency in the Fight Against White-Collar Crime, May 12, 2025 (available on justice.gov; the quoted phrases are from the sections on priorities, individual accountability, the Corporate Enforcement and Voluntary Self-Disclosure Policy, monitors, and resolution length). TRAC, Federal Prosecution of White-Collar Crimes Receiving Less and Less Attention, May 23, 2025.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 4 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your scenario data into one block of text, and paste that text into the Lab 4 submission in D2L before you leave class. Your data stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Your own four scenarios. Which detail, if any, moved your stated intention, and did your moral evaluation of each act track your intention more closely than the details did? Use your numbers from the Run the study tab.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Paternoster and Simpson found that sanctions aimed at the firm deterred only through the cost perceived by the individual manager, and that a personal moral code was the strongest inhibitor of all. Say what each finding implies for an organization that wants to prevent corporate crime, and which is easier for an organization to act on.</div>
+          <div class="qh">Three to five sentences. Cite the article by page.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Put the 2025 memorandum next to Schell-Busey and colleagues. Pick one of the four scenario acts, say whether it falls inside or outside the memo's priorities, and predict what the memo does to the perceived certainty of sanction for a manager considering that act. Say what evidence would test your prediction.</div>
+          <div class="qh">Three to five sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. What did the people in your case know about the risk of sanction before they acted? Look for prior enforcement against the firm or the industry, compliance programs, hotlines, or audits in your documents, and say what the record shows and what it does not.</div>
+          <div class="qh">Three to five sentences. This is material for the deterrence explanation in Part 3.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the scenarios</h2>
+      <p class="srcnote">The four scenarios are adapted from the examples in the appendix to Paternoster and Simpson (1996), pp. 580-581, with the same four offense types (price fixing, manipulation of sales data, violation of environmental standards, bribery) and the same fictional firm. Four of their ten randomized dimensions are used here, each with two levels: whether the manager was ordered by a supervisor or decided alone; whether an employee was recently criminally sanctioned or recently acquitted for a similar act; whether the act is common practice within the firm or the firm has a hotline and random audits; and whether the act will save the firm a large or a small amount of money. Levels are assigned by the page at random when it loads. The response items (chance you would do it, chance a typical manager would, moral evaluation, and shame) follow the article's measures in simplified form. This is a classroom exercise built for one person at a time, not a replication.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All figures are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+
+  // ---------- scenarios ----------
+  const DIMS = {
+    ordered: ['is ordered by a supervisor to', 'decides on J.\'s own initiative to'],
+    sanction: ['an employee was recently criminally prosecuted and sentenced for a similar act', 'an employee was recently acquitted of any wrongdoing for a similar act'],
+    climate: ['the act is a common practice within the firm', 'the firm has a hotline for anonymous reports and runs audits at random intervals'],
+    benefit: ['will save the company a large amount of money', 'will save the company a small amount of money']
+  };
+  const DIMLABEL = { ordered: ['Ordered by a supervisor', 'Own decision'], sanction: ['Employee recently prosecuted', 'Employee recently acquitted'], climate: ['Common practice in the firm', 'Hotline and random audits'], benefit: ['Saves a large amount', 'Saves a small amount'] };
+  const SCEN = [
+    { k: 'PF', name: 'Price fixing', who: 'J. Jones, a low-level manager who has been with Steelcorp for years,', act: 'meet with competitors to discuss product pricing for the next year', ctx: 'Steelcorp is a medium-sized company, currently experiencing growing sales and revenues in an industry that is losing ground to foreign competitors.', law: 'Price fixing among competitors is a felony under Section 1 of the Sherman Act (15 U.S.C. 1), punishable by up to 10 years for individuals and fines of up to $100 million for corporations.' },
+    { k: 'SD', name: 'Manipulation of sales data', who: 'J. Smith, a low-level manager who has been with Steelcorp for years,', act: 'order employees to inflate sales statistics in the firm\'s financial accounts, to be made up in anticipated sales next quarter', ctx: 'Steelcorp is a small company, currently experiencing growing sales and revenues in an industry that is economically healthy.', law: 'For a public company, false entries in financial accounts can be charged as securities fraud (18 U.S.C. 1348) or falsification of books and records (15 U.S.C. 78m(b)); for any company, as wire fraud if used to obtain money.' },
+    { k: 'EPA', name: 'Violation of environmental standards', who: 'J. Johnson, an upper-level manager who has been with Steelcorp for years,', act: 'order employees to release into the air emissions that fail to meet EPA standards', ctx: 'Steelcorp is a medium-sized company, currently experiencing growing sales and revenues in an industry that is economically deteriorating.', law: 'A knowing violation of a Clean Air Act emission standard is a felony (42 U.S.C. 7413(c)(1)), punishable by up to 5 years; the facility also faces civil penalties per day of violation.' },
+    { k: 'BR', name: 'Bribery', who: 'J. Bradley, a middle-level manager recently hired by Steelcorp,', act: 'comply with a supplier\'s request to make a cash payment for the supplier\'s personal use', ctx: 'Steelcorp is a large company, currently experiencing growing sales and revenue in an industry that is economically healthy.', law: 'Commercial bribery can be charged under the Travel Act (18 U.S.C. 1952) where it violates state commercial bribery law, or as honest services wire fraud (18 U.S.C. 1343, 1346).' },
+  ];
+  const cond = SCEN.map(() => ({ ordered: Math.random() < 0.5 ? 0 : 1, sanction: Math.random() < 0.5 ? 0 : 1, climate: Math.random() < 0.5 ? 0 : 1, benefit: Math.random() < 0.5 ? 0 : 1 }));
+  const ans = SCEN.map(() => ({ self: null, other: null, moral: null, shame: null, locked: false }));
+  const scenEl = $('scen');
+  SCEN.forEach((s, i) => {
+    const c = cond[i];
+    const text = s.who + ' ' + DIMS.ordered[c.ordered] + ' ' + s.act + '. It has been suggested to J. that the act ' + DIMS.benefit[c.benefit] + '. ' + s.ctx + ' J. knows that ' + DIMS.climate[c.climate] + ', and that ' + DIMS.sanction[c.sanction] + '. J. decides to ' + s.act + '.';
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">SCENARIO ' + (i + 1) + '</span><span class="evtitle">' + s.name + '</span></div>' +
+      '<div class="evtext">' + text + '</div><div class="evsrc"><strong>The law:</strong> ' + s.law + '</div>' +
+      '<div class="guessbox" style="margin-top:10px">' +
+      '<p class="gq">If you were J., what is the chance you would do what J. did?</p><div class="gr"><input type="range" data-i="' + i + '" data-q="self" min="0" max="100" step="5" value="50"><span class="gval" id="v-self-' + i + '">50</span></div>' +
+      '<p class="gq" style="margin-top:12px">What is the chance a typical manager in J.\'s position would do it?</p><div class="gr"><input type="range" data-i="' + i + '" data-q="other" min="0" max="100" step="5" value="50"><span class="gval" id="v-other-' + i + '">50</span></div>' +
+      '<p class="gq" style="margin-top:12px">How morally wrong is the act, on a scale from 0 (not wrong at all) to 10 (as wrong as an act can be)?</p><div class="gr"><input type="range" data-i="' + i + '" data-q="moral" min="0" max="10" step="1" value="5"><span class="gval" id="v-moral-' + i + '">5</span></div>' +
+      '<p class="gq" style="margin-top:12px">If you did it, would you feel shame or lose respect for yourself?</p><div class="pickrow"><button class="pick" data-i="' + i + '" data-sh="1" type="button">Yes</button><button class="pick" data-i="' + i + '" data-sh="0" type="button">No</button></div>' +
+      '<div class="pickrow" style="margin-top:6px"><button class="gbtn" data-lock="' + i + '" type="button">Lock in scenario ' + (i + 1) + '</button></div><p class="verdict" id="lk-' + i + '"></p></div>';
+    scenEl.appendChild(d);
+  });
+  scenEl.addEventListener('input', e => {
+    const s = e.target; if (!s.matches('input[type=range]')) return;
+    $('v-' + s.dataset.q + '-' + s.dataset.i).textContent = s.value;
+  });
+  scenEl.addEventListener('click', e => {
+    const sh = e.target.closest('[data-sh]');
+    if (sh) { const i = Number(sh.dataset.i); if (ans[i].locked) return; ans[i].shame = Number(sh.dataset.sh); scenEl.querySelectorAll('[data-sh][data-i="' + i + '"]').forEach(b => b.classList.toggle('chosen', b === sh)); return; }
+    const lk = e.target.closest('[data-lock]');
+    if (lk) {
+      const i = Number(lk.dataset.lock); if (ans[i].locked) return;
+      if (ans[i].shame === null) { $('lk-' + i).textContent = 'Answer the shame question before locking in.'; return; }
+      const box = lk.closest('.ev');
+      ans[i].self = Number(box.querySelector('input[data-q="self"]').value);
+      ans[i].other = Number(box.querySelector('input[data-q="other"]').value);
+      ans[i].moral = Number(box.querySelector('input[data-q="moral"]').value);
+      ans[i].locked = true; lk.disabled = true;
+      box.querySelectorAll('input[type=range], [data-sh]').forEach(x => x.disabled = true);
+      $('lk-' + i).textContent = 'Locked.';
+      const done = ans.filter(a => a.locked).length;
+      $('runProgress').textContent = done + ' of 4 scenarios answered.' + (done === 4 ? ' Your results are below.' : '');
+      if (done === 4) showOwn();
+    }
+  });
+  function showOwn(){
+    let html = '';
+    SCEN.forEach((s, i) => { html += '<div class="brow"><span class="blabel">' + s.name + ' (moral ' + ans[i].moral + '/10, shame ' + (ans[i].shame ? 'yes' : 'no') + ')</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="' + ans[i].self + '%"></div></div><span class="bval">' + ans[i].self + ' you / ' + ans[i].other + ' typical</span></div>'; });
+    $('ownBars').innerHTML = html;
+    const hi = ans.reduce((m, a, i) => a.self > ans[m].self ? i : m, 0), lo = ans.reduce((m, a, i) => a.self < ans[m].self ? i : m, 0);
+    const gap = ans.reduce((t, a) => t + (a.other - a.self), 0) / 4;
+    $('ownNote').innerHTML = '<strong>Two things to look at.</strong> Your highest stated chance was for ' + SCEN[hi].name.toLowerCase() + ' (' + ans[hi].self + ') and your lowest for ' + SCEN[lo].name.toLowerCase() + ' (' + ans[lo].self + '). Check whether that ordering follows your moral ratings (' + ans[hi].moral + ' and ' + ans[lo].moral + ') or the randomized details, which are listed in your assembled submission. Second, on average you rated a typical manager ' + Math.abs(gap).toFixed(0) + ' points ' + (gap >= 0 ? 'more' : 'less') + ' likely to act than yourself. Paternoster and Simpson asked only about the respondent; the gap between self and other is a well-known feature of these surveys and is worth raising in the debrief.';
+    $('runDone').style.display = 'block'; animateBars($('runDone'));
+  }
+
+  // ---------- found ----------
+  let fPicked = null;
+  document.querySelectorAll('#sec-found .pick[data-f]').forEach(btn => btn.addEventListener('click', () => {
+    if (fPicked) return; fPicked = btn.dataset.f; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-found .pick[data-f]').forEach(b => { b.disabled = true; if (b.dataset.f === 'moral') b.classList.add('answer'); });
+    $('fVerdict').textContent = fPicked === 'moral' ? 'Right. Personal moral belief had the largest effect.' : 'The largest effect belonged to the respondent\'s own moral belief. See below.';
+    $('fReveal').style.display = 'block'; animateBars($('fReveal'));
+  }));
+
+  // ---------- works ----------
+  let wPicked = null;
+  document.querySelectorAll('#sec-works .pick[data-w]').forEach(btn => btn.addEventListener('click', () => {
+    if (wPicked) return; wPicked = btn.dataset.w; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-works .pick[data-w]').forEach(b => { b.disabled = true; if (b.dataset.w === 'multi') b.classList.add('answer'); });
+    $('wVerdict').textContent = wPicked === 'multi' ? 'Right.' : 'The answer is multiple treatments together. See below.';
+    $('wReveal').style.display = 'block';
+  }));
+  let mPicked = null;
+  document.querySelectorAll('#sec-works .pick[data-m]').forEach(btn => btn.addEventListener('click', () => {
+    if (mPicked) return; mPicked = btn.dataset.m; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-works .pick[data-m]').forEach(b => { b.disabled = true; if (b.dataset.m === 'ind' || b.dataset.m === 'list') b.classList.add('answer'); });
+    $('mVerdict').textContent = (mPicked === 'ind' || mPicked === 'list') ? 'Defensible. Read why both marked answers are.' : 'Two answers are marked. See below for why the one you chose speaks to the firm rather than the manager.';
+    $('mReveal').style.display = 'block';
+  }));
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 4 · THE SANCTION THREAT', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), '', 'YOUR FOUR SCENARIOS (the randomized details and your answers)'];
+    SCEN.forEach((s, i) => {
+      const c = cond[i], a = ans[i];
+      lines.push((i + 1) + '. ' + s.name + ': ' + DIMLABEL.ordered[c.ordered] + '; ' + DIMLABEL.sanction[c.sanction] + '; ' + DIMLABEL.climate[c.climate] + '; ' + DIMLABEL.benefit[c.benefit] + '. ' + (a.locked ? 'You ' + a.self + ', typical manager ' + a.other + ', moral ' + a.moral + '/10, shame ' + (a.shame ? 'yes' : 'no') + '.' : 'Not answered.'));
+    });
+    lines.push('');
+    lines.push('QUESTION 1 (your own scenarios)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (Paternoster and Simpson)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (the memo and what works)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 4 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 4 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 4 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, cond, ans };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

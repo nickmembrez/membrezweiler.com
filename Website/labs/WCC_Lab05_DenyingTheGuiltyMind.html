@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Denying the Guilty Mind · White-Collar Crime · Crime Lab 5</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .codes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .codes .ynb { font-size: 12.5px; padding: 5px 10px; }
+  .ynb.answer { border-color: var(--good); color: var(--good); }
+  .ynb.sel.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .ynb.alt { border-color: var(--amber); color: var(--amber); }
+  .ynb.sel.alt { background: var(--amber); border-color: var(--amber); color: #fff; }
+  .ynb:disabled:not(.sel):not(.answer):not(.alt) { opacity: 0.55; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer or tablet works best. Nothing on this page is recorded or transmitted; your answers stay in your browser until you copy them into D2L.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Denying the Guilty Mind <span class="sub">White-Collar Crime · Crime Lab 5 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>In 1985 Michael Benson interviewed 30 people convicted of federal white-collar crimes and found that almost none of them denied doing what they were convicted of. What they denied was the guilty mind.</strong> They had made a mistake, followed industry practice, protected employees, borrowed rather than stolen, or been set up by associates and a prosecutor with an agenda. Sykes and Matza had described the same moves among delinquent boys in 1957 and called them techniques of neutralization. This lab gives you their five techniques plus the additions later researchers made for white-collar offenders, and asks you to code real statements: Benson's interviewees, and nine people sentenced or questioned in public between 2006 and 2025. Then it asks the harder question. Did the speaker think this before the act, or build it afterward for an audience? The answer matters for your case project, because the documents you are reading are full of statements like these.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-scheme" type="button">The coding scheme</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-code" type="button">Code nine statements</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-when" type="button">Before or after?</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-who" type="button">Who says what</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">Your response sheet</button>
+    </div>
+
+    <!-- TAB 1: SCHEME -->
+    <div class="section active" id="sec-scheme">
+      <div class="card">
+        <h2>Ten codes</h2>
+        <p class="lede">The first five are Sykes and Matza's techniques of neutralization (1957). Sykes and Matza argued that much delinquency "is based on what is essentially an unrecognized extension of defenses to crimes, in the form of justifications for deviance that are seen as valid by the delinquent but not by the legal system or society at large" (p. 666). Codes 6 and 7 were added by later researchers for offenders in business settings, and Klenowski, Copes, and Mullins (2011) coded for them alongside the original five. Codes 8 through 10 come from Benson (1985), who sorted his interviewees' statements as justifications, excuses, apologies, and outright denials, and found that the most consistent pattern was "denial of criminal intent, as opposed to the outright denial of any criminal behavior whatsoever" (p. 589).</p>
+        <div class="defs" id="codeDefs"></div>
+        <p class="teach"><strong>Two distinctions to keep straight.</strong> A justification admits the act but denies that it was wrong; an excuse admits the act was wrong but denies full responsibility for it (Scott and Lyman 1968, as used in Benson 1985, pp. 586-587). Codes 2 through 7 are mostly justifications, code 1 is an excuse, and code 8 is the white-collar hybrid: the act happened, it may even be a technical violation, but the mind behind it was not criminal. In an apology, by contrast, the person "splits himself into two parts, the part that is guilty of an offense and the part that disassociates itself from the delict and affirms a belief in the offended rule" (Goffman 1972, quoted in Benson 1985, p. 587). Watch for statements that do this split and then quietly attach a code 8 to the guilty half.</p>
+        <p class="srcnote">Sources: Sykes, G. M., and Matza, D. (1957). Techniques of neutralization: A theory of delinquency. American Sociological Review, 22(6), 664-670. Benson, M. L. (1985). Denying the guilty mind: Accounting for involvement in a white-collar crime. Criminology, 23(4), 583-607. Klenowski, P. M., Copes, H., and Mullins, C. W. (2011). Gender, identity, and accounts: How white collar offenders do gender when making sense of their crimes. Justice Quarterly, 28(1), 46-69. The defense of necessity follows Minor (1981) and the claim of normality follows Coleman (1987), both as used in the Klenowski study.</p>
+      </div>
+
+      <div class="card">
+        <h2>Practice on Benson's interviewees</h2>
+        <p class="lede">Six statements from Benson's interviews, all from people already convicted and speaking to a researcher. For each, pick the one code that fits best. A second code is often defensible; the reference note says when. The codes are listed by number above and repeated on each button.</p>
+        <div id="practiceList"></div>
+        <p class="progress" id="pProgress">0 of 6 coded.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: CODE -->
+    <div class="section" id="sec-code">
+      <div class="card">
+        <h2>Nine statements made in public</h2>
+        <p class="lede">Each statement below was made at sentencing, in a plea allocution, to a Senate committee, or on the courthouse steps, and each is quoted from the transcript or from contemporaneous reporting cited under it. Read the statement and the charges, then pick a primary code and, if you want, a second one. The reference coding appears after you lock in, with the setting and audience noted, because the setting is the point of the next tab. Keep your own reasoning where you disagree with the reference; the response sheet asks for it.</p>
+        <div id="stmtList"></div>
+        <p class="progress" id="sProgress">0 of 9 coded.</p>
+        <div class="veiled" id="sDone">
+          <h3>Your coding, summarized</h3>
+          <div id="sBars" class="bars"></div>
+          <p class="teach" id="sNote"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: WHEN -->
+    <div class="section" id="sec-when">
+      <div class="card">
+        <h2>Neutralization or account?</h2>
+        <p class="lede">Sykes and Matza's claim was about timing: the techniques come before the act and make it possible, by disarming the norms that would otherwise hold the person back. Cressey's embezzlement theory, which you used in Lab 3, makes the same claim about verbalizations. Benson's data cannot settle it. His interviews were accounts, statements made after conviction to explain "unanticipated or untoward behavior," and an account "is not a foolproof guide to an actor's intentions" (pp. 586-587). "It is important to distinguish between neutralizations that cause or allow an offense to be committed and accounts that are developed afterwards to excuse or justify it. By definition, an account is a linguistic act presented to or, more correctly, performed before an audience" (pp. 587-588).</p>
+        <div class="defs">
+          <div class="def"><div class="who">Reading 1: impression management</div><div class="hinge">The statement is a performance for the audience in front of the speaker: a judge deciding a sentence, a senator with a camera, a researcher, a boss. It tells you what the speaker thinks the audience will accept. It tells you little about what the speaker thought at the time of the act. Benson thought this reading "perhaps more plausible" for his sample, "given the obvious interest that offenders have in maintaining a noncriminal identity" (p. 587).</div></div>
+          <div class="def"><div class="who">Reading 2: the offender's own map</div><div class="hinge">The statement is an indicator of the speaker's "cognitive structure," how the speaker actually interprets what happened. Benson adds a bridge between the two readings: "offenders probably engage in a process of self-persuasion in defining their situations. Accounts intended to shore up the offender's public identity may evolve into the offender's own view of himself and his offense" (p. 587).</div></div>
+          <div class="def"><div class="who">Reading 3: built in advance</div><div class="hinge">Some accounts are constructed before the act, on purpose. Citing Katz, Benson notes that people in organizational crimes often know discovery is possible and participate anyway "provided that they can construct anticipatory defenses that will allow them to eventually deny blameworthiness," so that "the connection between act and motive remains ambiguous and deniable" (p. 604). Concerted ignorance of the law, or of what subordinates are doing, is a neutralization and an account at once.</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Five statements, two questions each</h2>
+        <p class="lede">For each statement, answer two things. First, does the statement make a claim about what the speaker believed or intended <em>before or during</em> the act, as opposed to how the speaker feels about it now? Second, what kind of record, if any, could test that claim independently of the speaker? Lock in each pair to see the reference answer.</p>
+        <div id="whenList"></div>
+        <p class="progress" id="wProgress">0 of 5 answered.</p>
+        <div class="veiled" id="wDone">
+          <p class="teach"><strong>The rule this gives you for the case project.</strong> A statement made at sentencing, in testimony, or to a reporter is evidence that an account exists and evidence of what the speaker expected the audience to accept. It is evidence of a neutralization that preceded the act only when something written at the time corroborates it: an email, a memo, a ledger entry, a hotline call log, a board minute. When you write Part 2, the verb rule applies to these statements exactly as it applies to charges. The defendant <em>says</em> she believed it would end shortly. The sentencing memorandum <em>argues</em> that he acted under compulsion. Only a contemporaneous document lets you write that the person <em>believed</em> anything at the time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: WHO -->
+    <div class="section" id="sec-who">
+      <div class="card">
+        <h2>The offense picks the account</h2>
+        <p class="lede">Benson's interviewees fell into four offense groups, and the accounts sorted by group more than by person. Before you look, predict which account dominated in each group. Then read his explanation, which is about the structure of the offense rather than the character of the offender.</p>
+        <div id="offList"></div>
+        <div class="veiled" id="offReveal">
+          <p class="teach"><strong>Antitrust (4 offenders, one bid-rigging case).</strong> Everyday business practice with a long history ("It was a way of doing business before we even got into the business"); a "technical violation" done for harmless reasons; prosecutors motivated by ambition and politics; and an explicit contrast with street crime, whose victims are identifiable and whose acts have a beginning and an end (pp. 591-593). Benson notes that antitrust offenders can point to the "checkered history of antitrust litigation," which waxes and wanes with administrations, as evidence that the conduct was never customarily wrong (p. 602).</p>
+          <p class="teach"><strong>Tax (6 offenders).</strong> "Everybody cheats on their income tax, 95% of the people," combined with mistakes, ignorance, and poor recordkeeping ("My records were strictly one big mess"), and in one case altruism toward employees. None denied the legitimacy of the tax laws; all denied intending to victimize the government (pp. 594-595).</p>
+          <p class="teach"><strong>Violations of financial trust (4 offenders: three bank officers, one union official).</strong> The only group that said "What I did was wrong, was criminal, and I knew it was." Because embezzlement "requires deliberate action" and "is almost inevitably committed for personal reasons," it cannot be excused as technical or as industry practice. The remaining route is extraordinary circumstances that make the act an aberration in an otherwise clean life (pp. 595-596). Benson connects this to the finding that judges treat embezzlers' accounts as more sufficient than other offenders' (p. 596).</p>
+          <p class="teach"><strong>Fraud and false statements (10 offenders).</strong> Seven of the ten denied committing any crime, while admitting that a fraud had occurred; they had been set up by associates and wrongly convicted by the U.S. Attorney. Benson calls this the scapegoat strategy, and explains it by the structure of the offense: "it is difficult to imagine how one could accidentally mislead someone else for his or her own good," and a large scheme cannot be presented as a desperate solution to a personal problem, so the only way to keep a noncriminal identity is to deny involvement altogether (pp. 596-597, 602).</p>
+          <p class="teach"><strong>What this means for your coding.</strong> If the account is selected by the offense, then the statements you coded on the previous tabs tell you about the position the speaker was in, not only about the speaker. A fraud defendant who admits the fraud has almost no account left except necessity; one who is still contesting the charge has only complete denial and condemnation of the condemners. Expect the accounts in your case project to follow the charge sheet.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Gender and the available account</h2>
+        <p class="lede">Klenowski, Copes, and Mullins (2011) interviewed 40 people in federal prison for white-collar crimes involving a position of trust, 20 men and 20 women, and coded their accounts with the scheme on the first tab. The most common technique was the same for both: an appeal to higher loyalties, used by 17 of the men and 14 of the women, almost always the family. What differed was how the loyalty was framed and which other techniques were used alongside it. Predict which technique showed the largest gap between men and women.</p>
+        <div class="guessbox">
+          <p class="gq">Which technique showed the largest difference in use between the 20 men and the 20 women?</p>
+          <div class="pickrow">
+            <button class="pick" data-g="hl" type="button">Appeal to higher loyalties</button>
+            <button class="pick" data-g="di" type="button">Denial of injury</button>
+            <button class="pick" data-g="dn" type="button">Defense of necessity</button>
+            <button class="pick" data-g="cc" type="button">Condemnation of the condemners</button>
+          </div>
+          <p class="verdict" id="gVerdict"></p>
+        </div>
+        <div class="veiled" id="gReveal">
+          <div class="bars">
+            <div class="brow"><span class="blabel">Appeal to higher loyalties</span><div class="btrack"><div class="bfill good" style="width:0%" data-w="85%"></div></div><span class="bval">men 17 · women 14</span></div>
+            <div class="brow"><span class="blabel">Denial of injury</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="50%"></div></div><span class="bval">men 10 · women fewer</span></div>
+            <div class="brow"><span class="blabel">Claim of normality</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="40%"></div></div><span class="bval">men 8 · women fewer</span></div>
+            <div class="brow"><span class="blabel">Condemnation of the condemners</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="35%"></div></div><span class="bval">men 7 · women fewer</span></div>
+            <div class="brow"><span class="blabel">Defense of necessity</span><div class="btrack"><div class="bfill" style="width:0%" data-w="35%"></div></div><span class="bval">women 7 · men 1</span></div>
+            <div class="brow"><span class="blabel">Denial of responsibility</span><div class="btrack"><div class="bfill" style="width:0%" data-w="20%"></div></div><span class="bval">women 4 · men fewer</span></div>
+          </div>
+          <p class="teach"><strong>Defense of necessity: 7 women, 1 man.</strong> Women more often said they had no choice, and framed the loyalty as caretaking, frequently for a household without a reliable male provider. Men framed the same loyalty as providing, and more often added that no one was really hurt (they were "only borrowing," 10 men), that competitors did the same thing (8 men), and that the government was hypocritical or the law unreasonable (7 men). Women who denied responsibility pointed to inadequate direction from a superior rather than to their own limits. The authors' reading is that both groups drew on gendered themes to align the crime with what is expected of a man or a woman, and that the accounts tell you about those expectations as much as about the crimes.</p>
+          <p class="teach"><strong>Put the two studies together.</strong> Benson says the offense selects the account. Klenowski and colleagues say the speaker's position in a gender order selects it too. Neither study can tell you whether the account preceded the act. All three points bear on your case: the statements in your documents were shaped by the charge, by who the speaker was expected to be, and by the audience in the room.</p>
+          <p class="srcnote">Source: Klenowski, Copes, and Mullins (2011), Justice Quarterly 28(1), 46-69, sample and coding as reported in the article. Counts are the number of interviewees who used each technique at least once.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: RESPONSE -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 5 response sheet</h2>
+        <p class="lede">Answer the four questions below in complete sentences. Then use the button at the bottom to assemble your answers and your coding record into one block of text, and paste that text into the Lab 5 submission in D2L before you leave class. Your answers stay on this page and are not sent anywhere until you paste them.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" placeholder="First and last name"></div>
+        <div class="rq">
+          <div class="qt">1. Pick the statement from the Code nine statements tab that was hardest to code, name the two codes that competed, and say which you chose and why. If you disagreed with the reference coding, defend your code.</div>
+          <div class="qh">Three to five sentences. Quote the words that made it hard.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Take one of the five statements from the Before or after tab. Is it evidence of a neutralization that preceded the act, an account built afterward, or something Benson would call an anticipatory defense? Say what record would let you decide, and whether that record is likely to exist.</div>
+          <div class="qh">Three to five sentences. Cite Benson by page.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Benson argues that the structure of the offense, not the character of the offender, determines which accounts are available. Apply that to the charges in your case project: which of the ten codes should you expect to find in your defendants' statements, and which should be nearly impossible for them to use?</div>
+          <div class="qh">Three to five sentences. Name the charges.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your case project. Find one statement by a person or company in your case that explains or justifies the conduct (a sentencing letter, an allocution, a press release, an earnings-call answer, a deposition). Code it, name the audience it was performed for, and say what the verb rule requires you to write about it in Part 2.</div>
+          <div class="qh">Three to five sentences. Give the document and date. This is material for Part 3.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="pickrow" style="margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <p class="verdict" id="buildNote"></p>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>About the statements</h2>
+      <p class="srcnote">Benson's interview excerpts are quoted from Benson (1985) at the pages given. The nine public statements are quoted from the sources cited beneath each one: the plea allocution transcript of United States v. Madoff (S.D.N.Y., March 12, 2009); contemporaneous reporting on the sentencing hearings of Jeffrey Skilling (S.D. Tex., October 23, 2006), Elizabeth Holmes (N.D. Cal., November 18, 2022), Sam Bankman-Fried (S.D.N.Y., March 28, 2024), Trevor Milton (S.D.N.Y., December 18, 2023), and Robert Menendez (S.D.N.Y., January 29, 2025); the Senate Banking Committee hearing of September 20, 2016; and the U.S. Attorney's Office press releases and local reporting on the two Lab 3 cases (W.D. Wash. and D. Neb., September 2025). Charges and sentences are as stated in the court records and Justice Department releases. Where a defendant was later pardoned or a sentence reduced, that is noted.</p>
+    </div>
+
+    <footer role="presentation">
+      Built for the White-Collar Crime course, Midwestern State University. All quotations are from the published sources cited on each tab, retrieved September 2026. Your answers stay on this page and are never recorded or transmitted until you copy and paste them yourself.
+    </footer>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement; const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; } else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function animateBars(c){ c.querySelectorAll('.bfill').forEach(b => { requestAnimationFrame(() => { b.style.width = b.dataset.w; }); }); }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  // ---------- codes ----------
+  const CODES = [
+    { k: 'DR', n: 1, name: 'Denial of responsibility', src: 'Sykes and Matza', def: 'The act was not really the speaker\'s doing: an order, a compulsion, ignorance, an accident, forces outside the speaker\'s control. An excuse: the act was wrong, but the speaker is not fully answerable for it.', ex: '"My records were strictly one big mess. That\'s all it was. If only I had an accountant, this wouldn\'t even of happened." (tax violator, Benson 1985, p. 594)' },
+    { k: 'DI', n: 2, name: 'Denial of injury', src: 'Sykes and Matza', def: 'No one was really hurt. The money was borrowed, the violation was technical, the loss was recovered, the number was small. Minimizing the amount is a version of this.', ex: '"What I did was a technical violation. I made a mistake. There\'s no question about that, but the bank lost no money." (fraud offender, Benson 1985, p. 598)' },
+    { k: 'DV', n: 3, name: 'Denial of the victim', src: 'Sykes and Matza', def: 'The injured party deserved it, or there is no identifiable injured party at all. In white-collar cases this usually takes the second form: the victim is the government, the market, or a corporation, and therefore not a real victim.', ex: 'Benson notes that antitrust victims "tend not to be identifiable individuals," and that offenders used this to contrast their conduct with "real crimes" (p. 592).' },
+    { k: 'CC', n: 4, name: 'Condemnation of the condemners', src: 'Sykes and Matza', def: 'The prosecutors, regulators, journalists, or the process itself are corrupt, ambitious, political, or hypocritical. Attention shifts from the act to the motives of those judging it.', ex: 'Antitrust and fraud offenders were "most prone to condemn their condemners," claiming prosecutors were "motivated by personal interest" and that they had been "singled out for political or other reasons" (Benson 1985, p. 601).' },
+    { k: 'HL', n: 5, name: 'Appeal to higher loyalties', src: 'Sykes and Matza', def: 'The act served a group the speaker owed more to than the law: family, employees, the company, customers, the community. The norm is not rejected, only outranked.', ex: '"The thing that really got me involved in it is my feeling for the employees here ... practically all of it was turned over to the employees, because of my feeling for them." (tax violator, Benson 1985, p. 594)' },
+    { k: 'CN', n: 6, name: 'Claim of normality', src: 'Coleman 1987; Klenowski and colleagues', def: 'Everyone does it. The conduct is standard in the industry, the profession, or the population, so the speaker is no worse than anyone and was simply the one who got caught.', ex: '"Everybody cheats on their income tax, 95% of the people. Even if it\'s for ten dollars it\'s the same principle." (tax violator, Benson 1985, p. 594)' },
+    { k: 'DN', n: 7, name: 'Defense of necessity', src: 'Minor 1981; Klenowski and colleagues', def: 'There was no other way. The business would have closed, the family would have gone under, the payroll would have been missed. Differs from higher loyalties in that it claims an absence of choice rather than a ranking of duties.', ex: '"I was faced with the choice of all of a sudden, and I mean now, closing the doors or doing something else to keep that business open. ... You\'re sitting there with a dying patient." (check-kiting offender, Benson 1985, p. 598)' },
+    { k: 'DG', n: 8, name: 'Denial of the guilty mind', src: 'Benson', def: 'The act happened and may even be a violation, but the speaker did not intend a crime: a mistake, a failing, a misjudgment, a technical breach, a scheme that was supposed to end. This is Benson\'s central finding and the most common code in white-collar statements.', ex: '"I\'m not a criminal. That is, I\'m not a criminal from the standpoint of taking a gun and doing this and that. I\'m a criminal from the standpoint of making a mistake, a serious mistake." (tax violator, Benson 1985, p. 594)' },
+    { k: 'SC', n: 9, name: 'Complete denial, scapegoat', src: 'Benson', def: 'The speaker committed no crime at all. Someone else did it, and the speaker was set up, duped, or wrongly convicted. Benson found this mainly among fraud defendants, for whom no partial admission was available.', ex: '"Inwardly, I personally felt that the only crime that I committed was not telling on these guys. Not that I deliberately, intentionally committed a crime against the system." (fraud offender, Benson 1985, pp. 597-598)' },
+    { k: 'AC', n: 10, name: 'Acceptance, apology', src: 'Goffman; Benson', def: 'The speaker admits the act, admits it was wrong, affirms the rule, and expresses remorse. Benson found it mainly among embezzlers. Watch for apologies that accept responsibility for consequences while a code 8 handles the intent.', ex: 'Embezzlers "did say \'What I did was wrong, was criminal, and I knew it was.\' Thus, the embezzlers were unusual in that they explicitly admitted responsibility for their crimes." (Benson 1985, p. 595)' },
+  ];
+  const BY = {}; CODES.forEach(c => BY[c.k] = c);
+  $('codeDefs').innerHTML = CODES.map(c => '<div class="def"><div class="who">' + c.n + ' · ' + esc(c.name) + '</div><div class="hinge"><strong>' + esc(c.src) + '.</strong> ' + esc(c.def) + '</div><div class="hinge" style="margin-top:6px;font-style:italic">' + esc(c.ex) + '</div></div>').join('');
+
+  function codeButtons(prefix, i){
+    return '<div class="codes">' + CODES.map(c => '<button class="ynb cb" data-p="' + prefix + '" data-i="' + i + '" data-k="' + c.k + '" type="button" title="' + esc(c.name) + '">' + c.n + ' ' + esc(c.name) + '</button>').join('') + '</div>';
+  }
+  function verdictFor(chosen, ref){
+    if (chosen === ref.p) return ['yes', 'Matches the reference'];
+    if (ref.alt.includes(chosen)) return ['arg', 'A defensible alternate'];
+    return ['no', 'Different from the reference'];
+  }
+
+  // ---------- practice (Benson) ----------
+  const PRACTICE = [
+    { who: 'Antitrust offender, bid rigging in the building and contracting industry', text: 'It was a way of doing business before we even got into the business. So it was like why do you brush your teeth in the morning or something. ... It was part of the everyday. ... It was a method of survival.', src: 'Benson 1985, p. 591.', ref: { p: 'CN', alt: ['DN', 'HL'], why: 'The claim is that the practice was universal and predated the speaker, which is the claim of normality. "A method of survival" adds necessity, and Benson reads the whole group as appealing to a "higher set of rules based on the concepts of profit and survival" that outrank the law (p. 593), which is an appeal to higher loyalties in his terms.' } },
+    { who: 'Tax violator', text: 'Everybody cheats on their income tax, 95% of the people. Even if it\'s for ten dollars it\'s the same principle. I didn\'t cheat. I just didn\'t know how to report it.', src: 'Benson 1985, p. 594.', ref: { p: 'CN', alt: ['DR', 'DG'], why: 'Two codes in two sentences. The first is a claim of normality; the second, "I just didn\'t know how to report it," denies responsibility through ignorance, and in Benson\'s framing denies the guilty mind. Either the first or the second is defensible as primary. Note that the speaker both says everyone cheats and says he did not cheat; the account does not have to be consistent to work.' } },
+    { who: 'Bank officer convicted of a violation of financial trust', text: 'As a kid, I never even, you know kids will sometimes shoplift from the dime store, I never even did that. I had never stolen a thing in my life and that was what was so unbelieveable about the whole thing, but there were some psychological and personal questions that I wasn\'t dealing with very well. I wasn\'t terribly happily married.', src: 'Benson 1985, p. 595.', ref: { p: 'DR', alt: ['DN', 'AC'], why: 'The act is admitted and called theft; what is denied is that it reflects the speaker. Extraordinary personal circumstances explain "uncharacteristic behavior" (p. 595), which is an excuse, so denial of responsibility. Benson stresses that this group alone said "what I did was wrong, was criminal, and I knew it was," so acceptance is present alongside the excuse.' } },
+    { who: 'Fraud offender, one of ten convicted of fraud or false statements', text: 'I figured I wasn\'t guilty, so it wouldn\'t be that hard to disprove it, until, as I say, I went to court and all of a sudden they start bringing in these guys out of the woodwork implicating me that I never saw. Lot of it could be proved that I never saw.', src: 'Benson 1985, p. 597.', ref: { p: 'SC', alt: ['CC'], why: 'The scapegoat strategy: a fraud occurred, but others committed it and the speaker was implicated by witnesses he never met. Seven of Benson\'s ten fraud defendants took this route (p. 597). Condemnation of the condemners is the usual companion, since the prosecutor has to be either ignorant or motivated for the conviction to be wrong.' } },
+    { who: 'Fraud offender who admitted the offense', text: 'First of all, no money was stolen or anything of that nature. The bank didn\'t lose any money. ... What I did was a technical violation. I made a mistake. There\'s no question about that, but the bank lost no money.', src: 'Benson 1985, p. 598.', ref: { p: 'DI', alt: ['DG'], why: 'The act is admitted and the injury denied, twice. "Technical violation" and "mistake" attach a denial of the guilty mind, which is why the two codes so often travel together: no harm and no intent leave nothing for a crime to consist of.' } },
+    { who: 'Check-kiting offender', text: 'I was faced with the choice of all of a sudden, and I mean now, closing the doors or doing something else to keep that business open. ... I\'m not going to tell you that this wouldn\'t have happened if I\'d had time to think it over, because I think it probably would have. You\'re sitting there with a dying patient. You are going to try to keep him alive.', src: 'Benson 1985, p. 598.', ref: { p: 'DN', alt: ['HL', 'AC'], why: 'No choice, an emergency, a business that would die: the defense of necessity. The business as a patient makes it an appeal to a higher loyalty as well. The middle sentence is unusual: he concedes he would have done it even with time to think, which gives up the excuse of haste and is closer to acceptance than most of Benson\'s interviewees came.' } },
+  ];
+  const pAns = PRACTICE.map(() => null);
+  const pEl = $('practiceList');
+  PRACTICE.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">PRACTICE ' + (i + 1) + '</span><span class="evtitle">' + esc(s.who) + '</span></div>' +
+      '<div class="evtext">"' + esc(s.text) + '"</div><div class="evsrc">' + esc(s.src) + '</div>' +
+      '<div class="drow"><span class="dlabel">Best code</span></div>' + codeButtons('p', i) +
+      '<p class="verdict" id="pv-' + i + '"></p><div class="evnote" id="pn-' + i + '"></div>';
+    pEl.appendChild(d);
+  });
+  pEl.addEventListener('click', e => {
+    const b = e.target.closest('.cb'); if (!b) return;
+    const i = Number(b.dataset.i); if (pAns[i]) return;
+    const k = b.dataset.k; pAns[i] = k;
+    const ref = PRACTICE[i].ref; const v = verdictFor(k, ref);
+    pEl.querySelectorAll('.cb[data-i="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x.dataset.k === k); if (x.dataset.k === ref.p) x.classList.add('answer'); else if (ref.alt.includes(x.dataset.k)) x.classList.add('alt'); });
+    $('pv-' + i).innerHTML = '<span class="tag ' + v[0] + '">' + v[1] + '</span> Reference: ' + ref.p + ' ' + esc(BY[ref.p].name) + (ref.alt.length ? '; defensible: ' + ref.alt.map(a => a + ' ' + BY[a].name).join(', ') : '') + '.';
+    const n = $('pn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(ref.why); n.style.display = 'block';
+    const done = pAns.filter(Boolean).length; $('pProgress').textContent = done + ' of 6 coded.' + (done === 6 ? ' Now open the Code nine statements tab.' : '');
+  });
+
+  // ---------- statements ----------
+  const STMTS = [
+    { who: 'Bernard Madoff', where: 'Plea allocution, U.S. District Court, Southern District of New York, March 12, 2009', text: 'I am here today to accept responsibility for my crimes by pleading guilty. ... When I began the Ponzi scheme I believed it would end shortly and I would be able to extricate myself and my clients from the scheme. ... I am painfully aware that I have deeply hurt many, many people, including the members of my family, my closest friends, business associates and the thousands of clients who gave me their money.', ctx: 'In the same statement he said the firm\'s market-making and proprietary trading businesses were legitimate and were managed by his brother and two sons.', law: 'Pleaded guilty to 11 felony counts, including securities fraud, investment adviser fraud, mail fraud, wire fraud, money laundering, false statements, perjury, false filings with the SEC, and theft from an employee benefit plan. Sentenced June 29, 2009, to 150 years.', src: 'Transcript of plea proceeding, United States v. Madoff, No. 09 Cr. 213 (S.D.N.Y. Mar. 12, 2009).', setting: 'A guilty plea, made to a judge who must find a factual basis for it. The audience requires an admission; the statement supplies one and then narrows the intent to the beginning.', ref: { p: 'DG', alt: ['AC'], why: 'The plea accepts the acts, and the apology is real in form. The load-bearing sentence is the one about the beginning: the fraud was supposed to be short, so the mind that started it was not the mind that ran it for years. That is a denial of the guilty mind at the origin, inside an acceptance of responsibility for the outcome. The sentence about his brother and sons is a claim about other people, and it draws the boundary of the crime around himself, which is the mirror image of the scapegoat strategy.' } },
+    { who: 'Jeffrey Skilling, former Enron chief executive', where: 'Sentencing, U.S. District Court, Southern District of Texas, Houston, October 23, 2006', text: 'In terms of remorse your honor, I can\'t imagine more remorse. ... I am innocent of every one of these charges.', ctx: 'He said the past years had been hard on his family, on Enron\'s employees, and on the community.', law: 'Convicted May 25, 2006, on 19 counts, including conspiracy, securities fraud, insider trading, and making false statements to auditors. Sentenced to 292 months (24 years and 4 months); resentenced in 2013 to 14 years under an agreement that ended his appeals.', src: 'Contemporaneous reporting on the sentencing hearing, including the Associated Press and the Houston Chronicle, October 23, 2006.', setting: 'Sentencing after a jury verdict, with an appeal planned. The audience is the judge, but the statement is written for the appellate record: any admission would be used against him.', ref: { p: 'SC', alt: ['AC', 'DG'], why: 'Complete denial of every charge, with remorse attached to the consequences. This is Goffman\'s split with the halves reversed: the part that affirms the rule grieves for the employees and the community, and the part that would be guilty is declared innocent. Benson would expect exactly this from a fraud defendant who has not admitted anything, because for fraud there is no partial admission that preserves a noncriminal identity (pp. 596-597).' } },
+    { who: 'Elizabeth Holmes, founder of Theranos', where: 'Sentencing, U.S. District Court, Northern District of California, San Jose, November 18, 2022', text: 'I regret my failings with every cell of my body. ... I am devastated by my failings.', ctx: 'Judge Edward Davila, in imposing sentence: "Failure is normal. But failure by fraud is not OK." He said she had never accepted responsibility.', law: 'Convicted January 3, 2022, on four counts: three of wire fraud against investors and one of conspiracy to commit wire fraud; acquitted on the counts concerning patients. Sentenced to 135 months (11 years and 3 months) and later ordered to pay $452 million in restitution.', src: 'Contemporaneous reporting on the sentencing hearing, including the Associated Press, Reuters, and the New York Times, November 18, 2022.', setting: 'Sentencing after a jury verdict, with an appeal planned. Her statement was in the register of an apology but did not use the word fraud or admit deceiving anyone.', ref: { p: 'DG', alt: ['AC', 'DR'], why: 'The vocabulary does the work. "Failings" places the events in the category of a company that did not succeed, which is not a crime; the judge answered in the same vocabulary to reject it. The remorse is for failing, not for deceiving, so the apology form carries a denial of the guilty mind. Compare Madoff: both accept the outcome and locate the innocence in the mind.' } },
+    { who: 'Sam Bankman-Fried, founder of FTX', where: 'Sentencing, U.S. District Court, Southern District of New York, March 28, 2024', text: 'I was the CEO of FTX and I was responsible. ... They built something really beautiful and I threw all of that away. ... It haunts me every day. ... Customers don\'t deserve this level of pain.', ctx: 'He also suggested that customers would eventually get back the money they had deposited. Judge Lewis Kaplan said he had never heard from the defendant "a word of remorse for the commission of terrible crimes," and found that his trial testimony had been evasive where it was not false.', law: 'Convicted November 2, 2023, on seven counts: wire fraud on customers and on lenders, conspiracy to commit wire fraud (two counts), securities fraud conspiracy, commodities fraud conspiracy, and money laundering conspiracy. Sentenced to 25 years and ordered to forfeit $11 billion.', src: 'Contemporaneous reporting on the sentencing hearing, including CNBC, CNN, and Reuters, March 28, 2024.', setting: 'Sentencing after a jury verdict at which the defendant testified and was disbelieved, with an appeal planned. The statement had to avoid contradicting his testimony.', ref: { p: 'DI', alt: ['AC', 'DG'], why: 'Responsibility is accepted for the outcome as a CEO would accept a bad quarter, and the pain is acknowledged. The claim that customers would be made whole denies the injury, and the judge treated it as the tell: remorse for the crime was absent because the crime was not being described as one. "Threw it all away" is a claim about loss to himself and his colleagues. Reasonable to code as acceptance; the reference weights the sentence the judge answered.' } },
+    { who: 'Robert Menendez, former United States Senator', where: 'Outside the courthouse after sentencing, Southern District of New York, January 29, 2025', text: 'President Trump was right. This process is political, and it\'s corrupted to the core. I hope President Trump cleans up the cesspool and restores the integrity to the system.', ctx: 'The statement was made to reporters minutes after the judge imposed sentence. In court he had asked for mercy.', law: 'Convicted July 16, 2024, on 16 counts, including bribery, extortion under color of official right, honest services wire fraud, obstruction of justice, and conspiracy to act as an agent of a foreign government (Egypt). Sentenced to 11 years.', src: 'Contemporaneous reporting, including the Associated Press, Axios, and the New York Times, January 29, 2025.', setting: 'A press statement, not a court statement, with a pardon as the realistic remaining route. The audience is one person, addressed by name.', ref: { p: 'CC', alt: ['SC'], why: 'Condemnation of the condemners in its purest form: nothing about the act, everything about the process. Benson found this technique among antitrust and fraud offenders and explains it as an attack on the legitimacy of the denouncer, who "must display no self-interest in the outcome" (p. 601). The setting shows why accounts change with audience: the plea for mercy inside and the attack outside were an hour apart.' } },
+    { who: 'Trevor Milton, founder of Nikola', where: 'Sentencing, U.S. District Court, Southern District of New York, December 18, 2023', text: 'I did not intend to harm anyone. ... I did not commit these crimes levied against me. ... It\'s not hard to find innocent people guilty.', ctx: 'Judge Edgardo Ramos, in imposing sentence: "The law doesn\'t grant a pass for good intentions," and "real people were hurt by your actions."', law: 'Convicted October 14, 2022, of one count of securities fraud and two counts of wire fraud, for false statements to retail investors about the company\'s trucks and technology. Sentenced to four years. Pardoned by the President on March 27, 2025, before serving the sentence.', src: 'Contemporaneous reporting on the sentencing hearing, including Courthouse News Service and Reuters, December 18, 2023; pardon as reported March 28, 2025.', setting: 'Sentencing after a jury verdict, with an appeal planned. The statement denies the charges and the intent in the same breath.', ref: { p: 'DG', alt: ['SC', 'CC'], why: 'Three codes in three sentences: no intent to harm (8), no crime committed (9), and a system that convicts the innocent (4). The reference takes the intent sentence as primary because the judge did, answering that good intentions are no defense. This is the fraud defendant\'s position Benson describes: once fraud is proven, the only way to remain noncriminal is to deny the guilty mind or deny involvement, and Milton did both.' } },
+    { who: 'John Stumpf, chief executive of Wells Fargo', where: 'Testimony before the Senate Committee on Banking, Housing, and Urban Affairs, September 20, 2016', text: 'We never directed nor wanted our team members to provide products and services to our customers that they didn\'t want. ... That said, I accept full responsibility for all unethical sales practices.', ctx: 'Asked whether the conduct was fraud, he said he was not a lawyer. About 5,300 employees had been fired over five years for opening unauthorized accounts, which he described as about 1 percent of the workforce. Senator Toomey: "This isn\'t cross-selling, this is fraud."', law: 'No criminal charges were brought against him. In January 2020 he agreed with the Office of the Comptroller of the Currency to a $17.5 million civil penalty and a lifetime ban from the banking industry; the bank paid $3 billion in February 2020 to resolve criminal and civil investigations by the Justice Department and the SEC.', src: 'Hearing transcript and video, U.S. Senate Committee on Banking, Housing, and Urban Affairs, September 20, 2016; OCC consent order, January 2020.', setting: 'A congressional hearing, under oath, with no charge pending against the speaker. The audience wants a statement of responsibility and the speaker\'s lawyers want no admission of fraud.', ref: { p: 'DR', alt: ['AC', 'DG'], why: 'The first sentence locates the acts in 5,300 other people who were not directed to do them: denial of responsibility, by the organization\'s head, for what the organization did. The second sentence is the corporate formula for acceptance, and it accepts responsibility for "practices," a word that does not name a crime. Refusing the word fraud is a denial of the guilty mind on behalf of the company. Code this from the top of the organization down and you have Benson\'s anticipatory defense: an arrangement in which the head can always say the conduct was never wanted.' } },
+    { who: 'Management analyst, Washington state agency (Lab 3, the state analyst)', where: 'Sentencing, U.S. District Court, Western District of Washington, September 2025', text: 'His lawyer told the court that addiction is compulsive by definition. He told the court that he had called a gambling hotline and been told the wait was 13 weeks, and he apologized.', ctx: 'He had created a fictitious company and three other fake businesses and paid them about $861,000 from the agency credit card over four years, making at least six trips to Las Vegas.', law: 'Wire fraud (18 U.S.C. 1343) and filing a false tax return (26 U.S.C. 7206(1)); 18 months; $1.1 million in restitution including unpaid taxes.', src: 'U.S. Attorney\'s Office, Western District of Washington, press release, September 2025; Washington State Standard, September 12, 2025.', setting: 'Sentencing after a guilty plea, where the defense memorandum argues mitigation and the defendant speaks last. The admission is complete; the argument is about why.', ref: { p: 'DR', alt: ['AC', 'DN'], why: 'A compulsion is the classic excuse: the act was wrong and the speaker was not fully in control of it. The hotline call is offered as evidence that he tried to regain control and the system failed him, which shifts part of the responsibility outward. The apology is real, and Benson\'s embezzlers took the same route: admit the act, present it as an aberration produced by circumstances. In Lab 3 this was the only statement that resembled a Cressey verbalization; here notice that it is also an account made to a judge.' } },
+    { who: 'School bookkeeper, Nebraska (Lab 3, the four withdrawals)', where: 'Statement when confronted by the school after an outside audit, May 2023', text: 'When confronted, she admitted to four unauthorized $10,000 cash withdrawals.', ctx: 'The FBI\'s investigation found about $452,000 taken between March 2016 and May 2023 through cash withdrawals, unauthorized card charges, unauthorized purchases, and fraudulent checks, concealed with falsified records.', law: 'Embezzlement from an organization receiving federal benefits (18 U.S.C. 666); nine months; restitution of $495,652.13.', src: 'U.S. Attorney\'s Office, District of Nebraska, press release, September 24, 2025.', setting: 'Not a court statement: an admission to an employer at the moment of discovery, before any lawyer, before any charge. The audience is the person who found the inconsistencies.', ref: { p: 'DI', alt: ['DG', 'AC'], why: 'A partial admission is an account expressed as a number. Four withdrawals of $10,000 is an injury of $40,000 in place of $452,000, and four discrete acts in place of seven years of them. It is a denial of injury by minimization, and it also shrinks the guilty mind to four lapses. The setting matters: this is the only statement of the nine made before the speaker knew what the record would show.' } },
+  ];
+  const sAns = STMTS.map(() => ({ p: null, s: null, locked: false }));
+  const sEl = $('stmtList');
+  STMTS.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">STATEMENT ' + (i + 1) + '</span><span class="evtitle">' + esc(s.who) + '</span></div>' +
+      '<div class="evsrc" style="margin-top:4px">' + esc(s.where) + '</div>' +
+      '<div class="evtext">' + (i >= 7 ? esc(s.text) : '"' + esc(s.text) + '"') + '</div>' +
+      '<div class="evsrc"><strong>Context:</strong> ' + esc(s.ctx) + '</div>' +
+      '<div class="evsrc"><strong>Charges and outcome:</strong> ' + esc(s.law) + '</div>' +
+      '<div class="evsrc">Source: ' + esc(s.src) + '</div>' +
+      '<div class="drow"><span class="dlabel">Primary code</span></div>' + codeButtons('sp', i) +
+      '<div class="drow"><span class="dlabel">Second code (optional)</span></div>' + codeButtons('ss', i) +
+      '<div class="pickrow" style="margin-top:8px"><button class="gbtn" data-lock="' + i + '" type="button">Lock in statement ' + (i + 1) + '</button></div>' +
+      '<p class="verdict" id="sv-' + i + '"></p><div class="evnote" id="sn-' + i + '"></div>';
+    sEl.appendChild(d);
+  });
+  sEl.addEventListener('click', e => {
+    const b = e.target.closest('.cb');
+    if (b) {
+      const i = Number(b.dataset.i); if (sAns[i].locked) return;
+      const which = b.dataset.p === 'sp' ? 'p' : 's';
+      if (which === 's' && sAns[i].s === b.dataset.k) { sAns[i].s = null; } else { sAns[i][which] = b.dataset.k; }
+      sEl.querySelectorAll('.cb[data-p="' + b.dataset.p + '"][data-i="' + i + '"]').forEach(x => x.classList.toggle('sel', x.dataset.k === sAns[i][which]));
+      return;
+    }
+    const lk = e.target.closest('[data-lock]');
+    if (lk) {
+      const i = Number(lk.dataset.lock); const a = sAns[i]; if (a.locked) return;
+      if (!a.p) { $('sv-' + i).textContent = 'Pick a primary code before locking in.'; return; }
+      a.locked = true; lk.disabled = true;
+      const ref = STMTS[i].ref; const v = verdictFor(a.p, ref);
+      sEl.querySelectorAll('.cb[data-i="' + i + '"]').forEach(x => { x.disabled = true; if (x.dataset.p === 'sp') { if (x.dataset.k === ref.p) x.classList.add('answer'); else if (ref.alt.includes(x.dataset.k)) x.classList.add('alt'); } });
+      $('sv-' + i).innerHTML = '<span class="tag ' + v[0] + '">' + v[1] + '</span> Reference: ' + ref.p + ' ' + esc(BY[ref.p].name) + '; defensible: ' + ref.alt.map(k => k + ' ' + BY[k].name).join(', ') + '.';
+      const n = $('sn-' + i); n.innerHTML = '<strong>Setting and audience.</strong> ' + esc(STMTS[i].setting) + '<br><br><strong>Why.</strong> ' + esc(ref.why); n.style.display = 'block';
+      const done = sAns.filter(x => x.locked).length;
+      $('sProgress').textContent = done + ' of 9 coded.' + (done === 9 ? ' Your summary is below.' : '');
+      if (done === 9) showSummary();
+    }
+  });
+  function showSummary(){
+    const counts = {}; CODES.forEach(c => counts[c.k] = 0);
+    sAns.forEach(a => { counts[a.p]++; if (a.s) counts[a.s]++; });
+    const refc = {}; CODES.forEach(c => refc[c.k] = 0); STMTS.forEach(s => refc[s.ref.p]++);
+    const max = Math.max(1, ...Object.values(counts));
+    $('sBars').innerHTML = CODES.map(c => '<div class="brow"><span class="blabel">' + c.n + ' ' + esc(c.name) + '</span><div class="btrack"><div class="bfill warn" style="width:0%" data-w="' + Math.round(100 * counts[c.k] / max) + '%"></div></div><span class="bval">you ' + counts[c.k] + ' · ref ' + refc[c.k] + '</span></div>').join('');
+    const match = sAns.filter((a, i) => a.p === STMTS[i].ref.p).length, alt = sAns.filter((a, i) => a.p !== STMTS[i].ref.p && STMTS[i].ref.alt.includes(a.p)).length;
+    $('sNote').innerHTML = '<strong>' + match + ' of 9 primary codes matched the reference, and ' + alt + ' more were defensible alternates.</strong> The reference codes the nine statements as denial of the guilty mind three times, and each of the others at most once; four of the nine come from people who had already been convicted by a jury and were still contesting the verdict, which is the position Benson says leaves only denial and condemnation. Count how often you reached for code 8 and code 10 together. Where an apology and a denial of intent sit in the same statement, you have found the pattern the lab is named for.';
+    $('sDone').style.display = 'block'; animateBars($('sDone'));
+  }
+
+  // ---------- when ----------
+  const WHEN = [
+    { who: 'Madoff, plea allocution, 2009', text: 'When I began the Ponzi scheme I believed it would end shortly and I would be able to extricate myself and my clients from the scheme.', ref: { claim: 'Y', rec: 'doc', why: 'This is a claim about a belief at the origin of the act, roughly the early 1990s by his own account, made in 2009 to a judge. It could be tested only by something written near the origin: correspondence, ledgers showing an attempt to unwind, the feeder-fund records. The trustee\'s later reconstruction of the books found the fraud operating long before the 1990s, which bears on the claim without settling what he believed. Absent a contemporaneous record, this is an account.' } },
+    { who: 'The state analyst, sentencing, 2025', text: 'He had called a gambling hotline and been told the wait was 13 weeks.', ref: { claim: 'Y', rec: 'doc', why: 'A specific, datable event during the period of the offense. A call log or a record from the hotline provider could confirm it, and a defense memorandum would ordinarily attach one. If the record exists, this is the rare case where a statement at sentencing is corroborated as a contemporaneous state of mind; it is still an account of what the call meant.' } },
+    { who: 'Stumpf, Senate testimony, 2016', text: 'We never directed nor wanted our team members to provide products and services to our customers that they didn\'t want.', ref: { claim: 'Y', rec: 'doc', why: 'A claim about the organization\'s intent during the period of the conduct. Sales goals, incentive plans, internal complaints, the firing records, and the 2013 Los Angeles Times reporting that preceded the hearing all exist and were later examined by the OCC and the bank\'s own board. This is the statement of the five with the richest independent record, and the record is what produced the 2020 lifetime ban.' } },
+    { who: 'Benson\'s antitrust offender, interview, 1980s', text: 'It was a way of doing business before we even got into the business.', ref: { claim: 'Y', rec: 'other', why: 'A claim about industry practice before and during the offense. Other participants, bid records, and the history of the industry could test whether the practice was as universal as claimed; the case itself involved multiple firms, which is partial corroboration. Whether the speaker thought of it as a way of doing business at the time, rather than as bid rigging, is the part no record can reach.' } },
+    { who: 'Holmes, sentencing, 2022', text: 'I regret my failings with every cell of my body.', ref: { claim: 'N', rec: 'none', why: 'A statement about the speaker\'s present feeling, not about what she believed at the time. There is nothing here to test. What the statement does is classify the events as failings, and that classification could be tested against the trial record, which is what the judge did in his reply. As evidence about the pre-act mind, it is empty; as an account performed for a sentencing judge, it is complete.' } },
+  ];
+  const wAns = WHEN.map(() => ({ claim: null, rec: null, locked: false }));
+  const wEl = $('whenList');
+  const RECS = [['doc', 'A contemporaneous document or record'], ['other', 'Other people\'s accounts'], ['later', 'The speaker\'s own later statements'], ['none', 'Nothing; there is no testable claim']];
+  WHEN.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'ev';
+    d.innerHTML = '<div class="evhead"><span class="evnum">TIMING ' + (i + 1) + '</span><span class="evtitle">' + esc(s.who) + '</span></div>' +
+      '<div class="evtext">"' + esc(s.text) + '"</div>' +
+      '<div class="drow"><span class="dlabel">Claims a pre-act belief?</span><div class="yn"><button class="ynb" data-wc="Y" data-i="' + i + '" type="button">Yes</button><button class="ynb" data-wc="N" data-i="' + i + '" type="button">No</button></div></div>' +
+      '<div class="drow"><span class="dlabel">What could test it?</span></div><div class="codes">' + RECS.map(r => '<button class="ynb" data-wr="' + r[0] + '" data-i="' + i + '" type="button">' + esc(r[1]) + '</button>').join('') + '</div>' +
+      '<div class="pickrow" style="margin-top:8px"><button class="gbtn" data-wlock="' + i + '" type="button">Lock in</button></div>' +
+      '<p class="verdict" id="wv-' + i + '"></p><div class="evnote" id="wn-' + i + '"></div>';
+    wEl.appendChild(d);
+  });
+  wEl.addEventListener('click', e => {
+    const c = e.target.closest('[data-wc]');
+    if (c) { const i = Number(c.dataset.i); if (wAns[i].locked) return; wAns[i].claim = c.dataset.wc; wEl.querySelectorAll('[data-wc][data-i="' + i + '"]').forEach(x => x.classList.toggle('sel', x === c)); return; }
+    const r = e.target.closest('[data-wr]');
+    if (r) { const i = Number(r.dataset.i); if (wAns[i].locked) return; wAns[i].rec = r.dataset.wr; wEl.querySelectorAll('[data-wr][data-i="' + i + '"]').forEach(x => x.classList.toggle('sel', x === r)); return; }
+    const lk = e.target.closest('[data-wlock]');
+    if (lk) {
+      const i = Number(lk.dataset.wlock); const a = wAns[i]; if (a.locked) return;
+      if (!a.claim || !a.rec) { $('wv-' + i).textContent = 'Answer both questions before locking in.'; return; }
+      a.locked = true; lk.disabled = true;
+      const ref = WHEN[i].ref;
+      wEl.querySelectorAll('[data-i="' + i + '"].ynb').forEach(x => { x.disabled = true; if (x.dataset.wc === ref.claim || x.dataset.wr === ref.rec) x.classList.add('answer'); });
+      const ok = a.claim === ref.claim, ok2 = a.rec === ref.rec;
+      $('wv-' + i).innerHTML = '<span class="tag ' + (ok && ok2 ? 'yes' : (ok || ok2 ? 'arg' : 'no')) + '">' + (ok && ok2 ? 'Matches the reference' : (ok || ok2 ? 'Half matches the reference' : 'Different from the reference')) + '</span> Reference: ' + (ref.claim === 'Y' ? 'yes, it claims a pre-act belief' : 'no pre-act claim') + '; ' + esc(RECS.find(x => x[0] === ref.rec)[1].toLowerCase()) + '.';
+      const n = $('wn-' + i); n.innerHTML = '<strong>Why.</strong> ' + esc(ref.why); n.style.display = 'block';
+      const done = wAns.filter(x => x.locked).length;
+      $('wProgress').textContent = done + ' of 5 answered.' + (done === 5 ? ' The rule for the case project is below.' : '');
+      if (done === 5) $('wDone').style.display = 'block';
+    }
+  });
+
+  // ---------- who: offense ----------
+  const OFF = [
+    { k: 'anti', name: 'Antitrust violators (4)', ref: 'CN', alt: ['DI', 'CC'] },
+    { k: 'tax', name: 'Tax violators (6)', ref: 'CN', alt: ['DR', 'DG'] },
+    { k: 'trust', name: 'Violations of financial trust, embezzlement (4)', ref: 'AC', alt: ['DR'] },
+    { k: 'fraud', name: 'Fraud and false statements (10)', ref: 'SC', alt: ['CC'] },
+  ];
+  const OFFOPTS = [['CN', 'Everybody does it, it is how the industry works'], ['DG', 'A mistake, not a crime'], ['AC', 'It was wrong and I knew it'], ['SC', 'I committed no crime; others did']];
+  const oAns = OFF.map(() => null);
+  const oEl = $('offList');
+  OFF.forEach((o, i) => {
+    const d = document.createElement('div'); d.className = 'drow'; d.style.marginTop = '10px';
+    d.innerHTML = '<span class="dlabel" style="min-width:300px">' + esc(o.name) + '</span><div class="codes">' + OFFOPTS.map(p => '<button class="ynb" data-oi="' + i + '" data-ok="' + p[0] + '" type="button">' + esc(p[1]) + '</button>').join('') + '</div><span class="ref" id="or-' + i + '"></span>';
+    oEl.appendChild(d);
+  });
+  oEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-oi]'); if (!b) return;
+    const i = Number(b.dataset.oi); if (oAns[i]) return; oAns[i] = b.dataset.ok;
+    oEl.querySelectorAll('[data-oi="' + i + '"]').forEach(x => { x.disabled = true; x.classList.toggle('sel', x === b); if (x.dataset.ok === OFF[i].ref) x.classList.add('answer'); });
+    const r = $('or-' + i); r.style.display = 'block'; r.innerHTML = oAns[i] === OFF[i].ref ? '<span class="tag yes">Matches</span>' : '<span class="tag no">Reference: ' + esc(OFFOPTS.find(p => p[0] === OFF[i].ref)[1]) + '</span>';
+    if (oAns.every(Boolean)) $('offReveal').style.display = 'block';
+  });
+
+  // ---------- who: gender ----------
+  let gPicked = null;
+  document.querySelectorAll('#sec-who .pick[data-g]').forEach(btn => btn.addEventListener('click', () => {
+    if (gPicked) return; gPicked = btn.dataset.g; btn.classList.add('chosen');
+    document.querySelectorAll('#sec-who .pick[data-g]').forEach(b => { b.disabled = true; if (b.dataset.g === 'dn') b.classList.add('answer'); });
+    $('gVerdict').textContent = gPicked === 'dn' ? 'Right. Seven women and one man used the defense of necessity.' : 'The largest gap was the defense of necessity: seven women, one man. See below.';
+    $('gReveal').style.display = 'block'; animateBars($('gReveal'));
+  }));
+
+  // ---------- response ----------
+  $('buildBtn').addEventListener('click', () => {
+    const name = $('rName').value.trim() || '(no name entered)';
+    const lines = ['WHITE-COLLAR CRIME · CRIME LAB 5 · DENYING THE GUILTY MIND', 'Name: ' + name, 'Assembled: ' + new Date().toLocaleString(), ''];
+    lines.push('PRACTICE CODING (Benson interviews; your code / reference)');
+    PRACTICE.forEach((s, i) => lines.push((i + 1) + '. ' + s.who.split(',')[0] + ': ' + (pAns[i] || 'not coded') + ' / ' + s.ref.p));
+    lines.push('');
+    lines.push('NINE STATEMENTS (your primary + second / reference)');
+    STMTS.forEach((s, i) => { const a = sAns[i]; lines.push((i + 1) + '. ' + s.who.split(',')[0] + ': ' + (a.locked ? a.p + (a.s ? ' + ' + a.s : '') : 'not coded') + ' / ' + s.ref.p); });
+    lines.push('');
+    lines.push('BEFORE OR AFTER (pre-act claim? what tests it / reference)');
+    WHEN.forEach((s, i) => { const a = wAns[i]; lines.push((i + 1) + '. ' + s.who + ': ' + (a.locked ? a.claim + ', ' + a.rec : 'not answered') + ' / ' + s.ref.claim + ', ' + s.ref.rec); });
+    lines.push('');
+    lines.push('QUESTION 1 (hardest statement to code)'); lines.push($('r1').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 2 (neutralization or account)'); lines.push($('r2').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 3 (the offense picks the account)'); lines.push($('r3').value.trim() || '(blank)'); lines.push('');
+    lines.push('QUESTION 4 (case project)'); lines.push($('r4').value.trim() || '(blank)');
+    $('outText').value = lines.join('\n'); $('outWrap').style.display = 'block'; $('copyBtn').disabled = false;
+    const blanks = ['r1','r2','r3','r4'].filter(id => !$(id).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 4 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 5 submission in D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText'); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const done = () => { $('buildNote').textContent = 'Copied. Paste it into the Lab 5 submission in D2L.'; };
+    const fail = () => { $('buildNote').textContent = ok ? 'Copied. Paste it into the Lab 5 submission in D2L.' : 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail); else fail();
+  });
+  window.__S = { activate, pAns, sAns, wAns, oAns };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<style id="a11yCss">
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:root[data-theme="dark"] .gbtn { color: #0d0d0c !important; }
+:root[data-theme="dark"] .gbtn.secondary { color: #c3c2b7 !important; }
+</style>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>
