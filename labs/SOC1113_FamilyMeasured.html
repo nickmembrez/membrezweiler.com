@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Family, Measured · SOC 1113 Trend Lab</title>
+<title>The Family, Measured · SOCL 1133 Trend Lab</title>
 <style>
   .viz-root {
     color-scheme: light;
@@ -106,6 +106,7 @@
 
   .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
   .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs .qtab { display: block; font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
   .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
 </style>
@@ -116,7 +117,7 @@
 <div class="viz-root">
   <div class="frame" role="main">
     <header role="presentation">
-      <h1>The Family, Measured <span class="sub">SOC 1113 · Trend Lab · Midwestern State University</span></h1>
+      <h1>The Family, Measured <span class="sub">SOCL 1133 · Trend Lab · Midwestern State University</span></h1>
       <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
     </header>
 
@@ -281,14 +282,18 @@
     <!-- ============ QUESTIONS ============ -->
     <div class="section" id="sec-questions">
       <div class="card">
-        <h2>Questions to take with you</h2>
+        <h2>Discussion questions</h2>
+        <p class="lede">Talk through these questions in your group first, then with the whole class. Each one refers back to a specific tab, so keep the lab open and look at the numbers as you discuss.</p>
         <ol class="qs">
-          <li>Which guess did you miss by the most across the tabs, and in which direction? Most rooms miss divorce high and men's housework high. What keeps those myths alive?</li>
-          <li>Marriage at 28 instead of 20 changes what a marriage is for. Name two things a 1960 marriage provided that people now assemble before marrying, and what that does to the institution.</li>
-          <li>The apps removed friends, family, and church from matchmaking, yet homogamy survived. What does that tell you about where the marriage market's rules actually live?</li>
-          <li>Run the second shift through Chapter 5: which agents of socialization teach children who does the dishes, and how would you expect the 2054 time diaries to look?</li>
-          <li>Reproduce the autopsy from memory in four sentences: association, confounders, controls, verdict. This is the exam skill, and it works on any charged correlation.</li>
-          <li>Find one claim about families in your own feed this week and name the step of the autopsy it skips.</li>
+          <li><span class="qtab">The family since 1960</span>Women's median age at first marriage rose from 20.3 in 1960 to 28.6 in 2024. What do people today expect to have in place before they marry (for example, a degree, a steady job, or their own place) that people in 1960 did not expect? If marriage now comes after those things, who is more likely to get married, and who is less likely?</li>
+          <li><span class="qtab">The family since 1960</span>The divorce rate in 2023 (2.4 per 1,000 people) was less than half of its 1979 peak (5.3). Did you guess that divorce is higher today than in 1980? Where have you heard that half of all marriages end in divorce, and why do you think people still repeat it?</li>
+          <li><span class="qtab">How couples meet</span>In 1995, the most common way couples met was through friends (33%). By 2017, it was online (39%). When friends or family introduce two people, they check out the match first. Who or what does that checking on a dating app? What is gained, and what is lost, when friends and family are no longer part of how couples meet?</li>
+          <li><span class="qtab">How couples meet</span>The lab reports that people who meet on apps still mostly pair up with people of similar education and income. On an app, almost anyone can match with anyone. Why do you think people still end up with partners much like themselves?</li>
+          <li><span class="qtab">Who does the dishes</span>On days they do household activities, women average 2.8 hours and men average 2.1 hours. Across all adults, women spend 0.81 hours a day on housework and men spend 0.30. Where do people learn which chores are theirs? Name one agent of socialization from Chapter 5 and describe how it teaches this.</li>
+          <li><span class="qtab">Who does the dishes</span>These numbers come from time diaries, where people record what they did hour by hour. Suppose you instead asked couples, "Do you split the housework evenly?" Would you expect their answers to match the diaries? Why might the two differ, and which would you trust more?</li>
+          <li><span class="qtab">The autopsy</span>Teens raised by single parents have a higher risk of criminal involvement. Single-mother families are also about five times as likely to be poor (21% compared with about 4% for married-couple families). Use this example to explain the difference between saying family structure is associated with crime and saying family structure causes crime.</li>
+          <li><span class="qtab">The autopsy</span>Demuth and Brown found that the gap in delinquency shrinks once researchers account for what parents do: closeness, involvement, supervision, and monitoring. If a city wanted to reduce juvenile delinquency, what does this research suggest it should focus on? What would that look like in practice?</li>
+          <li><span class="qtab">Looking back</span>Which of your guesses today was furthest from the measured number? What had you heard before class that led you to that guess, and where did you hear it?</li>
         </ol>
       </div>
     </div>
@@ -304,7 +309,7 @@ const TABS = [
   { id: 'sec-meet', label: 'How couples meet' },
   { id: 'sec-dishes', label: 'The dishes' },
   { id: 'sec-autopsy', label: 'The autopsy' },
-  { id: 'sec-questions', label: 'Questions' },
+  { id: 'sec-questions', label: 'Discussion' },
 ];
 const tabsBox = document.getElementById('tabs');
 function activate(id) {

@@ -30,7 +30,7 @@ assets/css/site.css        The entire design system
 assets/js/site.js          Theme toggle and lab filtering
 assets/img/                Portrait, social share card, favicon
 assets/cv/                 CV in PDF and Word
-labs/                      The 47 lab pages, unmodified
+labs/                      The 64 lab pages, unmodified
 ```
 
 ## Making changes

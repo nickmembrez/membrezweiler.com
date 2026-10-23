@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survey Questions Written by an AI Tool · SOCL 3633 · Lab 7</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .yn { flex-wrap: wrap; flex-shrink: 1; min-width: 0; }
+  .ynb { white-space: normal; text-align: left; }
+</style>
+<style>
+  .checks { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 10px 0 6px; }
+  .checks li label { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.5; cursor: pointer; }
+  .checks input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  .steps { margin: 8px 0 8px 22px; display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; line-height: 1.55; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 1px 5px; border-radius: 5px; }
+  pre { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 10px 12px; border-radius: 8px; margin-top: 6px; overflow-x: auto; white-space: pre; }
+  img.chart { display: block; width: 100%; max-width: 760px; height: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+  table.errs { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; margin-top: 6px; }
+  table.errs th, table.errs td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.errs th { color: var(--text-secondary); font-size: 12.5px; }
+  .defs .def .hinge { font-size: 14px; }
+  @media (max-width: 600px) { .viz-root { padding: 12px; } .card { padding: 16px 14px; } }
+  .pkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 6px 14px; margin-top: 10px; }
+  .pk { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; cursor: pointer; padding: 4px 0; }
+  .pk input { margin-top: 2px; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+  .pk.clean span { font-weight: 700; color: var(--good); }
+  .blabel { min-width: 290px; }
+  .qtxt { color: var(--text-primary); font-size: 14.5px; white-space: pre-wrap; }
+  select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; max-width: 100%; width: 100%; }
+  pre#promptShow { white-space: pre-wrap; font-size: 14px; }
+  @media (max-width: 600px) { .blabel { min-width: 0; width: 42%; font-size: 12px; } .bval { min-width: 0; } }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Survey Questions Written by an AI Tool <span class="sub">SOCL 3633 Research Methods · Lab 7 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>AI tools will write survey questions on any topic in a few seconds. Are the questions any good?</strong> Today a free AI tool drafts ten survey questions on the concept from your research question. You find the problems in each question and repair the three worst. Your grade is for the quality of your diagnosis and repairs, not for what the tool wrote. Work through the tabs in order. Before you leave, you paste your response sheet into the Lab 7 submission on D2L.</p>
+      <div class="teach"><strong>Keep this page open until you submit.</strong> Your entries are not saved anywhere. If you close or reload the page, they are lost.</div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-setup" type="button">1. Get set up</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-gen" type="button">2. Generate</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-diag" type="button">3. Diagnose</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-rep" type="button">4. Repair</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">5. Response sheet</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sources" type="button">Sources</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-setup">
+      <div class="card">
+        <h2>Get set up</h2>
+        <ul class="checks">
+          <li><label><input type="checkbox"><span>Log in to the lab computer with your MSU account and open this page from the Week 7 module on D2L.</span></label></li>
+          <li><label><input type="checkbox"><span>In a new browser tab, open a free AI chatbot, such as Google Gemini, Microsoft Copilot, or the free version of ChatGPT. Do not use a paid version.</span></label></li>
+          <li><label><input type="checkbox"><span>Do not type your name, your student ID, or anything else about yourself into the AI tool.</span></label></li>
+          <li><label><input type="checkbox"><span>Have your Writing assignment 3 research question in front of you.</span></label></li>
+        </ul>
+        <div class="rq">
+          <div class="qt">The concept you want to measure</div>
+          <div class="qh">Choose one concept from your research question and write it as a short phrase, for example "job satisfaction among hourly workers" or "sense of belonging on campus."</div>
+          <input type="text" id="concept" autocomplete="off">
+        </div>
+        <h3>Eight common problems with survey questions</h3>
+        <p class="lede">The first six are the problems from Tuesday. The last two are new today. Use this list in the Diagnose tab.</p>
+        <div class="defs" id="probDefs"></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-gen">
+      <div class="card">
+        <h2>Generate ten questions</h2>
+        <ol class="steps">
+          <li>Copy this prompt into the AI tool and send it. Use it exactly as written, with your concept filled in.</li>
+        </ol>
+        <pre id="promptShow" aria-label="The prompt to use"></pre>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+          <button class="gbtn" id="copyPrompt" type="button">Copy the prompt</button>
+        </div>
+        <div class="verdict" id="copyPromptNote" aria-live="polite"></div>
+        <div class="teach">Do not ask the tool to check or improve its questions, and do not regenerate until you get better ones. The point is to see what an AI tool produces on its first try.</div>
+        <ol class="steps" start="2">
+          <li>Record the tool and the exact prompt you sent. This is your AI-use statement for this lab.</li>
+        </ol>
+        <div class="rq"><div class="qt">AI tool used</div><div class="qh">For example, "Google Gemini, free version."</div><input type="text" id="tool" autocomplete="off"></div>
+        <div class="rq"><div class="qt">The exact prompt you sent</div><div class="qh">The copy button fills this in. If you changed anything before sending, edit it here so it matches what you sent.</div><textarea id="promptUsed" style="min-height:70px"></textarea></div>
+        <ol class="steps" start="3">
+          <li>Paste the ten questions below, one per box, each with its answer choices. Paste them exactly as the tool wrote them. If the tool wrote a question without answer choices, paste it anyway.</li>
+        </ol>
+        <div id="qInputs"></div>
+        <div class="teach" id="genStatus" aria-live="polite"></div>
+        <details style="margin-top:14px">
+          <summary style="cursor:pointer;font-size:14px;font-weight:600">Backup set: use only if your instructor tells you to</summary>
+          <p class="lede" style="margin-top:8px">If the AI tools do not work on the lab computers, your instructor will tell you to use a backup set of ten questions on the concept "trust in news media." The button replaces anything you have entered on this tab.</p>
+          <button class="gbtn secondary" id="backupBtn" type="button">Fill in the backup set</button>
+        </details>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-diag">
+      <div class="card">
+        <h2>Diagnose each question</h2>
+        <p class="lede">For each question, check every problem that applies, or check "No problems." Many questions have more than one problem. For each question, ask: if a person answered this, would I know where that person stands on my concept?</p>
+        <div id="diagList"></div>
+        <h3>Your tally</h3>
+        <div class="statrow">
+          <div class="stat ok"><div class="v" id="tClean">0</div><div class="l" id="tCleanL">questions marked "No problems"</div></div>
+          <div class="stat"><div class="v" id="tMarked">0</div><div class="l">questions diagnosed, of the ones you pasted</div></div>
+        </div>
+        <div class="bars" id="tBars" aria-label="Number of questions with each problem"></div>
+        <div class="teach" id="tNote">Check your questions above to fill in the tally.</div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-rep">
+      <div class="card">
+        <h2>Repair the three worst questions</h2>
+        <p class="lede">Choose the three questions with the most serious problems for measuring your concept. Rewrite each one with its answer choices. Your repaired questions are candidates for questions 4 to 10 of your Lab 8 survey.</p>
+        <div class="teach"><strong>Most repairs make a question more specific:</strong> one topic per question, a clear and recent time span, plain words, answer choices that do not overlap and fit everyone, and wording that asks about your concept directly.</div>
+        <div id="repList"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 7 response sheet</h2>
+        <p class="lede">Questions 1 to 3 are filled in from the earlier tabs. Answer questions 4 to 6 in complete sentences. Then assemble your answers and paste them into the Lab 7 submission on D2L. Nothing is sent anywhere until you paste it.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" autocomplete="name"></div>
+        <div class="rq">
+          <div class="qt">1. AI-use statement: the tool you used and your exact prompt.</div>
+          <div class="qh">Filled in from the Generate tab.</div>
+          <div class="teach" id="sum1"></div>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Your ten questions with the problems you marked, and your tally.</div>
+          <div class="qh">Filled in from the Diagnose tab.</div>
+          <div class="teach" id="sum2"></div>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Three repairs: the original question, your repaired version, the problem you removed, and how the original would have distorted your data.</div>
+          <div class="qh">Filled in from the Repair tab.</div>
+          <div class="teach" id="sum3"></div>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Pick one question you marked "Does not measure your concept." What does it measure instead, and what question would measure your concept?</div>
+          <div class="qh">Two to three sentences. If you marked none, pick the question that comes closest to missing your concept and explain.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">5. Which problems were easy to catch, and which needed you to know your concept? What does that tell you about which parts of writing a survey an AI tool can do?</div>
+          <div class="qh">Three to four sentences.</div>
+          <textarea id="r5"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">6. Which of your repaired questions will you use in your Lab 8 survey (questions 4 to 10)?</div>
+          <div class="qh">One to two sentences. Name the question and give one reason.</div>
+          <textarea id="r6" style="min-height:70px"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <div class="verdict" id="buildNote" aria-live="polite"></div>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+        <div class="teach" style="margin-top:12px"><strong>Before you leave:</strong> keep a copy of your repaired questions. Paste the assembled text into a document in your campus storage as well as into D2L. You will use the repairs in Lab 8 on Thursday, March 11.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-sources">
+      <div class="card">
+        <h2>Sources</h2>
+        <div class="srcnote" style="font-size:13px">
+          Bernard, H. Russell, and Amber Wutich. 2026. <em>Social Research Methods: Qualitative and Quantitative Approaches</em>. 3rd ed. Thousand Oaks, CA: SAGE. Chapter 9, "Fourteen Rules for Question Wording."<br>
+          Pew Research Center. 2025. American Trends Panel Wave 165 topline, survey conducted March 10 to 16, 2025. https://www.pewresearch.org/wp-content/uploads/sites/20/2025/05/SR_25.05.08_media-trust_topline.pdf<br>
+          Schaeffer, Nora Cate, and Stanley Presser. 2003. "The Science of Asking Questions." <em>Annual Review of Sociology</em> 29:65-88.<br><br>
+          The eight problems condense the textbook's rules and Schaeffer and Presser's review. The backup set was written for this course to resemble typical AI-drafted questions; one of its questions uses Pew Research Center's wording.
+        </div>
+      </div>
+    </div>
+
+    <footer>Built for SOCL 3633 Research Methods, Midwestern State University, Spring 2027. Your answers stay on this page and are never recorded or sent anywhere until you copy and paste them yourself.</footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+    if (sec === 'sec-diag') renderDiag();
+    if (sec === 'sec-rep') refreshRepairs();
+    if (sec === 'sec-response') renderSummaries();
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  // ---- the eight problems ----
+  const PROBS = [
+    ['two', 'Two questions in one', 'The question asks about two things but allows one answer. A person who feels differently about the two has no honest answer.'],
+    ['lead', 'Leading', 'The wording pushes toward one answer, for example by starting with "Don\'t you agree" or by describing one side favorably.'],
+    ['recall', 'Hard to recall', 'People cannot remember the answer accurately, usually because the time span is too long or the behavior is too routine to count.'],
+    ['choices', 'Answer choices overlap or leave people out', 'Some people fit two choices, or no choice fits them. This includes a missing choice such as "Never" or "Does not apply," and choices that do not match the question.'],
+    ['unclear', 'Unclear wording', 'The question uses words people may not know or may read differently. Words like "often," "regularly," or "sometimes" count here, because people read them differently.'],
+    ['sens', 'Sensitive', 'The question asks about something people may not want to admit, so some will give the answer that makes them look good. A sensitive question also breaks the class-project rules, so it cannot go in your Lab 8 survey.'],
+    ['assume', 'Assumes something about the person', 'The question takes for granted a fact that is not true for everyone, such as having a spouse, a job, or a car. People it does not fit have no honest answer.'],
+    ['concept', 'Does not measure your concept', 'The question may be clear and well written, but it measures a nearby idea instead of your concept. How often someone watches the news is not the same as how much they trust it. This is the measurement problem from week 4.']
+  ];
+  const LABEL = Object.fromEntries(PROBS.map(p => [p[0], p[1]]));
+  $('probDefs').innerHTML = PROBS.map(p => '<div class="def"><div class="who">' + p[1] + '</div><div class="hinge">' + p[2] + '</div></div>').join('');
+
+  // ---- generate ----
+  const N = 10;
+  const PROMPT = (c) => 'Write 10 survey questions with closed-ended answer choices measuring ' + (c || '[your concept]') + ' for a survey of adults.';
+  function updatePrompt(){ $('promptShow').textContent = PROMPT($('concept').value.trim()); }
+  $('concept').addEventListener('input', updatePrompt);
+  updatePrompt();
+  $('copyPrompt').addEventListener('click', () => {
+    const t = PROMPT($('concept').value.trim());
+    if (!$('concept').value.trim()) { $('copyPromptNote').textContent = 'Enter your concept in the Get set up tab first.'; return; }
+    $('promptUsed').value = t; updateStatus();
+    const done = () => { $('copyPromptNote').textContent = 'Copied. Paste it into the AI tool and send it.'; };
+    const fail = () => { $('copyPromptNote').textContent = 'Your browser blocked automatic copying. Select the prompt above and press Ctrl+C (Cmd+C on a Mac).'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, fail); else fail();
+  });
+  let h = '';
+  for (let i = 0; i < N; i++) {
+    h += '<div class="rq"><div class="qt">Question ' + (i + 1) + '</div><textarea id="q' + i + '" style="min-height:64px" aria-label="Question ' + (i + 1) + ' with its answer choices"></textarea></div>';
+  }
+  $('qInputs').innerHTML = h;
+  const qText = (i) => $('q' + i).value.trim();
+  const pasted = () => Array.from({ length: N }, (_, i) => i).filter(i => qText(i));
+  function updateStatus(){
+    const tool = $('tool').value.trim(), pr = $('promptUsed').value.trim(), n = pasted().length;
+    const ok = tool && pr && n === N;
+    $('genStatus').innerHTML = '<strong>Checkpoint:</strong> AI tool ' + (tool ? 'entered' : 'not entered yet') + '. Prompt ' + (pr ? 'entered' : 'not entered yet') + '. Questions pasted: ' + n + ' of 10.' + (ok ? ' You are ready for the Diagnose tab.' : ' Finish all three before you go on.');
+  }
+  ['tool', 'promptUsed'].forEach(id => $(id).addEventListener('input', updateStatus));
+  for (let i = 0; i < N; i++) $('q' + i).addEventListener('input', updateStatus);
+  updateStatus();
+
+  const BACKUP = [
+    'How much do you trust the news media and social media to report the news accurately? (A great deal / A fair amount / Not very much / None at all)',
+    'Don\'t you agree that most news outlets are biased? (Yes / No)',
+    'How many news articles have you read in the past six months? (0 to 10 / 10 to 50 / 50 to 100 / More than 100)',
+    'How often do you watch local TV news? (Never / Rarely / Sometimes / Often)',
+    'How often do you and your spouse disagree about news stories? (Never / Sometimes / Often)',
+    'Which news source do you trust most? (CNN / Fox News / MSNBC)',
+    'To what extent do you believe legacy media institutions have lost their epistemic authority? (Strongly agree / Agree / Disagree / Strongly disagree)',
+    'Have you ever shared a news story online that you knew was false? (Yes / No)',
+    'How much, if at all, do you trust the information you get from national news organizations? (A lot / Some / Not too much / Not at all)',
+    'How often do you use news apps on your phone? (Daily / Weekly / Monthly)'
+  ];
+  $('backupBtn').addEventListener('click', () => {
+    $('concept').value = 'trust in news media'; updatePrompt();
+    $('tool').value = 'Backup set provided by the instructor';
+    $('promptUsed').value = PROMPT('trust in news media');
+    BACKUP.forEach((q, i) => { $('q' + i).value = q; });
+    updateStatus();
+  });
+
+  // ---- diagnose ----
+  const marks = Array.from({ length: N }, () => new Set());
+  function renderDiag(){
+    const list = pasted();
+    if (!list.length) { $('diagList').innerHTML = '<div class="teach">Paste your questions in the Generate tab first.</div>'; tally(); return; }
+    $('diagList').innerHTML = list.map(i => {
+      const boxes = PROBS.map(p => '<label class="pk"><input type="checkbox" data-q="' + i + '" data-p="' + p[0] + '"' + (marks[i].has(p[0]) ? ' checked' : '') + '><span>' + p[1] + '</span></label>').join('') +
+        '<label class="pk clean"><input type="checkbox" data-q="' + i + '" data-p="none"' + (marks[i].has('none') ? ' checked' : '') + '><span>No problems</span></label>';
+      return '<div class="ev"><div class="evhead"><span class="evnum">QUESTION ' + (i + 1) + '</span></div><div class="evtext qtxt">' + esc(qText(i)) + '</div><div class="pkgrid" role="group" aria-label="Problems in question ' + (i + 1) + '">' + boxes + '</div></div>';
+    }).join('');
+    tally();
+  }
+  $('diagList').addEventListener('change', e => {
+    const b = e.target.closest('input[data-q]'); if (!b) return;
+    const i = Number(b.dataset.q), p = b.dataset.p, m = marks[i];
+    if (b.checked) {
+      m.add(p);
+      if (p === 'none') { PROBS.forEach(x => m.delete(x[0])); }
+      else m.delete('none');
+    } else m.delete(p);
+    $('diagList').querySelectorAll('input[data-q="' + i + '"]').forEach(x => { x.checked = m.has(x.dataset.p); });
+    tally();
+  });
+  function tallyData(){
+    const list = pasted();
+    const marked = list.filter(i => marks[i].size > 0);
+    const clean = list.filter(i => marks[i].has('none')).length;
+    const counts = PROBS.map(p => [p[0], list.filter(i => marks[i].has(p[0])).length]);
+    const max = Math.max(0, ...counts.map(c => c[1]));
+    const top = counts.filter(c => c[1] === max && max > 0).map(c => LABEL[c[0]]);
+    return { list, marked, clean, counts, max, top };
+  }
+  function tally(){
+    const t = tallyData();
+    $('tClean').textContent = t.clean;
+    $('tCleanL').textContent = (t.clean === 1 ? 'question' : 'questions') + ' marked "No problems"';
+    $('tMarked').textContent = t.marked.length + ' of ' + t.list.length;
+    const scale = Math.max(1, t.list.length);
+    $('tBars').innerHTML = t.counts.map(c => '<div class="brow"><div class="blabel">' + LABEL[c[0]] + '</div><div class="btrack"><div class="bfill" style="width:' + (100 * c[1] / scale) + '%"></div></div><div class="bval">' + c[1] + (c[1] === 1 ? ' question' : ' questions') + '</div></div>').join('');
+    if (!t.marked.length) $('tNote').textContent = 'Check your questions above to fill in the tally.';
+    else $('tNote').innerHTML = '<strong>Most common problem:</strong> ' + (t.top.length ? t.top.join(' and ') + ' (' + t.max + (t.max === 1 ? ' question' : ' questions') + ')' : 'none marked yet') + '.' + (t.marked.length < t.list.length ? ' ' + (t.list.length - t.marked.length) + ' questions are not diagnosed yet.' : '');
+  }
+
+  // ---- repair ----
+  const R = 3;
+  let rh = '';
+  for (let k = 0; k < R; k++) {
+    rh += '<div class="ev"><div class="evhead"><span class="evnum">REPAIR ' + (k + 1) + '</span></div>' +
+      '<div class="rq"><div class="qt">Which question are you repairing?</div><select id="rp' + k + '" aria-label="Question for repair ' + (k + 1) + '"></select></div>' +
+      '<div class="evtext" id="ro' + k + '"></div>' +
+      '<div class="rq"><div class="qt">Your repaired version, with its answer choices</div><textarea id="rv' + k + '" style="min-height:70px"></textarea></div>' +
+      '<div class="rq"><div class="qt">The main problem you removed</div><select id="rr' + k + '" aria-label="Problem removed in repair ' + (k + 1) + '"><option value="">Choose a problem</option>' + PROBS.map(p => '<option value="' + p[0] + '">' + p[1] + '</option>').join('') + '</select></div>' +
+      '<div class="rq"><div class="qt">In one sentence: how would the original question have distorted your data?</div><textarea id="rd' + k + '" style="min-height:60px"></textarea></div></div>';
+  }
+  $('repList').innerHTML = rh;
+  function short(t){ return t.length > 70 ? t.slice(0, 67) + '...' : t; }
+  function refreshRepairs(){
+    const list = pasted();
+    for (let k = 0; k < R; k++) {
+      const sel = $('rp' + k), cur = sel.value;
+      sel.innerHTML = '<option value="">Choose a question</option>' + list.map(i => '<option value="' + i + '">Question ' + (i + 1) + ': ' + esc(short(qText(i))) + '</option>').join('');
+      if (cur !== '' && list.includes(Number(cur))) sel.value = cur;
+      showOrig(k);
+    }
+  }
+  function showOrig(k){
+    const v = $('rp' + k).value;
+    $('ro' + k).innerHTML = v === '' ? '' : '<strong>Original:</strong> ' + esc(qText(Number(v)));
+  }
+  for (let k = 0; k < R; k++) $('rp' + k).addEventListener('change', () => showOrig(k));
+
+  // ---- response sheet ----
+  function marksText(i){
+    const m = marks[i];
+    if (m.has('none')) return 'No problems';
+    if (!m.size) return 'Not diagnosed';
+    return PROBS.filter(p => m.has(p[0])).map(p => p[1]).join('; ');
+  }
+  function repairsData(){
+    return Array.from({ length: R }, (_, k) => {
+      const v = $('rp' + k).value;
+      return { q: v === '' ? null : Number(v), rv: $('rv' + k).value.trim(), rr: $('rr' + k).value, rd: $('rd' + k).value.trim() };
+    });
+  }
+  function renderSummaries(){
+    const tool = $('tool').value.trim(), pr = $('promptUsed').value.trim();
+    $('sum1').innerHTML = '<strong>Tool:</strong> ' + (tool ? esc(tool) : 'not entered') + '<br><strong>Prompt:</strong> ' + (pr ? esc(pr) : 'not entered');
+    const t = tallyData();
+    $('sum2').innerHTML = t.list.length ? (t.list.length + ' questions pasted, ' + t.marked.length + ' diagnosed. Questions with no problems: ' + t.clean + '. Most common problem: ' + (t.top.length ? esc(t.top.join(' and ')) : 'none marked yet') + '.') : 'No questions pasted yet.';
+    const rs = repairsData();
+    const done = rs.filter(r => r.q !== null && r.rv && r.rr && r.rd).length;
+    $('sum3').textContent = done + ' of 3 repairs complete.';
+  }
+  $('buildBtn').addEventListener('click', () => {
+    renderSummaries();
+    const name = $('rName').value.trim() || '(no name entered)';
+    const L = [], miss = [];
+    L.push('SOCL 3633 RESEARCH METHODS · LAB 7 · SURVEY QUESTIONS WRITTEN BY AN AI TOOL');
+    L.push('Name: ' + name);
+    L.push('Assembled: ' + new Date().toLocaleString());
+    L.push('Concept: ' + ($('concept').value.trim() || '(not entered)'));
+    L.push('');
+    L.push('QUESTION 1 (AI-use statement)');
+    const tool = $('tool').value.trim(), pr = $('promptUsed').value.trim();
+    if (!tool || !pr) miss.push('the AI-use statement');
+    L.push('Tool: ' + (tool || '(blank)'));
+    L.push('Prompt: ' + (pr || '(blank)'));
+    L.push('');
+    L.push('QUESTION 2 (the ten questions and the problems marked)');
+    const t = tallyData();
+    if (t.list.length < N) miss.push((N - t.list.length) + ' pasted questions');
+    if (t.marked.length < t.list.length) miss.push('diagnoses for ' + (t.list.length - t.marked.length) + ' questions');
+    for (let i = 0; i < N; i++) {
+      L.push((i + 1) + '. ' + (qText(i) || '(blank)'));
+      L.push('   Problems marked: ' + (qText(i) ? marksText(i) : 'Not diagnosed'));
+    }
+    L.push('Tally: ' + t.clean + ' of ' + t.list.length + ' questions with no problems. Most common problem: ' + (t.top.length ? t.top.join(' and ') + ' (' + t.max + ')' : 'none marked') + '.');
+    t.counts.forEach(c => L.push('   ' + LABEL[c[0]] + ': ' + c[1]));
+    L.push('');
+    L.push('QUESTION 3 (three repairs)');
+    repairsData().forEach((r, k) => {
+      if (r.q === null || !r.rv || !r.rr || !r.rd) miss.push('part of repair ' + (k + 1));
+      L.push('Repair ' + (k + 1));
+      L.push('   Original (question ' + (r.q === null ? '?' : r.q + 1) + '): ' + (r.q === null ? '(not chosen)' : qText(r.q)));
+      L.push('   Repaired: ' + (r.rv || '(blank)'));
+      L.push('   Problem removed: ' + (r.rr ? LABEL[r.rr] : '(not chosen)'));
+      L.push('   How the original would have distorted the data: ' + (r.rd || '(blank)'));
+    });
+    L.push('');
+    const QS = [['r4', 'QUESTION 4 (a question that does not measure the concept)'], ['r5', 'QUESTION 5 (what an AI tool can and cannot do)'], ['r6', 'QUESTION 6 (which repair goes into the Lab 8 survey)']];
+    QS.forEach(q => { L.push(q[1]); const v = $(q[0]).value.trim(); if (!v) miss.push(q[1].split(' (')[0].toLowerCase()); L.push(v || '(blank)'); L.push(''); });
+    $('outText').value = L.join('\n').trim();
+    $('outWrap').style.display = 'block';
+    $('copyBtn').disabled = false;
+    $('buildNote').textContent = miss.length ? 'Assembled. Still missing: ' + miss.join(', ') + '. You can fill them in and assemble again.' : 'Assembled. Copy the text below and paste it into the Lab 7 submission on D2L.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText');
+    ta.focus(); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const okMsg = 'Copied. Paste it into the Lab 7 submission on D2L.';
+    const failMsg = 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(() => { $('buildNote').textContent = okMsg; }, () => { $('buildNote').textContent = ok ? okMsg : failMsg; });
+    } else {
+      $('buildNote').textContent = ok ? okMsg : failMsg;
+    }
+  });
+
+  window.__S = { activate, marks };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

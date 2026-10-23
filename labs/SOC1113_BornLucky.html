@@ -1,180 +1,221 @@
-<!doctype html>
-<html lang="en" data-theme="light">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Born Lucky</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Born Lucky · SOCL 1133 Introductory Sociology · In-class lab</title>
 <style>
-:root{
-  --bg:#f4f4f2; --surface:#fcfcfb; --surface2:#f0efec; --ink:#1a1a19; --ink2:#5d5c58;
-  --line:#dedcd6; --accent:#266cc1; --accent2:#ae4d26; --good:#137a55; --bad:#c94f42;
-  --warn:#b58a1f; --chip:#e8e6e1;
-}
-[data-theme="dark"]{
-  --bg:#131312; --surface:#1a1a19; --surface2:#232322; --ink:#ececea; --ink2:#a3a29d;
-  --line:#33322f; --accent:#3c8ff3; --accent2:#ef622a; --good:#199e70; --bad:#d4675b;
-  --warn:#cfa233; --chip:#2a2a28;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{max-width:860px;margin:0 auto;padding:18px 16px 60px}
-header{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
-h1{font-size:26px;margin:0}
-.sub{color:var(--ink2);font-size:14px}
-#themeBtn{background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:13px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:14px}
-.big{font-size:22px;font-weight:700;margin:0 0 6px}
-.muted{color:var(--ink2)}
-.small{font-size:13px}
-button{font:inherit}
-.btn{background:var(--accent);border:none;color:#fff;border-radius:9px;padding:10px 18px;cursor:pointer;font-size:15px;font-weight:600}
-.btn:hover{filter:brightness(1.06)}
-.btn:disabled{opacity:.45;cursor:default}
-.btn.secondary{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
-input[type=text]{font:inherit;background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 12px;width:100%;max-width:340px}
-.opt{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:12px 14px;margin:8px 0;cursor:pointer;font-size:15px}
-.opt:hover:not(:disabled){border-color:var(--accent)}
-.opt:disabled{cursor:default;opacity:.9}
-.opt .ot{font-weight:650}
-.opt .od{display:block;color:var(--ink2);font-size:13px;margin-top:2px}
-.opt.gray{opacity:.62}
-.opt.gray .od{color:var(--bad)}
-.opt.picked{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%, var(--surface2))}
-.opt.sel{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%, var(--surface2))}
-.meters{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
-.meter{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
-.meter .lab{font-size:12px;color:var(--ink2);display:flex;justify-content:space-between}
-.bar{height:7px;background:var(--chip);border-radius:4px;margin-top:5px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:4px;background:var(--accent);transition:width .4s}
-.meter.m-health .bar i{background:var(--good)}
-.meter.m-people .bar i{background:var(--accent2)}
-.meter.m-steady .bar i{background:var(--warn)}
-.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-.chip{background:var(--chip);border-radius:20px;padding:4px 12px;font-size:13px}
-.chip b{font-weight:700}
-.vign{font-size:16px;margin:0 0 10px;white-space:pre-line}
-.view{font-size:13.5px;color:var(--ink2);font-style:italic;border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:0 0 14px}
-.view b{font-style:normal;font-weight:650;color:var(--ink2);text-transform:uppercase;font-size:11px;letter-spacing:.07em;display:block;margin-bottom:1px}
-.age{font-size:13px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px}
-.outcome{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px}
-.delta{font-size:14px;margin-top:8px}
-.delta .up{color:var(--good);font-weight:650}
-.delta .dn{color:var(--bad);font-weight:650}
-.scoreline{font-size:15px;margin-top:6px}
-.scoreline b{font-size:17px}
-.hr{border:none;border-top:1px solid var(--line);margin:14px 0}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-th{color:var(--ink2);font-weight:600;font-size:13px}
-td.num,th.num{text-align:right;white-space:nowrap}
-.pos{color:var(--good);font-weight:650}
-.neg{color:var(--bad);font-weight:650}
-.startbar{height:12px;background:var(--chip);border-radius:6px;overflow:hidden;margin:6px 0 2px;position:relative}
-.startbar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.twoScore{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0}
-.scorebox{flex:1;min-width:200px;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;text-align:center}
-.scorebox .val{font-size:34px;font-weight:800}
-.scorebox .cap{font-size:13px;color:var(--ink2)}
-.qs li{margin-bottom:10px}
-footer{margin-top:24px;color:var(--ink2);font-size:12px;line-height:1.6}
-.lifetag{display:inline-block;background:var(--chip);border-radius:6px;padding:2px 10px;font-size:13px;margin-bottom:8px}
-.handline{margin:3px 0}
-.payhead{display:flex;justify-content:space-between;align-items:center;margin:10px 0 4px;font-size:14px}
-/* dashboard */
-.levers{display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;margin:12px 0}
-.lever .lab{font-size:13px;color:var(--ink2);margin-bottom:4px}
-.seg{display:flex;flex-wrap:wrap;gap:4px}
-.seg button{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:7px;padding:5px 10px;font-size:13px;cursor:pointer}
-.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
-.tiles{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
-.tile{flex:1;min-width:130px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
-.tile .val{font-size:26px;font-weight:800}
-.tile .val small{font-size:14px;font-weight:600;color:var(--ink2)}
-.tile .cap{font-size:12px;color:var(--ink2)}
-.tile .held{font-size:12px;color:var(--accent2);font-weight:650}
-.hist{display:flex;align-items:flex-end;gap:2px;height:150px;margin:8px 0 2px;position:relative}
-.hist .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative}
-.hist .b{border-radius:4px 4px 0 0;background:var(--accent);min-height:2px}
-.hist .bh{border-radius:4px 4px 0 0;background:var(--accent2);opacity:.55;min-height:0;margin-bottom:1px}
-.hist .col:hover .b{filter:brightness(1.12)}
-.histx{display:flex;gap:2px;font-size:10.5px;color:var(--ink2)}
-.histx span{flex:1;text-align:center}
-.legendrow{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin:6px 0}
-.legendrow i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:baseline}
-.rate{margin:8px 0}
-.rate .lab{font-size:13px;display:flex;justify-content:space-between;color:var(--ink)}
-.rate .track{height:9px;background:var(--chip);border-radius:5px;margin-top:3px;overflow:hidden}
-.rate .track i{display:block;height:100%;border-radius:5px 4px 4px 5px;background:var(--accent)}
-.rate .track.h i{background:var(--accent2);opacity:.65}
-.rw{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
-.realgrid{display:flex;gap:24px;flex-wrap:wrap;margin-top:10px}
-.realcol{flex:1;min-width:230px}
-.realcol h2{margin:0 0 8px;font-size:14px}
-.rbar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
-.rbar .rl{width:92px;color:var(--ink2)}
-.rbar .rt{flex:1;height:12px;background:var(--chip);border-radius:4px;overflow:hidden}
-.rbar .rt i{display:block;height:100%;border-radius:0 4px 4px 0}
-.rbar .rv{width:44px;text-align:right;font-weight:650}
-.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12.5px;padding:5px 9px;border-radius:7px;z-index:50;display:none;max-width:220px}
-.hb{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:14px}
-.hb .l{width:200px}
-.hb .t{flex:1;height:13px;background:var(--chip);border-radius:5px;overflow:hidden}
-.hb .t i{display:block;height:100%;border-radius:0 5px 5px 0;background:var(--accent);transition:width .35s}
-.hb .n{width:60px;font-weight:700;text-align:right;white-space:nowrap}
-.secbox{background:var(--surface2);border:1px dashed var(--line);border-radius:10px;padding:11px 14px;margin:14px 0 4px;font-size:14px}
-.secbar{position:relative;height:12px;background:var(--chip);border-radius:6px;margin:9px 0 7px}
-.secbar .rangebar{position:absolute;top:0;height:100%;background:var(--accent);opacity:.32;border-radius:6px}
-.secbar .medmark{position:absolute;top:-2px;width:3px;height:16px;background:var(--accent);border-radius:2px}
-.cmprow{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px}
-.cmprow .cl{width:100px}
-.cmprow .cbars{flex:1;display:flex;flex-direction:column;gap:2px}
-.cmprow .cbars .t{height:10px;background:var(--chip);border-radius:4px;overflow:hidden}
-.cmprow .cbars .t i{display:block;height:100%;border-radius:0 4px 4px 0;background:var(--accent)}
-.cmprow .cn{width:130px;text-align:right;font-size:13px;white-space:nowrap}
-.cmprow .cg{width:46px;text-align:right;font-weight:700;font-size:13px;color:var(--ink2)}
-.cmprow .cg.off{color:var(--bad)}
-.pairrow{margin:12px 0}
-.pairrow .prl{font-size:14px;font-weight:650;margin-bottom:2px}
-.pairrow .hb{margin:3px 0}
-.pairrow .hb .l{width:110px}
-.factbox{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:12px 0;font-size:14px}
-.warnbox{background:var(--surface2);border:1px solid var(--warn);border-left:4px solid var(--warn);border-radius:10px;padding:12px 15px;margin:14px 0;font-size:14px}
-.kept{border-left:3px solid var(--accent2);padding-left:12px;margin-top:16px}
-.kept .tag{font-size:12px;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
-.hist .b.orange{background:var(--accent2)}
-@media (max-width:560px){ .hb .l{width:130px} }
-@media (max-width:560px){ .meters{gap:6px} .meter{min-width:100px} .levers{grid-template-columns:1fr} }
+  /* ---------- tokens (light) ---------- */
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --page: #f9f9f7;
+    --text: #0b0b0b;
+    --text-2: #52514e;
+    --muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.12);
+    --accent: #266cc1;
+    --on-accent: #ffffff;
+    --warn: #ae4d26;
+    --good: #27774a;
+    --amber: #8a6500;
+    --wash: rgba(42,120,214,0.08);
+    --focus: #1a56a0;
+  }
+  /* ---------- tokens (dark) ---------- */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --page: #0d0d0d;
+    --text: #ffffff;
+    --text-2: #c3c2b7;
+    --muted: #a3a29c;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.14);
+    --accent: #3c8ff3;
+    --on-accent: #0d0d0c;
+    --warn: #ef7a4a;
+    --good: #4fb878;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.12);
+    --focus: #8cbcff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--page); }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); }
+  .root { min-height: 100vh; background: var(--page); color: var(--text); padding: 20px 16px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; line-height: 1.3; }
+  h1 .sub { display: inline-block; color: var(--muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text); }
+
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); }
+  .tab[aria-selected="true"] { background: var(--text); color: var(--page); border-color: var(--text); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .panel > * + * { margin-top: 12px; }
+  h2 { font-size: 17px; font-weight: 700; line-height: 1.35; }
+  h3 { font-size: 14.5px; font-weight: 700; color: var(--text-2); margin-top: 18px; }
+  .prose { font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  .prose p + p { margin-top: 10px; }
+  .prose strong, .prose b { color: var(--text); }
+  .prose ul, .prose ol { margin: 8px 0 0 22px; }
+  .prose li + li { margin-top: 4px; }
+  .lede { font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  .lede strong { color: var(--text); }
+  .note { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.55; color: var(--text-2); }
+  .note strong, .note b { color: var(--text); }
+  .note.caution { background: transparent; border: 1px solid var(--amber); border-left-width: 4px; }
+  .src { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .src strong { color: var(--text-2); }
+  .veiled { display: none; }
+
+  /* entries: definitions, systems, profiles */
+  .entries { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .entry { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .entry .kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .entry .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .entry .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .entry .body { font-size: 13.5px; line-height: 1.55; color: var(--text-2); }
+  .entry .body strong { color: var(--text); }
+  .entry .row { font-size: 13.5px; line-height: 1.5; color: var(--text-2); margin-top: 6px; }
+  .entry .row .lab { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-right: 6px; }
+
+  /* stats */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat .l { font-size: 12.5px; color: var(--text-2); line-height: 1.45; margin-top: 4px; }
+  .stat.warn .v { color: var(--warn); } .stat.good .v { color: var(--good); } .stat.accent .v { color: var(--accent); } .stat.amber .v { color: var(--amber); }
+
+  /* bars: one encoding, length only */
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .brow { display: grid; grid-template-columns: minmax(120px, 34%) 1fr auto; align-items: center; gap: 10px; }
+  .blabel { font-size: 13.5px; color: var(--text-2); text-align: right; line-height: 1.35; }
+  .btrack { height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; width: 0; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); } .bfill.good { background: var(--good); } .bfill.amber { background: var(--amber); }
+  .bval { font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 6ch; }
+
+  /* interactive boxes */
+  .box { background: var(--wash); border-radius: 10px; padding: 14px 16px; }
+  .box > * + * { margin-top: 10px; }
+  .prompt { font-size: 14.5px; font-weight: 600; line-height: 1.5; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choices.column { flex-direction: column; align-items: stretch; }
+  .opt { font: inherit; font-size: 14px; font-weight: 600; line-height: 1.4; padding: 9px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; text-align: left; }
+  .choices.column .opt { border-radius: 10px; }
+  .opt:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+  .opt:disabled { cursor: default; }
+  .opt.chosen { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .opt.chosen::after { content: " (your pick)"; font-weight: 500; font-size: 12px; }
+  .opt.answer { border: 2px solid var(--good); color: var(--good); }
+  .opt.answer::before { content: "Reference: "; font-weight: 500; font-size: 12px; }
+  .opt.chosen.answer { background: var(--good); border-color: var(--good); color: var(--on-accent); }
+  .opt.chosen.answer::before { content: ""; }
+  .opt.toggled { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .verdict { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .verdict:empty { display: none; }
+  .slider { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .slider input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); height: 32px; }
+  .slider .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; padding: 9px 16px; min-height: 40px; border-radius: 8px; border: none; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn.secondary { background: none; border: 1px solid var(--border); color: var(--text-2); }
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  /* items to sort or code */
+  .item { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; background: var(--surface); }
+  .item + .item { margin-top: 12px; }
+  .item .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .item .num { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
+  .item .title { font-size: 15px; font-weight: 700; line-height: 1.45; }
+  .item .text { font-size: 14px; line-height: 1.6; color: var(--text-2); margin-top: 6px; }
+  .item .meta { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+  .item .meta strong { color: var(--text-2); }
+  .dim { margin-top: 10px; }
+  .dim .dlabel { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+  .dim.inline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dim.inline .dlabel { margin-bottom: 0; min-width: 150px; }
+  .ref { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-2); margin-top: 8px; padding-left: 12px; border-left: 3px solid var(--border); }
+  .ref strong { color: var(--text); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; color: var(--accent); }
+  .tag.yes, .tag.good { color: var(--good); } .tag.no, .tag.warn { color: var(--warn); } .tag.arg, .tag.amber { color: var(--amber); }
+  .itemnote { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-2); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .itemnote strong { color: var(--text); }
+  .progress { font-size: 13.5px; color: var(--muted); }
+
+  /* ending */
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 12px; counter-reset: q; }
+  .qs li { font-size: 15px; line-height: 1.55; padding-left: 32px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .field { display: block; }
+  .field + .field { margin-top: 16px; }
+  .field .qt { display: block; font-size: 15px; line-height: 1.5; font-weight: 600; }
+  .field .qh { display: block; font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 2px; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 15px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text); margin-top: 6px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .wc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .out { display: none; }
+  .out textarea { min-height: 220px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .forum dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14.5px; line-height: 1.5; }
+  .forum dt { font-weight: 700; color: var(--text); }
+  .forum dd { color: var(--text-2); }
+  .nextrow { display: flex; justify-content: flex-end; margin-top: 4px; }
+  footer { font-size: 12.5px; color: var(--muted); line-height: 1.6; padding: 8px 2px 24px; }
+  .srclist { font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  .srclist h3 { margin-top: 14px; }
+  .srclist h3:first-child { margin-top: 0; }
+  .srclist p { margin-top: 6px; }
+  .notice { font-size: 14px; line-height: 1.45; padding: 10px 14px; background: #F9EBC8; color: #1a1a1a; border-bottom: 1px solid #9A7100; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .notice button { font: inherit; font-weight: 600; padding: 4px 12px; border: 1px solid #9A7100; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; flex: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  @media (max-width: 600px) {
+    .root { padding: 12px 10px; }
+    .panel { padding: 16px 14px; }
+    .brow { grid-template-columns: 1fr auto; }
+    .blabel { grid-column: 1 / -1; text-align: left; }
+    .btrack { grid-column: 1; }
+    .dim.inline .dlabel { min-width: 0; width: 100%; }
+    .forum dl { grid-template-columns: 1fr; }
+    h1 .sub { display: block; margin-left: 0; margin-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+  @media print {
+    .tabs, .theme-btn, .btnrow, .nextrow, .notice { display: none !important; }
+    .section { display: block !important; }
+    .panel { break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
-<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, Firefox, or Edge. A computer works best. On a phone, use the link your instructor posted instead of the downloaded file.</div></noscript>
 
-<div class="wrap" role="main">
-<header role="presentation">
-  <div>
-    <h1>Born Lucky</h1>
-    <div class="sub">Nobody chooses where they start.</div>
-  </div>
-  <button id="themeBtn">Dark</button>
-</header>
-
-<div id="app"></div>
-
-<footer role="presentation">
-Built for SOC 1113. <b>The simulation on this page is an illustration, not evidence.</b> Its rules were written by hand to reflect patterns described in the research below, and none of its numbers were estimated from data. Do not cite it. The measured figures come from Chetty, Hendren, Kline, and Saez 2014 (income mobility and the quintile transition matrix, tax records of about 40 million families) and the Pell Institute, <i>Indicators of Higher Education Equity in the United States</i>, 2024 (bachelor’s attainment by family income quarter). The model's design draws on Annette Lareau, <i>Unequal Childhoods</i> (parenting and class), Pierre Bourdieu (cultural and social capital), and Oliver and Shapiro, <i>Black Wealth/White Wealth</i> (income vs wealth). All people and places in the simulation are fictional.
-</footer>
-</div>
-<div class="tip" id="tip"></div>
+<div class="root"><div class="frame" id="app" role="main"></div></div>
 
 <script>
+/* ===================== LAB CONFIG ===================== */
+/* Simulation model for the Run 500 lives tab, carried over unchanged from the earlier Born Lucky page.
+ Its rules were written by hand. SIGMA and CUTS were calibrated on 2026-08-04 against Chetty et al. 2014, Table II. */
+var BL_MODEL = (function () {
 "use strict";
-const R = () => (window.__testRandom ? window.__testRandom() : Math.random());
+let RNG = Math.random;
+const R = () => RNG();
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const jit = () => [-1,0,0,1][Math.floor(R()*4)];
-const $ = s => document.querySelector(s);
 
-let S = null;
-window.__S = null;
 
 /* ---------------- the deal ---------------- */
 function deal(){
@@ -888,265 +929,8 @@ const ROUNDS = [
 ];
 
 /* ---------------- engine ---------------- */
-const NLIVES = 3;
 function grayOf(c,h,L){ return typeof c.gray==='function' ? c.gray(h,L) : (c.gray||null); }
 function liveChoices(rd,h,L){ return rd.choices(h,L).filter(c => c.only === undefined || c.only); }
-
-function startGame(team){
-  S = { team, lifeIdx: 0, lives: [], done: false };
-  window.__S = S;
-  startLife();
-}
-function startLife(){
-  const h = (window.__forceHand && window.__forceHand[S.lifeIdx]) ? window.__forceHand[S.lifeIdx] : deal();
-  S.cur = newLife(h);
-  renderRound();
-}
-function meterRow(L){
-  if (!L.adult) return '';
-  const m = (name, cls, v) => `<div class="meter ${cls}"><div class="lab"><span>${name}</span></div><div class="bar"><i style="width:${clamp(v,0,100)}%"></i></div></div>`;
-  return `<div class="meters">
-    ${m('Money','m-money',L.money)}
-    ${m('Steady','m-steady',L.steady)}
-    ${m('Health','m-health',L.health)}
-    ${m('People','m-people',L.people)}
-  </div>
-  <div class="chips">
-    <span class="chip">Loans: <b>${debtWord(L.debt)}</b></span>
-    <span class="chip">Score: <b>${L.score}</b></span>
-  </div>`;
-}
-function viewBlock(rd,h,L){
-  if (!rd.view) return '';
-  return `<div class="view"><b>The view from here</b>${rd.view(h,L)}</div>`;
-}
-function renderRound(){
-  const L = S.cur, rd = ROUNDS[L.roundIdx];
-  if (rd.closer){ renderCloser(); return; }
-  const vignText = rd.vign(L.h, L);
-  if (rd.type==='allocate'){ renderAllocate(rd, vignText); return; }
-  const lifeTag = `<span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>`;
-  const cs = liveChoices(rd, L.h, L);
-  L.curChoices = cs;
-  window.__C = cs.map((c,i)=>({ i, gray: !!grayOf(c,L.h,L), w: c.w }));
-  const optHtml = cs.map((c,i)=>{
-    const gray = grayOf(c,L.h,L);
-    return `<button class="opt${gray?' gray':''}" data-i="${i}" ${gray?'disabled':''}>
-      <span class="ot">${c.t}</span>
-      <span class="od">${gray ? gray : c.d}</span>
-    </button>`;
-  }).join('');
-  $('#app').innerHTML = `
-    ${meterRow(L)}
-    <div class="card">
-      ${lifeTag}
-      <div class="age">${rd.title}</div>
-      <p class="vign">${vignText}</p>
-      ${viewBlock(rd,L.h,L)}
-      <div id="opts">${optHtml}</div>
-      <div id="result"></div>
-    </div>`;
-  document.querySelectorAll('#opts .opt:not([disabled])').forEach(b => b.addEventListener('click', () => choose(+b.dataset.i)));
-}
-function showResult(L, text, shown, sc, drift, btnLabel){
-  $('#result').innerHTML = `
-    <div class="outcome">
-      ${text?`<div>${text}</div>`:''}
-      ${shown.length?`<div class="delta">${shown.join(' &nbsp; ')}</div>`:''}
-      <div class="scoreline">Score ${(sc+drift)>=0?'+':''}${sc+drift}. Life total <b>${L.score}</b>.</div>
-      <div style="margin-top:10px"><button class="btn" id="nextBtn">${btnLabel||'Keep going'}</button></div>
-    </div>`;
-  $('#nextBtn').addEventListener('click', nextRound);
-}
-function fxShown(L, fx){
-  const shown = [];
-  (fx||[]).forEach(([m,d])=>{
-    if (!L.adult && (m==='money'||m==='steady')) return;
-    const label = m==='money'?'Money':m==='steady'?'Steady':m==='health'?'Health':'People';
-    shown.push(`<span class="${d>=0?'up':'dn'}">${label} ${d>=0?'+':''}${d}</span>`);
-  });
-  return shown;
-}
-function choose(i){
-  const L = S.cur, rd = ROUNDS[L.roundIdx];
-  const c = L.curChoices[i];
-  const r = c.out(L.h, L);
-  const shown = fxShown(L, r.fx);
-  const { sc, drift } = applyResult(L, r, c.w, c.t, rd);
-  document.querySelectorAll('#opts .opt').forEach(b => { b.disabled = true; if (+b.dataset.i===i) b.classList.add('picked'); });
-  showResult(L, r.text, shown, sc, drift);
-}
-function renderAllocate(rd, vignText){
-  const L = S.cur;
-  const items = rd.items(L.h, L);
-  L.curItems = items;
-  L.sel = new Set();
-  window.__C = items.map((it,i)=>({ i, gray:false, w: it.w }));
-  const optHtml = items.map((it,i)=>`
-    <button class="opt payopt" data-i="${i}">
-      <span class="ot">${it.t}</span>
-      <span class="od">${it.d}</span>
-    </button>`).join('');
-  $('#app').innerHTML = `
-    ${meterRow(L)}
-    <div class="card">
-      <span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>
-      <div class="age">${rd.title}</div>
-      <p class="vign">${vignText}</p>
-      ${viewBlock(rd,L.h,L)}
-      <div id="opts">${optHtml}</div>
-      <div class="payhead"><span class="muted small" id="payCount">0 of 3 picked</span>
-      <button class="btn" id="payBtn" disabled>Cover these three</button></div>
-      <div id="result"></div>
-    </div>`;
-  document.querySelectorAll('.payopt').forEach(b => b.addEventListener('click', () => {
-    const i = +b.dataset.i;
-    if (L.sel.has(i)){ L.sel.delete(i); b.classList.remove('sel'); }
-    else if (L.sel.size < 3){ L.sel.add(i); b.classList.add('sel'); }
-    $('#payCount').textContent = `${L.sel.size} of 3 picked`;
-    $('#payBtn').disabled = L.sel.size !== 3;
-  }));
-  $('#payBtn').addEventListener('click', () => confirmAllocate(rd));
-}
-function confirmAllocate(rd){
-  const L = S.cur;
-  const items = L.curItems;
-  const kept = [], dropped = [];
-  items.forEach((it,i)=> (L.sel.has(i)?kept:dropped).push(it));
-  let allFx = [], score = 0, wsum = 0, texts = [];
-  kept.forEach(it => {
-    const r = it.keep(L.h, L);
-    allFx.push(...(r.fx||[])); score += r.score||0; wsum += it.w;
-    if (r.note) L.handNotes.push(r.note);
-    if (r.text) texts.push(r.text);
-  });
-  dropped.forEach(it => {
-    const r = it.drop(L.h, L);
-    allFx.push(...(r.fx||[])); score += r.score||0;
-    if (r.note) L.handNotes.push(r.note);
-    if (r.text) texts.push(r.text);
-  });
-  const label = 'Covered: ' + kept.map(k=>k.t.toLowerCase()).join(', ');
-  const shown = fxShown(L, allFx);
-  const r = { text:'', fx: allFx, score, note: null };
-  const { sc, drift } = applyResult(L, r, 0, label, rd);
-  // allocate contributes up to 6 wise points against a max of 6 (override the default 2)
-  L.wiseMax += 4; L.wise += wsum;
-  const text = texts.concat([rd.closeText(L.h)]).join(' ');
-  document.querySelectorAll('.payopt').forEach(b => { b.disabled = true; });
-  $('#payBtn').disabled = true;
-  showResult(L, text, shown, sc, drift);
-}
-function nextRound(){
-  const L = S.cur;
-  L.roundIdx++;
-  if (L.roundIdx >= ROUNDS.length){ endLife(); return; }
-  renderRound();
-}
-function renderCloser(){
-  const L = S.cur, rd = ROUNDS[L.roundIdx];
-  $('#app').innerHTML = `
-    ${meterRow(L)}
-    <div class="card">
-      <span class="lifetag">${['First','Second','Third'][S.lifeIdx]} life &middot; ${rd.age}</span>
-      <div class="age">${rd.title}</div>
-      <p class="vign">${rd.vign(L.h, L)}</p>
-      <div style="margin-top:10px"><button class="btn" id="nextBtn">Close this life</button></div>
-    </div>`;
-  $('#nextBtn').addEventListener('click', endLife);
-}
-function endLife(){
-  const L = S.cur;
-  const bonus = computeBonuses(L);
-  bonus.forEach(b => { L.score += b.pts; });
-  L.bonus = bonus;
-  L.played = L.wiseMax>0 ? Math.round(100 * L.wise / L.wiseMax) : 0;
-  S.lives.push(L);
-  const last = S.lifeIdx === NLIVES-1;
-  $('#app').innerHTML = `
-    <div class="card">
-      <div class="big">${['First','Second','Third'][S.lifeIdx]} life complete</div>
-      <p>Life score: <b>${L.score}</b>.</p>
-      <p class="muted">${last ? 'That was the third life. Time to open the books.' : 'A new deal is waiting. New family, new street, new everything.'}</p>
-      <button class="btn" id="nextBtn">${last ? 'Open the accounting' : 'Draw the next life'}</button>
-    </div>`;
-  $('#nextBtn').addEventListener('click', () => {
-    if (last){ renderAccounting(); }
-    else { S.lifeIdx++; startLife(); }
-  });
-}
-
-/* ---------------- the accounting ---------------- */
-function handReveal(h){
-  const incW = ['','bottom fifth','next fifth','middle fifth','fourth fifth','top fifth'][h.inc];
-  const weaW = ['nothing to speak of','a little cushion','some real savings','a paid off house','real money'][h.wealth];
-  const eduW = ['did not finish high school','finished high school','some college','college degrees'][h.pedu];
-  const famW = h.fam===2?'two parents':h.fam===1?'your mom':'your grandma';
-  return `
-    <div class="handline">Parents’ income: <b>${incW}</b></div>
-    <div class="handline">Family wealth: <b>${weaW}</b></div>
-    <div class="handline">Parents’ schooling: <b>${eduW}</b></div>
-    <div class="handline">At home: <b>${famW}</b>${h.sibs?`, <b>${h.sibs} sibling${h.sibs>1?'s':''}</b>`:''}</div>
-    <div class="handline">The neighborhood draw: <b>${hoodName(h)}</b></div>
-    <div class="startbar"><i style="width:${h.start}%"></i></div>
-    <div class="small muted">This life started ahead of about ${h.start} percent of the country.</div>`;
-}
-function renderAccounting(){
-  S.done = true;
-  const avgOut = Math.round(S.lives.reduce((a,l)=>a+l.score,0)/NLIVES);
-  const avgPlay = Math.round(S.lives.reduce((a,l)=>a+l.played,0)/NLIVES);
-  const lifeBlocks = S.lives.map((L,i)=>{
-    const cell = v => v===undefined || v===0 ? '<td class="num"></td>' : `<td class="num ${v>=0?'pos':'neg'}">${v>=0?'+':''}${v}</td>`;
-    const rows = L.ledger.map(e=>`<tr><td>${e.age}</td><td>${e.choice}</td>${cell(e.pts)}${cell(e.drift)}</tr>`).join('');
-    const brows = L.bonus.map(b=>`<tr><td>Age 40</td><td>${b.label}</td>${b.pos?'<td class="num"></td>'+cell(b.pts):cell(b.pts)+'<td class="num"></td>'}</tr>`).join('');
-    const choiceSum = L.ledger.reduce((a,e)=>a+e.pts,0) + L.bonus.filter(b=>!b.pos).reduce((a,b)=>a+b.pts,0);
-    const posSum = L.ledger.reduce((a,e)=>a+(e.drift||0),0) + L.bonus.filter(b=>b.pos).reduce((a,b)=>a+b.pts,0);
-    const notes = L.handNotes.length ? `<p class="small" style="margin-top:10px"><b>What the deal did, quietly:</b></p><ul class="small">${L.handNotes.map(n=>`<li>${n}</li>`).join('')}</ul>` : '';
-    return `<div class="card">
-      <div class="big">${['First','Second','Third'][i]} life</div>
-      ${handReveal(L.h)}
-      <hr class="hr">
-      <table><tr><th>Age</th><th>What you chose</th><th class="num">Choice</th><th class="num">Position</th></tr>${rows}${brows}
-      <tr><td></td><td><b>Totals</b></td><td class="num"><b>${choiceSum}</b></td><td class="num"><b>${posSum}</b></td></tr></table>
-      <p class="small muted" style="margin-top:8px">The Choice column is what your decisions earned. The Position column arrived every round on its own. During the game you only ever saw the sum.</p>
-      ${notes}
-      <div class="twoScore">
-        <div class="scorebox"><div class="val">${L.score}</div><div class="cap">Life outcome</div></div>
-        <div class="scorebox"><div class="val">${L.played}</div><div class="cap">How well the hand was played, out of 100</div></div>
-      </div>
-    </div>`;
-  }).join('');
-  $('#app').innerHTML = `
-    <div class="card">
-      <div class="big">The accounting</div>
-      <p>Three lives, three deals. Here is where each one actually started, and what the start was doing while you made your choices.</p>
-      <div class="twoScore">
-        <div class="scorebox"><div class="val">${avgOut}</div><div class="cap">Team average, life outcomes</div></div>
-        <div class="scorebox"><div class="val">${avgPlay}</div><div class="cap">Team average, hands well played</div></div>
-      </div>
-      <p class="small muted">Report both numbers. Your class will rank teams both ways, and the two lists will not agree.</p>
-    </div>
-    ${lifeBlocks}
-    <div class="card">
-      <div class="big">Talk about it</div>
-      <ul class="qs">
-        <li>Which of your three lives would you want to be born into? Say why. Then ask how much of that life’s ending its choices actually decided.</li>
-        <li>People often explain success as hard work and smart choices. After three deals, what does that explanation get right? What does it leave out?</li>
-        <li>Income arrived every month in these lives. Wealth showed up only a few times, and changed everything when it did. What is the difference between the two, and why does it matter so much?</li>
-        <li>Your three lives chose from three different menus. Nobody chooses their own menu. Where do the menus come from, and what would it take to hand somebody a better one?</li>
-        <li>This game dealt money, schooling, family, and neighborhood. It did not deal race or gender. Pick one life you played. Where would race or gender have changed what happened in it?</li>
-        <li>Compare your two team scores. Was your highest scoring life also your best played life? What does the answer tell you about how the world hands out its rewards?</li>
-      </ul>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" id="againBtn">Draw three new lives</button>
-        <button class="btn secondary" id="leversBtn">Open the levers</button>
-      </div>
-    </div>`;
-  $('#againBtn').addEventListener('click', () => startGame(S.team));
-  $('#leversBtn').addEventListener('click', renderDash);
-}
-
-/* ---------------- simulation (dashboard engine) ---------------- */
 function simulateLife(hand, style, trace){
   const L = newLife(hand);
   for (let ri = 0; ri < ROUNDS.length; ri++){
@@ -1257,323 +1041,1421 @@ const CHETTY_ROWS = {
   4: [13.4,16.0,20.9,24.4,25.4], 5: [10.9,11.9,17.0,23.6,36.5]
 };
 
-/* ---------------- the levers dashboard ---------------- */
-const DASH = { inc:1, wealth:0, pedu:1, hood:1, fam:1, sibs:1, style:'typical', n:500, held:null, last:null };
-const DASH_DEFAULTS = { inc:1, wealth:0, pedu:1, hood:1, fam:1, sibs:1, style:'typical', n:500 };
-const HOODW = h => h>=4 ? 'a well funded school zone' : h===3 ? 'an average school zone' : 'an underfunded school zone';
-window.__DASH = DASH;
-function dashHand(){
-  const d = DASH;
-  const raw = d.inc*2.6 + d.wealth*2.2 + d.pedu*1.7 + d.hood*1.7 + (d.fam===2?1.6:d.fam===1?0.6:0) - d.sibs*0.35;
-  const start = clamp(Math.round((raw - 1) / (25.8 - 1) * 100), 2, 98);
-  return { inc:d.inc, wealth:d.wealth, pedu:d.pedu, hood:d.hood, fam:d.fam, sibs:d.sibs, start };
-}
-function runSims(n){
-  const hand = dashHand();
-  const out = [];
-  for (let i=0;i<n;i++) out.push(simulateLife(hand, DASH.style));
-  const pct = f => Math.round(100*out.filter(f).length/n);
-  const dest = [1,2,3,4,5].map(q => Math.round(1000*out.filter(o=>o.dest===q).length/n)/10);
-  const secs = out.map(o=>o.security).sort((a,b)=>a-b);
-  const res = {
-    secMed: secs[Math.floor(n/2)], secLo: secs[Math.floor(n*0.25)], secHi: secs[Math.floor(n*0.75)],
-    n, hand, style: DASH.style,
-    degree: pct(o=>o.degree),
-    credential: pct(o=>o.degree || o.cert),
-    home: pct(o=>o.ownHome),
-    heavy: pct(o=>o.debt===2),
-    shaky: pct(o=>o.steady<40),
-    secure: pct(o=>o.steady>=62),
-    dest, incQ: DASH.inc
-  };
-  DASH.last = res;
-  return res;
-}
-function histBins(scores, lo, hi, step){
-  const bins = [];
-  for (let b=lo;b<hi;b+=step) bins.push(0);
-  scores.forEach(s=>{ const i = clamp(Math.floor((s-lo)/step), 0, bins.length-1); bins[i]++; });
-  return bins;
-}
-const SEG = (id, opts, cur) => `<div class="seg" data-id="${id}">` +
-  opts.map(o=>`<button data-v="${o.v}" class="${String(o.v)===String(cur)?'on':''}">${o.t}</button>`).join('') + `</div>`;
-function renderDash(){
-  const d = DASH;
-  $('#app').innerHTML = `
-    <div class="card">
-      <div class="big">Where a life starts</div>
-      <p>This is a model, not a measurement. It runs hundreds of made up lives from a starting position you choose, birth to forty, and reports where they end up. Set the circumstances, change one at a time, and argue about what happens. Read the note below on what the model can and cannot tell you before you trust anything it says.</p>
-      <div class="warnbox"><b>Read this first: where these numbers come from.</b> The rules inside this model were written by hand. Somebody decided how often a person in each position takes each option, how much a degree helps, how bad a car breakdown gets. Those decisions came from reading sociology, not from estimating anything, so nothing here is a finding about the United States.<br><br>One part was not guessed. The model was <b>calibrated</b>: its scale for economic position at forty, and the size of the random component standing in for everything the model leaves out, were fitted so it reproduces the real mobility table as closely as it can. Every run below shows you how close it got. It misses by about two percentage points on average and misses worst at the richest start. When the model and the measured column disagree, the measured column is right.</div>
-      <div class="levers">
-        <div class="lever"><div class="lab">Parents’ income</div>${SEG('inc',[{v:1,t:'Bottom fifth'},{v:2,t:'Next'},{v:3,t:'Middle'},{v:4,t:'Fourth'},{v:5,t:'Top fifth'}],d.inc)}</div>
-        <div class="lever"><div class="lab">Family wealth</div>${SEG('wealth',[{v:0,t:'None'},{v:1,t:'A little'},{v:2,t:'Some'},{v:3,t:'A paid off house'},{v:4,t:'Real money'}],d.wealth)}</div>
-        <div class="lever"><div class="lab">Parents’ schooling</div>${SEG('pedu',[{v:0,t:'No diploma'},{v:1,t:'High school'},{v:2,t:'Some college'},{v:3,t:'Degrees'}],d.pedu)}</div>
-        <div class="lever"><div class="lab">Neighborhood schools</div>${SEG('hood',[{v:1,t:'Underfunded'},{v:3,t:'Average'},{v:5,t:'Well funded'}],d.hood)}</div>
-        <div class="lever"><div class="lab">At home</div>${SEG('fam',[{v:2,t:'Two parents'},{v:1,t:'One parent'},{v:0,t:'A grandparent'}],d.fam)}</div>
-        <div class="lever"><div class="lab">Everything the start does not determine</div>${SEG('style',[{v:'careful',t:'Breaks their way'},{v:'typical',t:'Average'},{v:'loose',t:'Breaks against them'}],d.style)}</div>
-        <div class="lever"><div class="lab">How many lives to run</div>${SEG('n',[{v:100,t:'100'},{v:500,t:'500'},{v:2000,t:'2,000'}],d.n)}</div>
-      </div>
-      <div class="factbox"><b>What this tool is for, and what it cannot do.</b> It belongs to an old tradition in social science: build a small artificial world, run it, and see what patterns fall out of the rules. Thomas Schelling's segregation model is the famous case. He never measured a real city. He showed that mild preferences about neighbors are enough to produce sharp segregation, and that argument held because of the mechanism it revealed, not because of any number it produced.<br><br><b>What this model can show you:</b> that the same starting position produces a wide spread of endings, that advantages accumulate quietly over years rather than arriving at one dramatic moment, that some options never appear on some people's menus, and that a difference at birth can widen without anyone deciding it should.<br><br><b>What it cannot show you:</b> how much any of that matters. Every magnitude here comes from rules somebody wrote. If you want to know how much wealth matters compared with schooling, this page cannot tell you, and you should distrust it if it seems to. Take those questions to the measured panel further down, or to the research it came from.</div>
-      <div class="factbox"><b>What the last control is.</b> Where you start does not decide where you end up. It never explains more than part of the story, and in the measured data it explains well under half. Everything else lives in that last control: the choices a person makes, their health, the year they happened to graduate, who they met, how they were treated. Sociologists call that the part origin does not explain. It is not the same thing as merit, and this model does not pretend to separate a good decision from good luck.<br><br>Set it to <b>Average</b> and you get lives where that part behaves normally. Set it either way and you are asking a conditional question: what happens to people from this start when everything else breaks for or against them. The model also picks more or less prudent options at each stage, so choices are inside this control, but they are only one of the things inside it.<br><br><b>Note:</b> the comparison against measured data below is only valid at Average, because the measured table describes a whole population, not a favorable slice of it.</div>
-      <div class="factbox"><b>What gets reported.</b> Two kinds of number, and they are not equally trustworthy. First, outcomes that name something real: finishing a degree or credential, owning a home at forty, steady work, heavy debt, living one bad month from trouble. Those can be checked against published figures, and the page does check them.<br><br>Second, <b>security at forty</b>, which is this model's own composite of savings, job security, housing, health, debt and education. It exists because where someone lands in the income distribution misses all of that. It is reported as a percentile against the other simulated lives, so it means something on this page and nowhere else. No published measure corresponds to it. Treat it as a summary of the model, not a fact about the country.</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <button class="btn" id="runBtn">Run the lives</button>
-        <button class="btn secondary" id="holdBtn" ${d.last?'':'disabled'}>Keep this run for comparison</button>
-        <button class="btn secondary" id="clearHoldBtn" ${d.held?'':'disabled'}>Clear the kept run</button>
-        <button class="btn secondary" id="resetBtn">Start over</button>
-      </div>
-      <div id="dashResults">${d.last?'':'<p class="small muted" style="margin-top:10px">Try the bottom fifth first, then change one circumstance and run again. Watch what moves.</p>'}</div>
-      <div id="heldBlock"></div>
-    </div>
-    <div class="card">
-      <div class="big">The real numbers</div>
-      <p class="small">Everything above this line was invented by the person who wrote the model. Everything below it was measured. Where American children raised at the bottom and the top actually end up as adults, by income fifth, from tax records of about 40 million families (Chetty, Hendren, Kline, and Saez 2014).</p>
-      <div class="realgrid">
-        <div class="realcol"><h2><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent);margin-right:6px"></i>Raised in the bottom fifth</h2>${realBars([33.7,28.0,18.4,12.3,7.5],'var(--accent)')}</div>
-        <div class="realcol"><h2><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--accent2);margin-right:6px"></i>Raised in the top fifth</h2>${realBars([10.9,11.9,17.0,23.6,36.5],'var(--accent2)')}</div>
-      </div>
-      <p class="small muted" style="margin-top:10px">A child of the poorest families has a 7.5 percent chance of reaching the top fifth. A child of the richest families has a 36.5 percent chance of staying there, and children of the highest income families land on average 34 percentiles higher than children of the poorest. These came from tax records, not from anybody's judgment about how the world works.</p>
-      <hr class="hr">
-      <p class="small"><b>Bachelor’s degree by age 24, by family income quarter</b> <span class="muted">(United States, 2022, Pell Institute)</span></p>
-      <div class="hb"><span class="l">Lowest quarter</span><span class="t"><i style="width:15%"></i></span><span class="n">15%</span></div>
-      <div class="hb"><span class="l">Second quarter</span><span class="t"><i style="width:25%"></i></span><span class="n">25%</span></div>
-      <div class="hb"><span class="l">Third quarter</span><span class="t"><i style="width:44%"></i></span><span class="n">44%</span></div>
-      <div class="hb"><span class="l">Highest quarter</span><span class="t"><i style="width:58%"></i></span><span class="n">58%</span></div>
-      <p class="small muted" style="margin-top:8px">Hold the model's degree share against this one. If the model is far off, that tells you something about the model rather than about the country. Checking a model against measured numbers is what keeps it honest, and it is the same thing researchers do to their own.</p>
-    </div>
-    <div class="card">
-      <div class="big">Talk about it</div>
-      <p class="small muted" style="margin-top:0">Start with the first two. They matter more than anything the model says.</p>
-      <ul class="qs">
-        <li>Run the bottom fifth, then run the top fifth, and look at the model against measured column each time. The model nearly nails the bottom and misses the top badly. Why would a model be good at one end of a distribution and bad at the other, and what would you want to change about it?</li>
-        <li>Somebody wrote every rule in here by hand, then fitted two numbers so the model matched the real mobility table. Does fitting it make it more trustworthy, or just better dressed? What would still have to be true for you to believe a claim it produced?</li>
-        <li>Run one start twice without changing anything. The results differ every time. What is that spread standing in for, and why does one person's life story make a weak argument about a whole society?</li>
-        <li>Run the worst start with everything breaking their way, keep it, then run the best start with everything breaking against them. Notice the model refuses to compare either one to real data. Why is a favorable slice of a population not something you can check against a national table?</li>
-        <li>That last control mixes choices, luck, health, timing and how a person gets treated, all in one. Why can a model like this not separate them? What kind of study would you need to pull one apart from the others?</li>
-        <li>The model shows advantages accumulating slowly rather than arriving all at once. Where in a real life would that accumulation actually happen, and who would notice it happening?</li>
-        <li>Some options never appear on some starts. In the real world, who decides which options a person sees? Name three mechanisms.</li>
-        <li>This model only includes class. Real starts also differ by race, gender, health, and place. Pick one and describe how you would find out what it does, rather than guessing.</li>
-      </ul>
-    </div>`;
-  document.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
-    const id = seg.dataset.id;
-    DASH[id] = (id==='style') ? b.dataset.v : +b.dataset.v;
-    seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
-  }));
-  $('#runBtn').addEventListener('click', () => { runSims(DASH.n); drawDashResults(); $('#holdBtn').disabled = false; });
-  $('#holdBtn').addEventListener('click', () => { DASH.held = DASH.last; drawDashResults(); });
-  $('#clearHoldBtn').addEventListener('click', () => { DASH.held = null; drawDashResults(); });
-  $('#resetBtn').addEventListener('click', () => { Object.assign(DASH, DASH_DEFAULTS); DASH.last = null; DASH.held = null; renderDash(); });
-  if (DASH.last) drawDashResults();
-}
+function setRandom(f){ RNG = f || Math.random; }
+return { simulateLife: simulateLife, setRandom: setRandom, clamp: clamp, CHETTY_ROWS: CHETTY_ROWS };
+})();/* The two lives students play. Everything here is made up; the patterns follow Lareau (2011) and Oliver and Shapiro (2006). */
+var BL_GAME = { A: null, B: null, listeners: [] };
 
-function realBars(vals, color){
-  const labs = ['Bottom fifth','Second','Middle','Fourth','Top fifth'];
-  return vals.map((v,i)=>`<div class="rbar"><span class="rl">${labs[i]}</span><span class="rt"><i style="width:${v/40*100}%;background:${color}"></i></span><span class="rv">${v}%</span></div>`).join('');
-}
-function runWords(res){
-  return `${['','bottom fifth','next fifth','middle fifth','fourth fifth','top fifth'][res.hand.inc]} income, ${['no wealth','a little wealth','some wealth','a paid off house','real money'][res.hand.wealth]}, ${['no diploma','high school','some college','degrees'][res.hand.pedu]}, ${HOODW(res.hand.hood)}, with the unexplained part ${res.style==='careful'?'breaking their way':res.style==='loose'?'breaking against them':'behaving normally'}`;
-}
-const OUTCOMES = [
-  ['credential','Finish a degree or trade credential'],
-  ['degree','Finish a four year degree'],
-  ['home','Own their home at forty'],
-  ['secure','Have steady, secure work at forty'],
-  ['heavy','Still carrying heavy debt at forty'],
-  ['shaky','One bad month away from real trouble']
-];
-const QLAB = ['Bottom fifth','Second','Middle','Fourth','Top fifth'];
-function destCompareHTML(res){
-  const real = CHETTY_ROWS[res.incQ];
-  if (res.style !== 'typical'){
-    return `<p class="small" style="margin-top:16px"><b>Where these lives ended up</b></p>
-      ${res.dest.map((v,i)=>`<div class="hb"><span class="l">${QLAB[i]}</span><span class="t"><i style="width:${v/40*100}%"></i></span><span class="n">${v}%</span></div>`).join('')}
-      <div class="factbox">No comparison against the measured table is shown here. You set the unexplained part to ${res.style==='careful'?'break their way':'break against them'}, so these lives are a selected slice rather than a whole population, and the national table has nothing to say about a slice. Set that control back to Average to check the model against real data.</div>`;
-  }
-  const rows = res.dest.map((v,i)=>{
-    const gap = Math.round((v - real[i])*10)/10;
-    return `<div class="cmprow">
-      <span class="cl">${QLAB[i]}</span>
-      <span class="cbars">
-        <span class="t"><i style="width:${v/40*100}%"></i></span>
-        <span class="t"><i style="width:${real[i]/40*100}%;background:var(--good)"></i></span>
-      </span>
-      <span class="cn">${v}% <span class="muted">vs</span> ${real[i]}%</span>
-      <span class="cg ${Math.abs(gap)>=5?'off':''}">${gap>=0?'+':''}${gap}</span>
-    </div>`;
-  }).join('');
-  const err = Math.round(res.dest.reduce((a,v,i)=>a+Math.abs(v-real[i]),0)/5*10)/10;
-  return `
-    <p class="small" style="margin-top:16px"><b>Where these lives ended up, against where real children from the same fifth actually ended up</b></p>
-    <div class="legendrow"><span><i style="background:var(--accent)"></i>This model</span><span><i style="background:var(--good)"></i>Measured, Chetty et al. 2014</span></div>
-    ${rows}
-    <p class="small muted" style="margin-top:6px">Average miss across the five: <b>${err} points</b>. ${err < 3 ? 'Close, for a model built by hand.' : 'That is a large gap. Trust the measured column, not this model.'} The model was fitted to the whole national table at once, so it tracks the poorer starts well and the richest start badly. It cannot really tell the top three starts apart, which is a limit of how it was written, not a fact about the country.</p>`;
-}
-function runBlockHTML(res, orange){
-  const rows = OUTCOMES.map(([k,label])=>`
-    <div class="hb"><span class="l">${label}</span><span class="t"><i style="width:${res[k]}%;${orange?'background:var(--accent2)':''}"></i></span><span class="n">${res[k]}%</span></div>`).join('');
-  return `
-    <p class="small"><b>Out of ${res.n} simulated lives</b> from this start: ${runWords(res)}.</p>
-    ${rows}
-    <p class="small muted" style="margin-top:6px">Each bar is the share of those ${res.n} lives that reached that outcome by age forty. Bars do not add to 100 because a life can reach several.</p>
-    <div class="secbox">
-      <div><b>Security at forty:</b> the typical life from this start sits at the <b>${res.secMed}th percentile</b> of all simulated lives. The middle half fall between the ${res.secLo}th and the ${res.secHi}th.</div>
-      <div class="secbar"><span class="rangebar" style="left:${res.secLo}%;width:${Math.max(res.secHi-res.secLo,1)}%"></span><span class="medmark" style="left:${res.secMed}%"></span></div>
-      <div class="small muted">This is the model's own composite of savings, job security, housing, health, debt and education. It has no published equivalent and means nothing outside this page.</div>
-    </div>
-    ${destCompareHTML(res)}`;
-}
-function drawDashResults(){
-  const cur = DASH.last, held = DASH.held;
-  $('#dashResults').innerHTML = cur ? `<hr class="hr">` + runBlockHTML(cur, false) : '';
-  $('#heldBlock').innerHTML = held
-    ? `<div class="kept"><span class="tag">Kept run</span>` + runBlockHTML(held, true) + `</div>`
-    : '';
-  $('#clearHoldBtn').disabled = !held;
-}
-
-$('#themeBtn').addEventListener('click', () => {
-  const el = document.documentElement;
-  const dark = el.getAttribute('data-theme') === 'dark';
-  el.setAttribute('data-theme', dark ? 'light' : 'dark');
-  $('#themeBtn').textContent = dark ? 'Dark' : 'Light';
-});
-
-renderDash();
-</script>
-
-<script>
-(function () {
-  if (window.innerWidth >= 740) return;
-  var b = document.createElement('div');
-  b.setAttribute('role', 'region');
-  b.setAttribute('aria-label', 'Display notice');
-  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
-  var t = document.createElement('span');
-  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
-  var x = document.createElement('button');
-  x.textContent = 'OK';
-  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
-  x.addEventListener('click', function () { b.remove(); });
-  b.appendChild(t); b.appendChild(x);
-  document.body.insertBefore(b, document.body.firstChild);
-})();
-</script>
-<script type="application/json" id="a11yOverrides">{}</script>
-<style id="a11yCss">
-@media (prefers-reduced-motion: reduce) {
-  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
-}
-:root[data-theme="dark"], :root[data-theme="dark"] .viz-root, :root[data-theme="dark"] .wrap, :root[data-theme="dark"] body { --text-muted: #9b9a94 !important; --muted: #9b9a94 !important; }
-.sr-only-a11y { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-:root[data-theme="dark"] .gbtn, :root[data-theme="dark"] #startBtn, :root[data-theme="dark"] #runBtn,
-:root[data-theme="dark"] .subtab[aria-selected="true"], :root[data-theme="dark"] .seg .on, :root[data-theme="dark"] .segbtn.on,
-:root[data-theme="dark"] .opt.on, :root[data-theme="dark"] .lever .on, :root[data-theme="dark"] .chip.on { color: #0d0d0c !important; }
-</style>
-<script>
-/* Accessibility enhancements. Runs after the page scripts have built the UI. */
-(function () {
-  var OVERRIDES = {};
-  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
-
-  function textOf(el, cap) {
-    if (!el) return '';
-    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
-    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
-  }
-
-  /* 1. Tabs: wire tabpanels and arrow-key navigation. */
-  var tablists = document.querySelectorAll('[role="tablist"]');
-  tablists.forEach(function (list) {
-    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
-    tabs.forEach(function (tab, i) {
-      var sec = tab.getAttribute('data-sec');
-      if (sec) {
-        if (!tab.id) tab.id = 'tabbtn-' + sec;
-        tab.setAttribute('aria-controls', sec);
-        var panel = document.getElementById(sec);
-        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
-      }
-      tab.addEventListener('keydown', function (e) {
-        var j = null;
-        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
-        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
-        else if (e.key === 'Home') j = 0;
-        else if (e.key === 'End') j = tabs.length - 1;
-        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
-      });
-    });
-  });
-
-  /* 2. Accessible names for inputs and selects that lack one. */
-  function hasName(el) {
-    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
-    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
-    if (el.closest('label')) return true;
-    return false;
-  }
-  function deriveName(el) {
-    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
-    /* table grid inputs: row text plus column header */
-    var td = el.closest('td');
-    if (td) {
-      var tr = td.closest('tr'), table = td.closest('table');
-      if (tr && table) {
-        var rowLabel = textOf(tr.cells[0], 80);
-        var ths = table.querySelectorAll('thead th');
-        var colLabel = ths.length > td.cellIndex ? textOf(ths[td.cellIndex], 60) : '';
-        if (rowLabel || colLabel) return (rowLabel + (colLabel ? ', ' + colLabel : '')).trim();
-      }
+var BL_LIVES = {
+  A: {
+    name: "Life A",
+    reminder: "<strong>Life A:</strong> parents' income in the bottom fifth, no family wealth (the family rents and has no savings), parents finished high school, crowded neighborhood school.",
+    stages: [
+      { key: "s1", age: "Age 10", topic: "Falling behind in math",
+        text: function () { return "In fourth grade your class reaches fractions, and you start falling behind. Your class has 31 students and one teacher. Your mom works evenings."; },
+        ask: "What do you do?",
+        options: [
+          { t: "Stay after class and ask the teacher", d: "She helps when she can.",
+            out: function (s) { s.math = "caught up"; return { text: "Your teacher gives you a few minutes twice a week. You catch up by spring, but it takes most of the year.", why: "Free help was available, but one teacher had to divide her time among 31 students." }; } },
+          { t: "Ask for help at home", d: "Your mom gets home after 10 p.m.",
+            out: function (s) { s.math = "partly caught up"; return { text: "Your mom looks at the worksheet with you on Sunday. She has not done fractions since high school, and you get through about half of it.", why: "Help at home depends on whether a parent has the time and the schooling to give it." }; } },
+          { t: "Decide math is not your subject", d: "Plenty of people say that.",
+            out: function (s) { s.math = "behind"; return { text: "You pass with a D. The next year the school places you in the lower math group, which covers less material.", why: "Schools often sort students into groups based on early grades. A lower group covers less, so it is hard to move back up." }; } }
+        ] },
+      { key: "s2", age: "Age 16", topic: "The school year and the summer",
+        text: function () { return "Your mom's hours were cut at work. Nobody asks you to get a job, but the family needs the money."; },
+        ask: "How do you spend the year?",
+        options: [
+          { t: "Work 25 hours a week at a grocery store", d: "The paycheck covers the phone bill and part of the rent.",
+            out: function (s) { s.grades = "slipped"; return { text: "Most of your paycheck goes to household bills. Your grades drop in the spring because you do homework after late shifts.", why: "In many families, a teenager's paycheck is part of the household budget." }; } },
+          { t: "Work weekends only and study on weeknights", d: "Less money goes home.",
+            out: function (s) { s.grades = "held"; return { text: "You study for the SAT with a free practice book from the library. Your grades hold, but you know the family is short each month.", why: "Studying had a cost here: money the family did not get." }; } },
+          { t: "Join the track team and skip the job", d: "Practice runs until 6 p.m. every weekday.",
+            out: function (s) { s.grades = "held"; s.contacts.push("a coach who writes you a recommendation letter"); return { text: "You make friends, and your coach writes you a recommendation letter later. Money is tighter at home, and your aunt pays the electric bill one month.", why: "Activities that build connections are easier when a family can do without a teenager's income." }; } }
+        ] },
+      { key: "s3", age: "Age 18", topic: "After high school",
+        text: function () { return "You graduate. Your school counselor has more than 400 students. Nobody at home has filled out the federal college aid form (the FAFSA) before."; },
+        ask: "What do you do next?",
+        options: [
+          { t: "Go to the state university and take out loans", d: "Aid covers part of the cost.",
+            out: function (s) { s.path = "univ"; s.loans = true; return { text: "You borrow the rest of the cost and work 20 hours a week at a campus job. You are the first person in your family to go to college.", why: "You attend the same university as students whose parents paid, and you carry loans to do it." }; } },
+          { t: "Go to community college and keep your job", d: "Cheaper classes, and you live at home.",
+            out: function (s) { s.path = "cc"; return { text: "You take classes in the morning and work in the afternoon. Part of each paycheck still goes to the family.", why: "Living at home saved money, and it kept you available to help your family." }; } },
+          { t: "Work full time at a warehouse", d: "Steady pay starting now.",
+            out: function (s) { s.path = "work"; return { text: "The pay is steady, and part of every paycheck goes home.", why: "Your family needed the income now, which made college a harder choice." }; } },
+          { t: "Take a gap year first", gone: "Not available: nobody in your family can support you for a year without a paycheck." }
+        ] },
+      { key: "s4", age: "Age 23", topic: "Looking for a better job",
+        text: function (s) {
+          var where = s.path === "univ" ? "You finished your bachelor's degree at 22 and owe about $30,000 in student loans."
+            : s.path === "cc" ? "You finished an associate degree at 20 and take one night class each term toward a bachelor's degree."
+            : "You have worked at the warehouse for five years and are now a shift lead.";
+          return where + " You want a better job.";
+        },
+        ask: "How do you look for it?",
+        options: [
+          { t: "Apply to every job posting you can find", d: "Cover letters, job sites, and waiting.",
+            out: function (s) {
+              var job = s.path === "univ" ? "an entry-level job in a hospital billing office" : s.path === "cc" ? "a job as a medical records clerk" : "a job as a dispatcher at a trucking company";
+              s.job = job;
+              return { text: "You send more than 100 applications. After four months you get an offer for " + job + ".", why: "You found a job the way most people are told to: on your own, with no one vouching for you." }; } },
+          { t: "Take a job near home so you can help your family", d: "Your grandmother needs rides to her medical appointments.",
+            out: function (s) { s.job = "a lower-paying job near home"; return { text: "The pay is lower than you could get in a bigger city, but you can drive your grandmother to her appointments.", why: "Your family's needs shaped where you could live and work." }; } },
+          { t: "Take an unpaid internship in the city", gone: "Not available: you need to pay rent, and nobody can cover it for six months." }
+        ] },
+      { key: "s5", age: "Age 29", topic: "A $2,000 car repair",
+        text: function (s) { return "Your car needs a $2,000 repair, and you need the car to get to work. You have about $300 in savings." + (s.loans ? " Your student loan payment is $350 a month." : ""); },
+        ask: "How do you pay for it?",
+        options: [
+          { t: "Put it on a credit card", d: "The interest rate is 24 percent.",
+            out: function (s) { s.card = true; return { text: "The car is fixed the same day. With interest, the repair costs you about $2,800, and paying it off takes three years.", why: "When a family has no savings to fall back on, an emergency becomes a debt." }; } },
+          { t: "Work extra shifts for a month", d: "Borrow rides to work in the meantime.",
+            out: function (s) { return { text: "You work 60-hour weeks for five weeks and sleep about five hours a night. The car is fixed in the second month.", why: "Without savings, the only way to pay was with more hours of work." }; } },
+          { t: "Ask your family for help", gone: "Not available: your family does not have $2,000 to lend." }
+        ] }
+    ],
+    summary: function (s) {
+      var school = s.path === "univ" ? "Bachelor's degree" : s.path === "cc" ? "Associate degree, with night classes toward a bachelor's" : "High school diploma";
+      var debt = [];
+      if (s.loans) debt.push("student loans, $350 a month");
+      if (s.card) debt.push("a credit card balance at 24 percent interest");
+      return [
+        ["Schooling", school],
+        ["Debt", debt.length ? debt.join("; ") : "none"],
+        ["Savings", "about $300"],
+        ["Housing", "renting"],
+        ["Who can help in an emergency", "no one in the family has savings to lend"]
+      ];
     }
-    /* guess boxes: the question line names the slider */
-    var box = el.closest('.guessbox');
-    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
-    /* otherwise the nearest previous element with real text */
-    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
-    while (hops < 6) {
-      while (node) {
-        if (!node.matches('input, button, select, textarea, svg, canvas')) {
-          var t = textOf(node);
-          if (t.length > 2) return t;
+  },
+
+  B: {
+    name: "Life B",
+    reminder: "<strong>Life B:</strong> parents' income in the top fifth, family wealth (they own their home and have savings and investments), both parents have college degrees, well-funded neighborhood school.",
+    stages: [
+      { key: "s1", age: "Age 10", topic: "Falling behind in math",
+        text: function () { return "In fourth grade your class reaches fractions, and you start falling behind. Your class has 19 students and a classroom aide. Your mom sees your quiz grade before you mention it."; },
+        ask: "What do you do?",
+        options: [
+          { t: "Work with a tutor", d: "Your parents have already found one.",
+            out: function (s) { s.math = "ahead"; return { text: "You meet with the tutor twice a week. By December you are ahead of the class.", why: "Your parents arranged help before you asked. Sociologist Annette Lareau calls this concerted cultivation: parents actively managing a child's development." }; } },
+          { t: "Ask for help at home", d: "Your dad is an engineer.",
+            out: function (s) { s.math = "caught up"; return { text: "Your dad explains fractions at the kitchen table. You catch up in a week.", why: "Help at home was available because a parent had the time and the schooling to give it." }; } },
+          { t: "Decide math is not your subject", d: "Plenty of people say that.",
+            out: function (s) { s.math = "caught up"; return { text: "Your parents email the teacher, set up a meeting, and hire a tutor anyway. You catch up by winter break.", why: "Your parents stepped in before the choice could follow you into the next grade." }; } }
+        ] },
+      { key: "s2", age: "Age 16", topic: "The school year and the summer",
+        text: function () { return "Your parents have already signed you up for an SAT prep course in March. It costs about $1,000. They ask what you want to do this summer."; },
+        ask: "How do you spend the summer?",
+        options: [
+          { t: "Intern at a family friend's law office", d: "Your mom made one phone call.",
+            out: function (s) { s.contacts.push("a lawyer who writes you a recommendation letter"); return { text: "You file papers and sit in on meetings for six weeks. You leave with a recommendation letter and three new contacts.", why: "A family friend opened a door most 16-year-olds never see. Sociologists call help that comes through who your family knows social capital." }; } },
+          { t: "Work as a lifeguard with friends", d: "Spending money and a summer outside.",
+            out: function (s) { return { text: "You earn spending money and have a good summer. The SAT course still happens in March.", why: "Your paycheck was for you, not for the household, and the SAT course was paid for either way." }; } },
+          { t: "Go to a three-week science camp at a university", d: "It costs $3,000.",
+            out: function (s) { s.contacts.push("a professor you met at camp"); return { text: "You live in a dorm, make a research poster, and meet a professor. The camp goes on your college applications.", why: "Your family's money bought a head start on college applications." }; } }
+        ] },
+      { key: "s3", age: "Age 18", topic: "After high school",
+        text: function () { return "You graduate. Your school counselor knows your name and has helped you with every application. Your parents have saved for your college since you were born."; },
+        ask: "What do you do next?",
+        options: [
+          { t: "Go to the state university, where your dad went", d: "Your parents pay tuition and housing.",
+            out: function (s) { s.path = "univ"; return { text: "You live on campus and finish in four years with no loans.", why: "Your parents' savings turned college into a choice with no debt attached." }; } },
+          { t: "Go to a private college", d: "It costs about $60,000 a year.",
+            out: function (s) { s.path = "private"; s.contacts.push("the college's alumni network"); return { text: "Your parents pay for it. You finish in four years with no loans and a large alumni network.", why: "The price did not decide whether you could go." }; } },
+          { t: "Take a gap year first", d: "Travel and work part time.",
+            out: function (s) { s.path = "gap"; return { text: "You travel and work part time. The university holds your place, and you start a year later. Your parents pay, and you finish with no loans.", why: "A year off was safe because your family could support you and the university held your place." }; } }
+        ] },
+      { key: "s4", age: "Age 23", topic: "Looking for a better job",
+        text: function () { return "You finished your bachelor's degree with no student loans. You want a better job than the one you have."; },
+        ask: "How do you look for it?",
+        options: [
+          { t: "Ask a family friend for a referral", d: "Your dad's college roommate works at a company you like.",
+            out: function (s) { s.job = "a job at the company your dad's roommate works for"; return { text: "He passes your resume to the hiring manager. You have an interview within a week and an offer within a month.", why: "A referral moved you to the front of the line. Who your family knows worked like money here." }; } },
+          { t: "Take an unpaid internship in the city", d: "Six months, no pay.",
+            out: function (s) { s.job = "a full-time job that grew out of the internship"; return { text: "Your parents pay your rent for six months. The internship turns into a full-time job.", why: "An unpaid internship is open only to people who can afford to work for free." }; } },
+          { t: "Apply to every job posting you can find", d: "Cover letters, job sites, and waiting.",
+            out: function (s) { s.job = "an entry-level office job"; return { text: "You send 40 applications. After two months you get an offer.", why: "You applied on your own, but with a degree, no loans, and internships on your resume." }; } }
+        ] },
+      { key: "s5", age: "Age 29", topic: "A $2,000 car repair",
+        text: function () { return "Your car needs a $2,000 repair, and you need the car to get to work. You have about $8,000 in savings."; },
+        ask: "How do you pay for it?",
+        options: [
+          { t: "Pay for it from your savings", d: "This is what savings are for.",
+            out: function (s) { return { text: "The car is fixed the same day. You rebuild your savings over the next few months.", why: "Savings turned an emergency into an inconvenience." }; } },
+          { t: "Put it on a credit card", d: "The interest rate is 24 percent.",
+            out: function (s) { return { text: "You pay off the credit card balance the next month from your savings, so you pay almost no interest.", why: "The same choice that became a three-year debt in Life A cost almost nothing here, because savings stood behind it." }; } },
+          { t: "Ask your parents for help", d: "They have offered before.",
+            out: function (s) { return { text: "Your parents send the money that afternoon and tell you to pay it back whenever you can.", why: "Your parents' wealth worked as a safety net you could use at any age." }; } }
+        ] }
+    ],
+    summary: function (s) {
+      return [
+        ["Schooling", s.path === "private" ? "Bachelor's degree from a private college" : "Bachelor's degree"],
+        ["Debt", "none"],
+        ["Savings", "about $8,000"],
+        ["Housing", "owns a home. At 27, your parents gave you $20,000 toward the down payment. You did not choose this; it came with the family."],
+        ["Who can help in an emergency", "your parents"]
+      ];
+    }
+  }
+};
+
+function blLifeBlock(which) {
+  var life = BL_LIVES[which];
+  return {
+    type: "custom", id: "life" + which, label: life.name,
+    questions: life.stages.map(function (st) {
+      return life.name + ", " + st.age + " (" + st.topic + "): " + st.text({ path: "univ", loans: true, contacts: [] }).replace(/<[^>]+>/g, "") + " " + st.ask + " Options: " + st.options.map(function (o) { return o.t + (o.gone ? " [" + o.gone + "]" : ""); }).join(" | ");
+    }),
+    render: function (el, api) {
+      blStyles();
+      var s = { contacts: [], picks: [] };
+      var idx = 0;
+      el.appendChild(api.html("div", "note", life.reminder));
+      var log = api.html("div", "bl-log"); el.appendChild(log);
+      var stageBox = api.html("div", "box"); el.appendChild(stageBox);
+      var live = api.html("div", "sr-only"); live.setAttribute("aria-live", "polite"); el.appendChild(live);
+
+      function show() {
+        stageBox.innerHTML = "";
+        if (idx >= life.stages.length) { finish(); return; }
+        var st = life.stages[idx];
+        stageBox.appendChild(api.html("div", "bl-age", st.age + ": " + st.topic + " (stage " + (idx + 1) + " of " + life.stages.length + ")"));
+        stageBox.appendChild(api.html("p", "bl-text", st.text(s)));
+        var qid = "blq" + which + idx;
+        var q = api.html("div", "prompt", st.ask); q.id = qid; stageBox.appendChild(q);
+        var row = api.html("div", "choices column"); row.setAttribute("role", "group"); row.setAttribute("aria-labelledby", qid);
+        stageBox.appendChild(row);
+        var res = api.html("div", "bl-result"); res.setAttribute("aria-live", "polite"); stageBox.appendChild(res);
+        st.options.forEach(function (o, i) {
+          var b = api.html("button", "opt bl-opt" + (o.gone ? " bl-gone" : ""), "<span class=\"bl-t\">" + o.t + "</span><span class=\"bl-d\">" + (o.gone || o.d) + "</span>");
+          b.type = "button";
+          if (o.gone) { b.disabled = true; b.setAttribute("aria-disabled", "true"); }
+          b.addEventListener("click", function () {
+            if (o.gone) return;
+            Array.prototype.forEach.call(row.children, function (x) { x.disabled = true; });
+            b.classList.add("chosen"); b.setAttribute("aria-pressed", "true");
+            var r = o.out(s);
+            s.picks.push({ stage: st, pick: o, text: r.text });
+            res.innerHTML = "<p><strong>What happened:</strong> " + r.text + "</p><p class=\"bl-why\"><strong>What the starting point did:</strong> " + r.why + "</p>";
+            var nb = api.html("button", "btn", idx === life.stages.length - 1 ? "See where " + life.name + " ends up" : "Next stage"); nb.type = "button";
+            nb.addEventListener("click", function () {
+              var li = api.html("div", "bl-logline", "<strong>" + st.age + ":</strong> " + o.t + ". " + r.text);
+              log.appendChild(li);
+              idx++; show();
+              var f = stageBox.querySelector("button:not([disabled])"); if (f) f.focus();
+            });
+            res.appendChild(nb);
+            api.record(s.picks.map(function (p) { return p.stage.age + " (" + p.stage.topic + "): " + p.pick.t; }));
+          });
+          row.appendChild(b);
+        });
+      }
+      function finish() {
+        var rows = life.summary(s);
+        var gone = 0; life.stages.forEach(function (st) { st.options.forEach(function (o) { if (o.gone) gone++; }); });
+        var html = "<h3 class=\"bl-h\">" + life.name + " at age 30</h3><dl class=\"bl-dl\">" + rows.map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("") +
+          "<dt>Options you could not choose</dt><dd>" + (gone ? gone + " of the options in this life were not available" : "none; every option in this life was available") + "</dd></dl>";
+        stageBox.innerHTML = html;
+        live.textContent = life.name + " is complete.";
+        BL_GAME[which] = s;
+        api.result({ picks: s.picks.map(function (p) { return p.pick.t; }) });
+        api.done();
+        BL_GAME.listeners.forEach(function (f) { f(); });
+      }
+      api.onAutoplay(function () {
+        var guard = 0;
+        while (idx < life.stages.length && guard++ < 50) {
+          var b = stageBox.querySelector(".bl-opt:not([disabled])"); if (!b) break; b.click();
+          var nb = stageBox.querySelector(".bl-result .btn"); if (nb) nb.click();
         }
-        node = node.previousElementSibling;
+      });
+      show();
+    }
+  };
+}
+
+function blSideBySide() {
+  return {
+    type: "custom", id: "sideBySide", label: "Side by side", required: false, record: false,
+    render: function (el, api) {
+      blStyles();
+      var box = api.html("div", "bl-side"); el.appendChild(box);
+      function draw() {
+        if (!BL_GAME.A || !BL_GAME.B) {
+          box.innerHTML = "<div class=\"note caution\">Finish both lives first. This tab fills in once Life A and Life B are both complete.</div>";
+          return;
+        }
+        var html = "";
+        BL_LIVES.A.stages.forEach(function (stA, i) {
+          var stB = BL_LIVES.B.stages[i];
+          html += "<div class=\"box\"><div class=\"bl-age\">" + stA.age + ": " + stA.topic + "</div><div class=\"bl-cols\">";
+          [["A", stA], ["B", stB]].forEach(function (pair) {
+            var g = BL_GAME[pair[0]], st = pair[1];
+            var picked = g.picks[i] ? g.picks[i].pick : null;
+            html += "<div><div class=\"bl-colh\">Life " + pair[0] + " menu</div><ul class=\"bl-menu\">" + st.options.map(function (o) {
+              var tag = o.gone ? " <span class=\"bl-tag bl-tag-no\">not available</span>" : (o === picked ? " <span class=\"bl-tag\">your choice</span>" : "");
+              return "<li" + (o.gone ? " class=\"bl-struck\"" : "") + ">" + o.t + tag + "</li>";
+            }).join("") + "</ul>" + (picked ? "<p class=\"bl-small\"><strong>What happened:</strong> " + g.picks[i].text + "</p>" : "") + "</div>";
+          });
+          html += "</div></div>";
+        });
+        html += "<div class=\"box\"><div class=\"bl-age\">The same choice in both lives</div>" +
+          "<p class=\"bl-small\"><strong>Deciding math is not your subject (age 10).</strong> In Life A, the school placed you in the lower math group the next year. In Life B, your parents emailed the teacher and hired a tutor, and you caught up by winter break.</p>" +
+          "<p class=\"bl-small\"><strong>Putting the car repair on a credit card (age 29).</strong> In Life A, the $2,000 repair cost about $2,800 and took three years to pay off. In Life B, you paid off the credit card balance the next month from savings.</p></div>";
+        box.innerHTML = html;
       }
-      if (!parent || parent === document.body) break;
-      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+      BL_GAME.listeners.push(draw);
+      draw();
+      api.done();
     }
-    return '';
-  }
-  document.querySelectorAll('input, select').forEach(function (el) {
-    if (el.type === 'hidden' || hasName(el)) return;
-    var name = deriveName(el);
-    if (name) el.setAttribute('aria-label', name);
-  });
+  };
+}
 
-  /* 3. Checklists: make click-to-tick rows real keyboard checkboxes. */
-  document.querySelectorAll('.cki').forEach(function (row) {
-    row.setAttribute('tabindex', '0');
-    row.setAttribute('role', 'checkbox');
-    row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
-    var label = row.querySelector('.ckt');
-    if (label) row.setAttribute('aria-label', textOf(label, 160));
-    row.addEventListener('keydown', function (e) {
-      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); row.click(); }
-    });
-    row.addEventListener('click', function () {
-      row.setAttribute('aria-checked', row.classList.contains('on') ? 'true' : 'false');
-    });
-  });
+function blStyles() {
+  if (document.getElementById("bl-styles")) return;
+  var st = document.createElement("style"); st.id = "bl-styles";
+  st.textContent = [
+    ".bl-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}",
+    ".bl-t{font-weight:600}",
+    ".bl-d{font-size:.92em;font-weight:400;color:var(--text-2)}",
+    ".opt.chosen .bl-d{color:var(--on-accent)}",
+    ".bl-gone{border-style:dashed}",
+    ".bl-gone .bl-t{text-decoration:line-through}",
+    ".bl-age{font-weight:700;font-size:1.05em}",
+    ".bl-text{margin:6px 0 2px}",
+    ".bl-result p{margin:8px 0}",
+    ".bl-why{color:var(--text-2)}",
+    ".bl-log{display:flex;flex-direction:column;gap:6px;margin:10px 0}",
+    ".bl-logline{font-size:.92em;color:var(--text-2);border-left:3px solid var(--grid);padding-left:10px}",
+    ".bl-h{margin:0 0 8px}",
+    ".bl-dl{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:6px 14px;margin:0}",
+    ".bl-dl dt{font-weight:600}",
+    ".bl-dl dd{margin:0}",
+    "@media (max-width:560px){.bl-dl{grid-template-columns:1fr}.bl-dl dd{margin-bottom:6px}}",
+    ".bl-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}",
+    "@media (max-width:640px){.bl-cols{grid-template-columns:1fr}}",
+    ".bl-colh{font-weight:600;margin-bottom:4px}",
+    ".bl-menu{margin:0;padding-left:18px}",
+    ".bl-menu li{margin:3px 0}",
+    ".bl-struck{color:var(--text-2)}",
+    ".bl-tag{display:inline-block;font-size:.8em;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);margin-left:4px}",
+    ".bl-tag-no{border-color:var(--warn);color:var(--warn)}",
+    ".bl-small{font-size:.92em;margin:8px 0 0}",
+    ".bl-side .box + .box{margin-top:12px}",
+    ".bl-seg{display:flex;flex-wrap:wrap;gap:6px}",
+    ".bl-seg button{font:inherit;font-size:.92em;padding:6px 10px;border-radius:8px;border:1px solid var(--grid);background:transparent;color:inherit;cursor:pointer}",
+    ".bl-seg button[aria-pressed=true]{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff)}",
+    ".bl-lever{margin:10px 0}",
+    ".bl-lever .bl-lab{font-weight:600;margin-bottom:4px}",
+    ".bl-hint{font-size:.9em;color:var(--text-2);margin:2px 0 6px}"
+  ].join("\n");
+  document.head.appendChild(st);
+}
+/* The Run 500 lives tab: the earlier page's levers simulation with shorter text. */
+function blSimBlock() {
+  var LEVERS = [
+    { id: "inc", lab: "Parents' income", opts: [[1, "Bottom fifth"], [2, "Second fifth"], [3, "Middle fifth"], [4, "Fourth fifth"], [5, "Top fifth"]] },
+    { id: "wealth", lab: "Family wealth", opts: [[0, "None"], [1, "A little"], [2, "Some savings"], [3, "A paid-off house"], [4, "A lot"]] },
+    { id: "pedu", lab: "Parents' schooling", opts: [[0, "No diploma"], [1, "High school"], [2, "Some college"], [3, "College degrees"]] },
+    { id: "hood", lab: "Neighborhood schools", opts: [[1, "Underfunded"], [3, "Average"], [5, "Well funded"]] },
+    { id: "fam", lab: "Who raises the child", opts: [[2, "Two parents"], [1, "One parent"], [0, "A grandparent"]] },
+    { id: "style", lab: "Everything else", hint: "Everything the starting point does not cover: choices, health, luck, timing, and how a person is treated.", opts: [["careful", "Goes well"], ["typical", "Average"], ["loose", "Goes badly"]] }
+  ];
+  var WORDS = {
+    inc: ["", "bottom fifth income", "second fifth income", "middle fifth income", "fourth fifth income", "top fifth income"],
+    wealth: ["no wealth", "a little wealth", "some savings", "a paid-off house", "a lot of wealth"],
+    pedu: ["parents with no diploma", "parents with high school", "parents with some college", "parents with college degrees"],
+    hood: { 1: "underfunded schools", 3: "average schools", 5: "well-funded schools" },
+    fam: ["raised by a grandparent", "one parent", "two parents"],
+    style: { careful: "everything else goes well", typical: "everything else average", loose: "everything else goes badly" }
+  };
+  var FIFTHS = ["Bottom fifth", "Second fifth", "Middle fifth", "Fourth fifth", "Top fifth"];
+  var N = 500;
 
-  /* 4. Canvas simulations get a text alternative. */
-  document.querySelectorAll('canvas').forEach(function (c) {
-    if (!c.getAttribute('aria-label') && !c.getAttribute('role')) {
-      c.setAttribute('role', 'img');
-      c.setAttribute('aria-label', 'Simulation grid. The numbers this simulation produces are reported in the statistics text on this page.');
+  return {
+    type: "custom", id: "sim", label: "Simulation runs",
+    questions: ["Set a starting point, run 500 lives, then change one setting and run again. Compare where the lives ended up with the real figures."],
+    render: function (el, api) {
+      blStyles();
+      BL_MODEL.setRandom(api.random);
+      var D = { inc: 1, wealth: 0, pedu: 1, hood: 1, fam: 1, style: "typical" };
+      var last = null, kept = null, runs = [];
+
+      var box = api.html("div", "box"); el.appendChild(box);
+      LEVERS.forEach(function (lv) {
+        var wrap = api.html("div", "bl-lever");
+        var labId = "bl-lv-" + lv.id;
+        var lab = api.html("div", "bl-lab", lv.lab); lab.id = labId; wrap.appendChild(lab);
+        if (lv.hint) wrap.appendChild(api.html("div", "bl-hint", lv.hint));
+        var seg = api.html("div", "bl-seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-labelledby", labId);
+        lv.opts.forEach(function (o) {
+          var b = api.html("button", "", o[1]); b.type = "button";
+          b.setAttribute("aria-pressed", String(D[lv.id]) === String(o[0]) ? "true" : "false");
+          b.addEventListener("click", function () {
+            D[lv.id] = o[0];
+            Array.prototype.forEach.call(seg.children, function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+          });
+          seg.appendChild(b);
+        });
+        wrap.appendChild(seg); box.appendChild(wrap);
+      });
+      var btns = api.html("div", "btnrow");
+      var run = api.html("button", "btn", "Run 500 lives"); run.type = "button";
+      var keep = api.html("button", "btn secondary", "Keep this run to compare"); keep.type = "button"; keep.disabled = true;
+      btns.appendChild(run); btns.appendChild(keep); box.appendChild(btns);
+      var out = api.html("div", ""); out.setAttribute("aria-live", "polite"); el.appendChild(out);
+      var keptBox = api.html("div", ""); el.appendChild(keptBox);
+
+      function hand() {
+        var raw = D.inc * 2.6 + D.wealth * 2.2 + D.pedu * 1.7 + D.hood * 1.7 + (D.fam === 2 ? 1.6 : D.fam === 1 ? 0.6 : 0) - 0.35;
+        var start = Math.max(2, Math.min(98, Math.round((raw - 1) / (25.8 - 1) * 100)));
+        return { inc: D.inc, wealth: D.wealth, pedu: D.pedu, hood: D.hood, fam: D.fam, sibs: 1, start: start };
+      }
+      function words(r) {
+        return [WORDS.inc[r.inc], WORDS.wealth[r.wealth], WORDS.pedu[r.pedu], WORDS.hood[r.hood], WORDS.fam[r.fam], WORDS.style[r.style]].join(", ");
+      }
+      function simulate() {
+        var h = hand(), res = [];
+        for (var i = 0; i < N; i++) res.push(BL_MODEL.simulateLife(h, D.style));
+        var pct = function (f) { return Math.round(100 * res.filter(f).length / N); };
+        return {
+          inc: D.inc, wealth: D.wealth, pedu: D.pedu, hood: D.hood, fam: D.fam, style: D.style,
+          credential: pct(function (o) { return o.degree || o.cert; }),
+          home: pct(function (o) { return o.ownHome; }),
+          secure: pct(function (o) { return o.steady >= 62; }),
+          heavy: pct(function (o) { return o.debt === 2; }),
+          dest: [1, 2, 3, 4, 5].map(function (q) { return Math.round(1000 * res.filter(function (o) { return o.dest === q; }).length / N) / 10; })
+        };
+      }
+      function block(r, title) {
+        var wrap = api.html("div", "panel");
+        wrap.appendChild(api.html("h3", "bl-h", title));
+        wrap.appendChild(api.html("p", "bl-small", "<strong>Starting point:</strong> " + words(r) + "."));
+        api.render([{ type: "bars", max: 100, caption: "Share of the 500 lives that reached each outcome by age 40. A life can reach more than one, so the bars do not add to 100.", rows: [
+          { label: "Finished a degree or trade credential", value: r.credential, display: r.credential + "%" },
+          { label: "Owned a home", value: r.home, display: r.home + "%" },
+          { label: "Had steady, secure work", value: r.secure, display: r.secure + "%" },
+          { label: "Still had heavy debt", value: r.heavy, display: r.heavy + "%" }
+        ] }], wrap);
+        if (r.style === "typical") {
+          var real = BL_MODEL.CHETTY_ROWS[r.inc], rows = [];
+          FIFTHS.forEach(function (f, i) {
+            rows.push({ label: f + ": model", value: r.dest[i], display: r.dest[i] + "%" });
+            rows.push({ label: f + ": real children", value: real[i], display: real[i] + "%", tone: "good" });
+          });
+          var miss = Math.round(r.dest.reduce(function (a, v, i) { return a + Math.abs(v - real[i]); }, 0) / 5 * 10) / 10;
+          wrap.appendChild(api.html("p", "bl-small", "<strong>Which income fifth the lives ended up in as adults.</strong> Each fifth shows the model's share, then the share of real children raised in the same fifth (Chetty and others, 2014)."));
+          api.render([{ type: "bars", max: 40, rows: rows, caption: "On average the model missed the real figures by " + miss + " percentage points per fifth." }], wrap);
+        } else {
+          wrap.appendChild(api.html("div", "note", "The real figures describe everyone raised in a given fifth, so they cannot be compared with a run where everything else goes well or badly. Set <strong>Everything else</strong> to Average to compare the model with real children."));
+        }
+        return wrap;
+      }
+      run.addEventListener("click", function () {
+        last = simulate();
+        out.innerHTML = ""; out.appendChild(block(last, "This run"));
+        api.animateBars(out);
+        keep.disabled = false;
+        runs.push(words(last) + ": degree or credential " + last.credential + "%, top fifth as adults " + last.dest[4] + "%");
+        api.record(runs.slice(-6));
+        api.done();
+      });
+      keep.addEventListener("click", function () {
+        if (!last) return;
+        kept = last; keptBox.innerHTML = ""; keptBox.appendChild(block(kept, "Kept run, for comparison"));
+        api.animateBars(keptBox);
+      });
+      api.onAutoplay(function () { run.click(); keep.click(); });
     }
-  });
-})();
+  };
+}
+window.LAB = {
+  title: "Born Lucky",
+  course: "SOCL 1133 Introductory Sociology",
+  labLabel: "In-class lab",
+  institution: "Midwestern State University",
+  retrieved: "October 2026",
+  lmsName: "D2L",
+
+  intro: "<strong>Where you start in life shapes which choices you get to make, and what each choice costs.</strong> In this lab you live two made-up lives, one that starts in the bottom fifth of family income and one that starts in the top fifth. You make one choice at each of five stages in each life. Then you compare the two lives, check them against real data, and run a simulation. You can work with a partner. Nothing is submitted; the questions in the last tab are for class discussion.",
+
+  sections: [
+    {
+      tab: "Two starts",
+      title: "Two children, born the same year in the same city",
+      lede: "Neither child chose anything about where they started. Read both profiles, then answer the question below.",
+      blocks: [
+        { type: "entries", items: [
+          { kicker: "Life A", title: "Starts in the bottom fifth",
+            rows: [
+              { label: "Parents' income", html: "Bottom fifth (the lowest-earning 20 percent of families)" },
+              { label: "Family wealth", html: "None. The family rents and has no savings." },
+              { label: "Parents' schooling", html: "High school diploma" },
+              { label: "Neighborhood school", html: "Crowded classes, few extra programs" } ] },
+          { kicker: "Life B", title: "Starts in the top fifth",
+            rows: [
+              { label: "Parents' income", html: "Top fifth (the highest-earning 20 percent of families)" },
+              { label: "Family wealth", html: "They own their home and have savings and investments." },
+              { label: "Parents' schooling", html: "Both have college degrees" },
+              { label: "Neighborhood school", html: "Small classes, tutors and test prep nearby" } ] }
+        ] },
+        { type: "check", id: "qcWealth", label: "Quick check (income or wealth)",
+          prompt: "The profiles list income and wealth separately. Which of these is wealth rather than income?",
+          options: [ { v: "pay", t: "A weekly paycheck" }, { v: "house", t: "A house the family owns" }, { v: "ss", t: "A monthly Social Security check" }, { v: "ot", t: "Overtime pay" } ],
+          answer: "house", right: "Right. A house the family owns is wealth.",
+          reveal: [ { type: "note", html: "<strong>Income</strong> is money that comes in over time, such as wages, tips, or benefit checks. <strong>Wealth</strong> is what a family owns (a home, savings, investments) minus what it owes. Two families with the same income can have very different wealth. Watch for where wealth matters in the two lives." } ] },
+        { type: "note", tone: "caution", html: "Both lives are made up. The stages and outcomes follow patterns sociologists have documented, especially Annette Lareau's research on parenting and social class and Melvin Oliver and Thomas Shapiro's research on wealth. They are illustrations, not data." }
+      ]
+    },
+    {
+      tab: "Life A",
+      title: "Life A: starting in the bottom fifth",
+      lede: "Make one choice at each stage. After each choice you will see what happened and what the starting point had to do with it. Some options are shown but not available; read why.",
+      blocks: [ blLifeBlock("A") ]
+    },
+    {
+      tab: "Life B",
+      title: "Life B: starting in the top fifth",
+      lede: "The same five stages, with a different starting point. Make one choice at each stage.",
+      blocks: [ blLifeBlock("B") ]
+    },
+    {
+      tab: "Side by side",
+      title: "The two menus, side by side",
+      lede: "For each stage, here are the options each life had and the one you picked. Look for options that only one life had.",
+      blocks: [ blSideBySide() ]
+    },
+    {
+      tab: "The real numbers",
+      panels: [
+        { title: "Where real children ended up",
+          lede: "Researchers used federal tax records for about 10 million American children born from 1980 to 1982. They compared each child's family income while growing up with the child's own income around age 30. Make a guess before you see each figure.",
+          blocks: [
+            { type: "guess", id: "gBottom", label: "Guess (bottom fifth to top fifth, per 100)",
+              prompt: "Out of 100 children raised in the bottom fifth, how many were in the top fifth as adults?",
+              min: 0, max: 50, step: 0.5, start: 25, answer: 7.5, close: 3,
+              format: { decimals: 1 },
+              answerText: "The real figure is 7.5 out of 100.",
+              reveal: [
+                { type: "bars", max: 40, caption: "Children raised in the bottom fifth: which fifth they were in around age 30, out of 100.", rows: [
+                  { label: "Bottom fifth", value: 33.7, display: "33.7" }, { label: "Second fifth", value: 28.0, display: "28.0" },
+                  { label: "Middle fifth", value: 18.4, display: "18.4" }, { label: "Fourth fifth", value: 12.3, display: "12.3" },
+                  { label: "Top fifth", value: 7.5, display: "7.5" } ] },
+                { type: "note", html: "If where you start made no difference, each bar would be 20. About one in three children raised in the bottom fifth stayed there." } ] },
+            { type: "guess", id: "gTop", label: "Guess (top fifth staying on top, per 100)",
+              prompt: "Out of 100 children raised in the top fifth, how many were still in the top fifth as adults?",
+              min: 0, max: 100, step: 0.5, start: 60, answer: 36.5, close: 5,
+              format: { decimals: 1 },
+              answerText: "The real figure is 36.5 out of 100.",
+              reveal: [
+                { type: "bars", max: 40, caption: "Children raised in the top fifth: which fifth they were in around age 30, out of 100.", rows: [
+                  { label: "Bottom fifth", value: 10.9, display: "10.9" }, { label: "Second fifth", value: 11.9, display: "11.9" },
+                  { label: "Middle fifth", value: 17.0, display: "17.0" }, { label: "Fourth fifth", value: 23.6, display: "23.6" },
+                  { label: "Top fifth", value: 36.5, display: "36.5" } ] },
+                { type: "note", html: "A child raised in the top fifth was almost five times as likely to end up in the top fifth as a child raised in the bottom fifth (36.5 compared with 7.5). Starting at the top did not guarantee staying there: about 1 in 10 fell to the bottom fifth." } ] }
+          ],
+          source: "Chetty, R., Hendren, N., Kline, P., and Saez, E. (2014). Where is the land of opportunity? The geography of intergenerational mobility in the United States. <em>Quarterly Journal of Economics</em>, 129(4), 1553-1623, Table II. Children born 1980 to 1982; parents' income 1996 to 2000; children's income 2011 to 2012." },
+        { title: "Who finishes college",
+          blocks: [
+            { type: "guess", id: "gDegree", label: "Guess (bachelor's by 24, lowest income quarter)",
+              prompt: "In 2022, 58 percent of young people from the highest-income quarter of families had a bachelor's degree by age 24. What percent of young people from the lowest-income quarter did?",
+              min: 0, max: 60, step: 1, start: 35, answer: 16, close: 4,
+              format: { suffix: "%" },
+              answerText: "The real figure is 16 percent.",
+              reveal: [
+                { type: "bars", max: 60, caption: "Bachelor's degree by age 24, by family income quarter, United States, 2022.", rows: [
+                  { label: "Lowest-income quarter", value: 16, display: "16%" }, { label: "Second quarter", value: 25, display: "25%" },
+                  { label: "Third quarter", value: 44, display: "44%" }, { label: "Highest-income quarter", value: 58, display: "58%" } ] },
+                { type: "note", html: "Young people from the highest-income families were more than three times as likely to have a bachelor's degree by 24. Starting college and finishing it are different steps, and money affects both." } ] }
+          ],
+          source: "Pell Institute for the Study of Opportunity in Higher Education. <em>Indicators of Higher Education Equity in the United States: 2024 Historical Trend Report</em>, Indicator 5a(i): estimated bachelor's degree attainment by age 24 by family income quartile (U.S. Census Bureau data)." },
+        { title: "Covering an emergency",
+          blocks: [
+            { type: "guess", id: "gEmergency", label: "Guess (adults who could cover $400 in cash)",
+              prompt: "Both lives faced a $2,000 car repair at age 29. In a 2025 Federal Reserve survey, what percent of U.S. adults said they could cover a much smaller emergency, $400, using cash or its equivalent?",
+              min: 0, max: 100, step: 1, start: 85, answer: 63, close: 5,
+              format: { suffix: "%" },
+              answerText: "The real figure is 63 percent.",
+              reveal: [ { type: "note", html: "About 37 percent of adults said they could not cover a $400 expense with cash or its equivalent. Many of them would borrow, sell something, or not be able to pay it at all. This is the situation Life A faced at age 29." } ] }
+          ],
+          source: "Board of Governors of the Federal Reserve System. Survey of Household Economics and Decisionmaking, 2025 survey: unexpected expenses data table, Report on the Economic Well-Being of U.S. Households." }
+      ]
+    },
+    {
+      tab: "Run 500 lives",
+      title: "Run 500 lives",
+      lede: "This simulation runs 500 made-up lives from a starting point you choose and reports where they ended up at age 40. Start with the settings below, click Run, then change one setting at a time and run again.",
+      blocks: [
+        { type: "note", tone: "caution", html: "<strong>This is a model, not a measurement.</strong> A person wrote its rules by hand, based on sociology research. Two numbers in it were adjusted so that, with Everything else set to Average, its results come close to the real figures from Chetty and others (2014). It is closest for poorer starts and furthest off for the richest start. When the model and the real figures disagree, trust the real figures." },
+        blSimBlock()
+      ]
+    }
+  ],
+
+  ending: {
+    mode: "discussion",
+    tab: "Talk about it",
+    title: "Questions for discussion",
+    intro: "Use specific stages and numbers from the lab in your answers.",
+    questions: [
+      "In the Side by side tab, Life B could take an unpaid internship at age 23 and Life A could not. Find one more stage where an option was open to one life and not the other. What about each family made the difference?",
+      "Both lives had the option to decide that math was not their subject at age 10. In Life A, the school moved you to a lower math group. In Life B, your parents stepped in and you caught up. Why did the same choice cost Life A more?",
+      "At age 29, both lives needed $2,000 for a car repair. Life A had about $300 in savings, and Life B had about $8,000 and parents who could help. Use this example to explain the difference between income and wealth.",
+      "Of every 100 children raised in the bottom fifth, 7.5 reached the top fifth by about age 30. Of every 100 raised in the top fifth, 36.5 stayed there. People often explain success as hard work and good choices. Using these numbers and the two lives, what does that explanation get right, and what does it leave out?",
+      "In the Run 500 lives tab, run the bottom fifth, then change one setting (for example, family wealth) and run it again. Which change moved the results the most? Since a person wrote the model's rules, what would you want to see in real data before believing that this setting matters that much?",
+      "The two lives differed in income, wealth, parents' schooling, and neighborhood. They did not have a race or a gender. Pick one stage of Life A. How might race or gender have changed what happened at that stage?"
+    ]
+  },
+
+  sources: [
+    "Lareau, A. (2011). <em>Unequal Childhoods: Class, Race, and Family Life</em> (2nd ed.). University of California Press.",
+    "Oliver, M. L., and Shapiro, T. M. (2006). <em>Black Wealth/White Wealth: A New Perspective on Racial Inequality</em> (2nd ed.). Routledge.",
+    "The two lives and the simulation in this lab are fictional. The simulation's rules were written by hand and calibrated against Chetty and others (2014), Table II."
+  ]
+};
+
+/* =================== END LAB CONFIG =================== */
 </script>
 
+<script>
+/* Lab engine. Authors edit the config above, not this script.
+   Everything the student does stays in this page until they copy or download it. */
+(function () {
+  'use strict';
+  var LAB = window.LAB;
+  var app = document.getElementById('app');
+  if (!LAB) { app.innerHTML = '<div class="panel"><p class="lede">This lab has no content yet.</p></div>'; return; }
+
+  /* ---------- small helpers ---------- */
+  var uid = 0;
+  function nid(p) { uid += 1; return (p || 'x') + uid; }
+  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function txt(html) { var d = document.createElement('div'); d.innerHTML = html == null ? '' : String(html); return (d.textContent || '').replace(/\s+/g, ' ').trim(); }
+  function arr(x) { return x == null ? [] : (Array.isArray(x) ? x : [x]); }
+  function refOf(r) {
+    if (r == null) return null;
+    if (Array.isArray(r)) return { v: r[0], why: r[1] || '' };
+    if (typeof r === 'string') return { v: r, why: '' };
+    return { v: r.v, why: r.why || '' };
+  }
+  function isArguable(v) { return v === 'arguable' || v === '*'; }
+  function accepts(v, choice) { if (isArguable(v)) return true; return arr(v).indexOf(choice) !== -1; }
+  function fmtNum(n, f) {
+    f = f || {};
+    var d = f.decimals == null ? 0 : f.decimals;
+    var s = Number(n).toFixed(d);
+    if (f.thousands !== false) { var parts = s.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); s = parts.join('.'); }
+    return (f.prefix || '') + s + (f.suffix || '');
+  }
+  function fmtDiff(n, f) {
+    f = f || {};
+    if (f.diffSuffix != null) return fmtNum(n, { decimals: f.decimals, thousands: f.thousands, prefix: f.prefix }) + f.diffSuffix;
+    return fmtNum(n, f);
+  }
+  var seed = (function () { var m = /[?&]seed=(\d+)/.exec(location.search || ''); return m ? Number(m[1]) : null; })();
+  var rand = seed == null ? Math.random : (function (s) { return function () { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; })(seed);
+
+  /* ---------- registries ---------- */
+  var BLOCKS = [];        // interactive blocks in page order: {id, group, lines(), complete(), play(mode), questions()}
+  var RESULTS = {};       // cross-block results by block id
+  var SOURCES = [];       // {group, html}
+  var SECTIONS = [];      // {id, tab, node}
+  var dirty = false;      // typed text not yet copied or downloaded
+  var curSec = null;
+  function reg(kind, group) { var r = { kind: kind, group: group, sec: curSec }; BLOCKS.push(r); return r; }
+  function addSource(group, html) {
+    if (!html) return;
+    var t = txt(html);
+    for (var i = 0; i < SOURCES.length; i++) if (txt(SOURCES[i].html) === t) return;
+    SOURCES.push({ group: group || 'Other sources', html: html });
+  }
+
+  /* ---------- page chrome ---------- */
+  var subParts = [LAB.course, LAB.labLabel, LAB.institution].filter(Boolean);
+  document.title = [LAB.title, LAB.course, LAB.labLabel].filter(Boolean).join(' · ');
+  var head = el('header', 'top');
+  head.setAttribute('role', 'presentation');
+  head.innerHTML = '<h1>' + LAB.title + (subParts.length ? ' <span class="sub">' + subParts.join(' · ') + '</span>' : '') + '</h1>';
+  var themeBtn = el('button', 'theme-btn', 'Dark mode'); themeBtn.type = 'button';
+  themeBtn.addEventListener('click', function () { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+  head.appendChild(themeBtn);
+  app.appendChild(head);
+  function setTheme(t) {
+    if (t === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); themeBtn.textContent = 'Light mode'; }
+    else { document.documentElement.removeAttribute('data-theme'); themeBtn.textContent = 'Dark mode'; }
+  }
+  if (LAB.theme === 'dark' || (LAB.theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) setTheme('dark');
+
+  if (LAB.intro) { var ip = el('div', 'panel'); ip.appendChild(el('div', 'lede', LAB.intro)); app.appendChild(ip); }
+
+  /* ---------- reveal and bar animation ---------- */
+  function animateBars(node) {
+    if (!node) return;
+    var fills = node.querySelectorAll('.bfill[data-w]');
+    Array.prototype.forEach.call(fills, function (b) {
+      if (b.offsetParent === null) return;
+      requestAnimationFrame(function () { b.style.width = b.getAttribute('data-w'); });
+    });
+  }
+  function reveal(node) { if (!node) return; node.style.display = 'block'; animateBars(node); }
+
+  /* ---------- static blocks ---------- */
+  function renderStatic(b, group) {
+    var n;
+    switch (b.type) {
+      case 'heading': return el('h3', '', b.text || b.html);
+      case 'text': return el('div', 'prose', b.html);
+      case 'note': n = el('div', 'note' + (b.tone === 'caution' ? ' caution' : ''), b.html); return n;
+      case 'source': addSource(group, b.html); return el('p', 'src', (b.label === false ? '' : '<strong>' + (b.label || 'Source') + ':</strong> ') + b.html);
+      case 'entries':
+        n = el('div', 'entries');
+        arr(b.items).forEach(function (it) {
+          var e = el('div', 'entry');
+          if (it.kicker) e.appendChild(el('div', 'kicker', it.kicker));
+          if (it.title) e.appendChild(el('div', 'title', it.title));
+          if (it.quote) e.appendChild(el('div', 'quote', it.quote));
+          if (it.body) e.appendChild(el('div', 'body', it.body));
+          arr(it.rows).forEach(function (r) { e.appendChild(el('div', 'row', '<span class="lab">' + r.label + '</span>' + r.html)); });
+          n.appendChild(e);
+          if (it.source) addSource(group, it.source);
+        });
+        if (b.source) addSource(group, b.source);
+        return n;
+      case 'stats':
+        n = el('div', 'stats');
+        arr(b.items).forEach(function (s) { n.appendChild(el('div', 'stat' + (s.tone ? ' ' + s.tone : ''), '<div class="v">' + s.value + '</div><div class="l">' + s.label + '</div>')); });
+        if (b.source) addSource(group, b.source);
+        return n;
+      case 'bars':
+        n = el('div', 'bars');
+        var max = b.max || Math.max.apply(null, arr(b.rows).map(function (r) { return Number(r.value) || 0; })) || 1;
+        arr(b.rows).forEach(function (r) {
+          var w = Math.max(0, Math.min(100, (Number(r.value) || 0) / max * 100));
+          var row = el('div', 'brow', '<span class="blabel">' + r.label + '</span><div class="btrack" aria-hidden="true"><div class="bfill' + (r.tone ? ' ' + r.tone : '') + '" data-w="' + w.toFixed(1) + '%"></div></div><span class="bval">' + (r.display != null ? r.display : r.value) + '</span>');
+          n.appendChild(row);
+        });
+        if (b.caption) { var wrap = el('div'); wrap.appendChild(n); wrap.appendChild(el('p', 'src', b.caption)); if (b.source) addSource(group, b.source); return wrap; }
+        if (b.source) addSource(group, b.source);
+        return n;
+    }
+    return null;
+  }
+
+  function renderBlocks(list, container, group) {
+    arr(list).forEach(function (b) {
+      if (typeof b === 'string') b = { type: 'text', html: b };
+      var node = renderStatic(b, group);
+      if (!node) node = renderInteractive(b, group);
+      if (node) container.appendChild(node);
+    });
+  }
+  function revealBox(blocks, group) {
+    var box = el('div', 'veiled');
+    var inner = el('div'); inner.style.display = 'flex'; inner.style.flexDirection = 'column'; inner.style.gap = '12px';
+    if (typeof blocks === 'string') inner.appendChild(el('div', 'note', blocks)); else renderBlocks(blocks, inner, group);
+    box.appendChild(inner);
+    return box;
+  }
+
+  /* ---------- interactive blocks ---------- */
+  function renderInteractive(b, group) {
+    switch (b.type) {
+      case 'check': return renderCheck(b, group);
+      case 'guess': return renderGuess(b, group);
+      case 'sort': return renderSort(b, group);
+      case 'trace': return renderTrace(b, group);
+      case 'pick': return renderPick(b, group);
+      case 'custom': return renderCustom(b, group);
+    }
+    var warn = el('div', 'note caution', 'Unknown block type: ' + b.type);
+    return warn;
+  }
+
+  /* check: one question, pick one, then the explanation */
+  function renderCheck(b, group) {
+    var id = b.id || nid('check');
+    var R = reg('check', b.recordAs || group);
+    var wrap = el('div', 'box');
+    wrap.appendChild(el('div', 'prompt', b.prompt));
+    var row = el('div', 'choices' + (b.layout === 'column' ? ' column' : ''));
+    row.setAttribute('role', 'group'); row.setAttribute('aria-label', txt(b.prompt).slice(0, 120));
+    var verdict = el('div', 'verdict'); verdict.setAttribute('aria-live', 'polite');
+    var rv = b.reveal || b.explain ? revealBox(b.reveal || b.explain, group) : null;
+    var state = { choice: null };
+    var hasAnswer = b.answer != null;
+    arr(b.options).forEach(function (o) {
+      var btn = el('button', 'opt', o.t); btn.type = 'button'; btn.setAttribute('data-choice', '1'); btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', function () {
+        if (state.choice !== null) return;
+        state.choice = o.v;
+        Array.prototype.forEach.call(row.children, function (x, i) {
+          x.disabled = true;
+          var ov = arr(b.options)[i].v;
+          if (ov === o.v) { x.classList.add('chosen'); x.setAttribute('aria-pressed', 'true'); }
+          if (hasAnswer && accepts(b.answer, ov) && !isArguable(b.answer)) x.classList.add('answer');
+        });
+        if (hasAnswer) {
+          var right = accepts(b.answer, o.v);
+          verdict.innerHTML = right ? (b.right || 'Right.') : (b.wrong || ('The reference answer is ' + arr(b.options).filter(function (x) { return accepts(b.answer, x.v); }).map(function (x) { return txt(x.t); }).join(' or ') + '.' + (rv ? ' The note below explains why.' : '')));
+        } else if (b.after) verdict.innerHTML = b.after;
+        reveal(rv);
+        RESULTS[id] = { choice: o.v, correct: hasAnswer ? accepts(b.answer, o.v) : null };
+      });
+      row.appendChild(btn);
+    });
+    wrap.appendChild(row); wrap.appendChild(verdict); if (rv) wrap.appendChild(rv);
+    if (b.source) { addSource(group, b.source); wrap.appendChild(el('p', 'src', '<strong>Source:</strong> ' + b.source)); }
+    Object.assign(R, {
+      id: id,
+      lines: function () {
+        if (b.record === false) return [];
+        var label = b.label || txt(b.prompt);
+        var o = arr(b.options).filter(function (x) { return x.v === state.choice; })[0];
+        return [label + ': ' + (o ? txt(o.t) : 'not answered')];
+      },
+      complete: function () { return state.choice !== null; },
+      play: function (mode) {
+        if (state.choice !== null) return;
+        var opts = arr(b.options); var pickI = 0;
+        if (mode === 'random') pickI = Math.floor(rand() * opts.length);
+        if (mode === 'reference' && hasAnswer) opts.forEach(function (x, i) { if (accepts(b.answer, x.v)) pickI = i; });
+        row.children[pickI].click();
+      },
+      questions: function () { return ['Check: ' + txt(b.prompt) + ' Options: ' + arr(b.options).map(function (x) { return txt(x.t) + (hasAnswer && accepts(b.answer, x.v) && !isArguable(b.answer) ? ' [reference]' : ''); }).join(' | ')]; }
+    });
+    return wrap;
+  }
+
+  /* guess: commit to a number on a slider, then the real figure */
+  function renderGuess(b, group) {
+    var id = b.id || nid('guess');
+    var R = reg('guess', b.recordAs || group);
+    var f = b.format || {};
+    var wrap = el('div', 'box');
+    var pid = nid('gp');
+    var p = el('div', 'prompt', b.prompt); p.id = pid; wrap.appendChild(p);
+    var row = el('div', 'slider');
+    var input = document.createElement('input'); input.type = 'range'; input.min = b.min; input.max = b.max; input.step = b.step || 1; input.value = b.start != null ? b.start : Math.round((Number(b.min) + Number(b.max)) / 2);
+    input.setAttribute('aria-labelledby', pid);
+    var val = el('span', 'gval', fmtNum(input.value, f)); val.setAttribute('aria-hidden', 'true');
+    input.setAttribute('aria-valuetext', fmtNum(input.value, f));
+    var lock = el('button', 'btn', b.lockText || 'Lock in my guess'); lock.type = 'button'; lock.setAttribute('data-choice', '1');
+    row.appendChild(input); row.appendChild(val); row.appendChild(lock);
+    var verdict = el('div', 'verdict'); verdict.setAttribute('aria-live', 'polite');
+    var rv = b.reveal ? revealBox(b.reveal, group) : null;
+    var state = { guess: null };
+    input.addEventListener('input', function () { val.textContent = fmtNum(input.value, f); input.setAttribute('aria-valuetext', fmtNum(input.value, f)); });
+    lock.addEventListener('click', function () {
+      if (state.guess !== null) return;
+      var g = Number(input.value), a = Number(b.answer), d = g - a, close = b.close != null ? Number(b.close) : 0;
+      state.guess = g; lock.disabled = true; input.disabled = true;
+      var t = 'You guessed ' + fmtNum(g, f) + '. ' + (b.answerText || ('The answer is ' + fmtNum(a, f) + '.')) + ' ';
+      if (Math.abs(d) <= close) t += d === 0 ? 'Exactly right.' : (b.closeText || ('Within ' + fmtDiff(close, f) + '.'));
+      else t += 'You were ' + fmtDiff(Math.abs(d), f) + (d > 0 ? ' high.' : ' low.');
+      verdict.textContent = t;
+      RESULTS[id] = { guess: g, answer: a, diff: d };
+      reveal(rv);
+    });
+    wrap.appendChild(row); wrap.appendChild(verdict); if (rv) wrap.appendChild(rv);
+    if (b.source) { addSource(group, b.source); wrap.appendChild(el('p', 'src', '<strong>Source:</strong> ' + b.source)); }
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; return [(b.label || txt(b.prompt)) + ': ' + (state.guess === null ? 'not answered' : 'guessed ' + fmtNum(state.guess, f) + ' (answer ' + fmtNum(b.answer, f) + ')')]; },
+      complete: function () { return state.guess !== null; },
+      play: function (mode) {
+        if (state.guess !== null) return;
+        var lo = Number(b.min), hi = Number(b.max), st = Number(b.step || 1);
+        var v = mode === 'reference' ? Number(b.answer) : mode === 'random' ? lo + Math.round(rand() * (hi - lo) / st) * st : Number(input.value);
+        input.value = v; input.dispatchEvent(new Event('input')); lock.click();
+      },
+      questions: function () { return ['Guess: ' + txt(b.prompt) + ' Range ' + fmtNum(b.min, f) + ' to ' + fmtNum(b.max, f) + '. Answer ' + fmtNum(b.answer, f) + '.']; }
+    });
+    return wrap;
+  }
+
+  /* shared item renderer for sort and trace */
+  function buildItems(cfg, items, host, onItemDone, group) {
+    var dims = arr(cfg.dims);
+    var mode = cfg.reveal || 'item';
+    var state = items.map(function () { return {}; });
+    var itemLabel = cfg.itemLabel || 'Item';
+    items.forEach(function (it, i) {
+      var box = el('div', 'item');
+      var hd = el('div', 'head');
+      if (cfg.numbered !== false) hd.appendChild(el('span', 'num', itemLabel + ' ' + (i + 1)));
+      if (it.title) hd.appendChild(el('span', 'title', it.title));
+      box.appendChild(hd);
+      if (it.text) box.appendChild(el('div', 'text', it.text));
+      if (it.src) { box.appendChild(el('div', 'meta', '<strong>Source:</strong> ' + it.src)); addSource(cfg.sourceGroup || group, '<strong>' + itemLabel + ' ' + (i + 1) + '.</strong> ' + it.src); }
+      arr(it.meta).forEach(function (m) { box.appendChild(el('div', 'meta', '<strong>' + m.label + ':</strong> ' + m.html)); });
+      var refs = {};
+      dims.forEach(function (d) {
+        var dw = el('div', 'dim' + ((d.layout || cfg.layout) === 'column' ? '' : ' inline'));
+        var lab = el('div', 'dlabel', d.label || 'Your call');
+        dw.appendChild(lab);
+        var row = el('div', 'choices' + ((d.layout || cfg.layout) === 'column' ? ' column' : ''));
+        row.setAttribute('role', 'group');
+        row.setAttribute('aria-label', (it.title ? txt(it.title) + ', ' : itemLabel + ' ' + (i + 1) + ', ') + txt(d.label || 'Your call'));
+        arr(d.options).forEach(function (o) {
+          var btn = el('button', 'opt', o.t); btn.type = 'button'; btn.setAttribute('data-choice', '1'); btn.setAttribute('aria-pressed', 'false');
+          btn.addEventListener('click', function () {
+            if (state[i][d.key] != null) return;
+            state[i][d.key] = o.v;
+            Array.prototype.forEach.call(row.children, function (x, k) {
+              x.disabled = true;
+              if (arr(d.options)[k].v === o.v) { x.classList.add('chosen'); x.setAttribute('aria-pressed', 'true'); }
+            });
+            if (mode === 'each') showRef(i, d);
+            var all = dims.every(function (dd) { return state[i][dd.key] != null; });
+            if (all) {
+              if (mode !== 'each') dims.forEach(function (dd) { showRef(i, dd); });
+              if (it.note) { var nn = box.querySelector('.itemnote'); nn.innerHTML = '<strong>' + (cfg.noteLabel || 'Why this ' + itemLabel.toLowerCase() + ' is here.') + '</strong> ' + it.note; nn.style.display = 'block'; }
+              onItemDone(i);
+            }
+          });
+          row.appendChild(btn);
+        });
+        dw.appendChild(row);
+        var rf = el('div', 'ref'); rf.setAttribute('aria-live', 'polite');
+        refs[d.key] = rf;
+        box.appendChild(dw); box.appendChild(rf);
+      });
+      box.appendChild(el('div', 'itemnote'));
+      it._refs = refs; it._box = box;
+      host.appendChild(box);
+    });
+    function showRef(i, d) {
+      var it = items[i];
+      var r = refOf(it.ref && it.ref[d.key]);
+      var rf = it._refs[d.key];
+      var choice = state[i][d.key];
+      if (!r) { rf.style.display = 'none'; return; }
+      var opts = arr(d.options);
+      var optText = function (v) { var o = opts.filter(function (x) { return x.v === v; })[0]; return o ? txt(o.t) : String(v); };
+      var tag, tail;
+      if (isArguable(r.v)) { tag = '<span class="tag arg">arguable</span>'; tail = ' ' + (cfg.arguableText || 'Either call is defensible.'); }
+      else {
+        var refV = arr(r.v)[0];
+        var o = opts.filter(function (x) { return x.v === refV; })[0];
+        var tone = o && o.tone ? o.tone : (accepts(r.v, choice) ? 'good' : 'warn');
+        var refTxt = arr(r.v).map(optText).join(' or ');
+        tag = refTxt.length > 40
+          ? '<span class="tag ' + tone + '">' + (cfg.refPrefix || 'Reference') + ' answer marked above.</span>'
+          : '<span class="tag ' + tone + '">' + (cfg.refPrefix === false ? '' : (cfg.refPrefix || 'Reference') + ': ') + refTxt + '</span>';
+        tail = accepts(r.v, choice) ? ' You agreed.' : (opts.length === 2 ? ' You called it the other way.' : ' You chose ' + optText(choice).toLowerCase() + '.');
+      }
+      if (!isArguable(r.v)) Array.prototype.forEach.call(rf.previousSibling.querySelector('.choices').children, function (x, k) { if (accepts(r.v, opts[k].v)) x.classList.add('answer'); });
+      rf.innerHTML = tag + r.why + '<strong>' + tail + '</strong>';
+      rf.style.display = 'block';
+    }
+    return {
+      state: state,
+      score: function () { var s = 0, n = 0; items.forEach(function (it, i) { dims.forEach(function (d) { var r = refOf(it.ref && it.ref[d.key]); if (!r || state[i][d.key] == null) return; n++; if (accepts(r.v, state[i][d.key])) s++; }); }); return { agree: s, of: n }; },
+      itemLine: function (i) {
+        var it = items[i];
+        return (cfg.numbered !== false ? (i + 1) + '. ' : '') + (it.title ? txt(it.title) : itemLabel + ' ' + (i + 1)) + ': ' + dims.map(function (d) {
+          var v = state[i][d.key]; var o = arr(d.options).filter(function (x) { return x.v === v; })[0];
+          return (dims.length > 1 ? txt(d.label) + ' = ' : '') + (o ? txt(o.t) : 'not answered');
+        }).join('; ');
+      },
+      done: function (i) { return dims.every(function (d) { return state[i][d.key] != null; }); },
+      play: function (mode) {
+        items.forEach(function (it, i) {
+          dims.forEach(function (d) {
+            if (state[i][d.key] != null) return;
+            var opts = arr(d.options), k = 0;
+            if (mode === 'random') k = Math.floor(rand() * opts.length);
+            if (mode === 'reference') { var r = refOf(it.ref && it.ref[d.key]); if (r && !isArguable(r.v)) opts.forEach(function (x, j) { if (accepts(r.v, x.v)) k = j; }); }
+            var row = it._box.querySelectorAll('.choices')[dims.indexOf(d)];
+            row.children[k].click();
+          });
+        });
+      }
+    };
+  }
+
+  /* sort: every item gets a call on one or more dimensions */
+  function renderSort(b, group) {
+    var id = b.id || nid('sort');
+    var R = reg('sort', b.recordAs || group);
+    var wrap = el('div');
+    var items = arr(b.items);
+    var host = el('div');
+    var prog = el('p', 'progress'); prog.setAttribute('aria-live', 'polite');
+    var summary = el('div', 'veiled');
+    var api;
+    function update() {
+      var n = items.filter(function (_, i) { return api.done(i); }).length;
+      var unit = (b.itemPlural || ((b.itemLabel || 'item').toLowerCase() + 's'));
+      var t = n + ' of ' + items.length + ' ' + unit + ' ' + (b.progressVerb || 'done') + '.';
+      var sc0 = api.score(); RESULTS[id] = { state: api.state, agree: sc0.agree, of: sc0.of, done: n, total: items.length };
+      if (n === items.length) {
+        var nx = nextSectionName(wrap);
+        t += nx && b.pointNext !== false ? ' Go to the next tab, ' + nx + '.' : '';
+        if (b.summary && !summary.hasChildNodes()) {
+          var content = typeof b.summary === 'function' ? b.summary(RESULTS[id], api.state) : b.summary;
+          renderBlocks(typeof content === 'string' ? [{ type: 'note', html: content }] : content, summary, group);
+          reveal(summary);
+        }
+      }
+      prog.textContent = t;
+    }
+    api = buildItems(b, items, host, update, group);
+    if (b.prompt) wrap.appendChild(el('div', 'lede', b.prompt));
+    wrap.appendChild(host); wrap.appendChild(prog); wrap.appendChild(summary);
+    summary.style.marginTop = '12px'; prog.style.marginTop = '10px';
+    setTimeout(update, 0);
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; var L = items.map(function (_, i) { return api.itemLine(i); }); var sc = api.score(); if (b.recordScore !== false && sc.of) L.push('Matched the reference call on ' + sc.agree + ' of ' + sc.of + ' calls (arguable calls count as matches).'); return L; },
+      complete: function () { return items.every(function (_, i) { return api.done(i); }); },
+      play: function (mode) { api.play(mode); },
+      questions: function () {
+        var out = [];
+        arr(b.dims).forEach(function (d) { out.push('Sort dimension: ' + txt(d.label || 'Your call') + '. Options: ' + arr(d.options).map(function (o) { return txt(o.t); }).join(' | ')); });
+        items.forEach(function (it, i) {
+          out.push('  ' + (b.itemLabel || 'Item') + ' ' + (i + 1) + ': ' + txt(it.title || it.text) + '. Reference: ' + arr(b.dims).map(function (d) { var r = refOf(it.ref && it.ref[d.key]); if (!r) return 'no reference'; if (isArguable(r.v)) return 'arguable'; return arr(r.v).map(function (v) { var o = arr(d.options).filter(function (x) { return x.v === v; })[0]; return o ? txt(o.t) : v; }).join(' or '); }).join(' / '));
+        });
+        return out;
+      }
+    });
+    return wrap;
+  }
+
+  /* trace: choose one scenario, then decide for each row (system, stage, actor) */
+  function renderTrace(b, group) {
+    var id = b.id || nid('trace');
+    var R = reg('trace', b.recordAs || group);
+    var wrap = el('div');
+    if (b.prompt) wrap.appendChild(el('div', 'lede', b.prompt));
+    var pick = el('div', 'choices' + (b.layout === 'column' ? ' column' : ''));
+    pick.setAttribute('role', 'group'); pick.setAttribute('aria-label', b.chooseLabel || 'Choose a scenario');
+    var stage = el('div', 'veiled');
+    var traces = [];
+    var current = null;
+    arr(b.scenarios).forEach(function (sc, si) {
+      var btn = el('button', 'opt', sc.title); btn.type = 'button'; btn.setAttribute('data-choice', '1');
+      btn.addEventListener('click', function () { start(si); });
+      pick.appendChild(btn);
+    });
+    function start(si) {
+      var sc = arr(b.scenarios)[si];
+      Array.prototype.forEach.call(pick.children, function (x, k) { x.disabled = true; x.classList.toggle('chosen', k === si); });
+      stage.innerHTML = '';
+      var head = el('div', 'item');
+      head.innerHTML = '<div class="head"><span class="num">' + (b.scenarioLabel || 'Your scenario') + '</span><span class="title">' + sc.title + '</span></div>' + (sc.text ? '<div class="text">' + sc.text + '</div>' : '');
+      if (sc.src) { head.appendChild(el('div', 'meta', '<strong>Source:</strong> ' + sc.src)); addSource(group, sc.src); }
+      stage.appendChild(head);
+      var rows = arr(b.rows).map(function (r) { return { title: r.name, text: r.detail, ref: (function () { var o = {}; o.call = sc.ref && sc.ref[r.key]; return o; })() }; });
+      var host = el('div'); host.style.marginTop = '12px';
+      var sumBox = el('div', 'veiled'); sumBox.style.marginTop = '12px';
+      var cfg = { dims: [{ key: 'call', label: b.callLabel || 'Your call', options: b.options }], itemLabel: b.rowLabel || 'System', numbered: b.numbered === true, reveal: 'item', refPrefix: b.refPrefix, layout: b.layout };
+      var api = buildItems(cfg, rows, host, function () {
+        if (!rows.every(function (_, i) { return api.done(i); })) return;
+        var sc2 = api.score();
+        var rec = { title: txt(sc.title), lines: rows.map(function (_, i) { return api.itemLine(i); }), agree: sc2.agree, of: sc2.of };
+        traces.push(rec); current.done = true;
+        RESULTS[id] = { traces: traces };
+        var content = [];
+        if (sc.note) content.push({ type: 'note', html: '<strong>' + (b.noteLabel || 'Why this scenario is here.') + '</strong> ' + sc.note });
+        if (b.summary) { var s = typeof b.summary === 'function' ? b.summary(rec, sc) : b.summary; content = content.concat(typeof s === 'string' ? [{ type: 'note', html: s }] : s); }
+        renderBlocks(content, sumBox, group);
+        if (b.repeat !== false && traces.length < arr(b.scenarios).length) {
+          var again = el('button', 'btn secondary', b.againText || 'Trace another scenario'); again.type = 'button';
+          again.addEventListener('click', function () { Array.prototype.forEach.call(pick.children, function (x) { x.disabled = false; x.classList.remove('chosen'); }); stage.style.display = 'none'; current = null; pick.scrollIntoView({ block: 'start' }); });
+          var r = el('div', 'btnrow'); r.appendChild(again); sumBox.appendChild(r);
+        }
+        reveal(sumBox);
+      }, group);
+      current = { api: api, done: false, si: si };
+      stage.appendChild(host); stage.appendChild(sumBox);
+      reveal(stage);
+    }
+    wrap.appendChild(pick); wrap.appendChild(stage); stage.style.marginTop = '12px';
+    Object.assign(R, {
+      id: id,
+      lines: function () {
+        if (b.record === false) return [];
+        if (!traces.length) return ['No scenario traced.'];
+        var L = [];
+        traces.forEach(function (t, k) { L.push('Scenario ' + (k + 1) + ': ' + t.title + ' (matched the reference on ' + t.agree + ' of ' + t.of + ')'); t.lines.forEach(function (x) { L.push('   ' + x); }); });
+        return L;
+      },
+      complete: function () { return traces.length >= (b.minTraces || 1); },
+      play: function (mode) {
+        if (traces.length >= (b.minTraces || 1)) return;
+        if (!current || current.done) {
+          var used = traces.map(function (t) { return t.title; });
+          var free = []; arr(b.scenarios).forEach(function (sc, j) { if (used.indexOf(txt(sc.title)) === -1) free.push(j); });
+          if (!free.length) return;
+          var k = mode === 'random' ? free[Math.floor(rand() * free.length)] : free[0];
+          start(k);
+        }
+        current.api.play(mode);
+      },
+      questions: function () {
+        var out = ['Trace' + (b.prompt ? ': ' + txt(b.prompt) : '') + '. Options per row: ' + arr(b.options).map(function (o) { return txt(o.t); }).join(' | ')];
+        arr(b.scenarios).forEach(function (sc) { out.push('  Scenario: ' + txt(sc.title) + '. Reference: ' + arr(b.rows).map(function (r) { var rf = refOf(sc.ref && sc.ref[r.key]); if (!rf) return txt(r.name) + ' = no reference'; var o = arr(b.options).filter(function (x) { return x.v === rf.v; })[0]; return txt(r.name) + ' = ' + (isArguable(rf.v) ? 'arguable' : (o ? txt(o.t) : rf.v)); }).join('; ')); });
+        return out;
+      }
+    });
+    return wrap;
+  }
+
+  /* pick: choose exactly n of the options (a budget, a triage), then see what each choice did */
+  function renderPick(b, group) {
+    var id = b.id || nid('pick');
+    var R = reg('pick', b.recordAs || group);
+    var n = b.n || 1;
+    var wrap = el('div', 'box');
+    wrap.appendChild(el('div', 'prompt', b.prompt));
+    var row = el('div', 'choices column');
+    var count = el('span', 'progress', '0 of ' + n + ' picked'); count.setAttribute('aria-live', 'polite');
+    var confirm = el('button', 'btn', b.confirmText || 'Confirm my choices'); confirm.type = 'button'; confirm.disabled = true; confirm.setAttribute('data-confirm', '1');
+    var results = el('div', 'veiled');
+    var sel = [], done = false;
+    arr(b.options).forEach(function (o, i) {
+      var btn = el('button', 'opt', '<strong>' + o.t + '</strong>' + (o.d ? '<br><span style="font-weight:500">' + o.d + '</span>' : '')); btn.type = 'button'; btn.setAttribute('aria-pressed', 'false'); btn.setAttribute('data-toggle', '1');
+      btn.addEventListener('click', function () {
+        if (done) return;
+        var k = sel.indexOf(i);
+        if (k !== -1) { sel.splice(k, 1); btn.classList.remove('toggled'); btn.setAttribute('aria-pressed', 'false'); }
+        else if (sel.length < n) { sel.push(i); btn.classList.add('toggled'); btn.setAttribute('aria-pressed', 'true'); }
+        count.textContent = sel.length + ' of ' + n + ' picked';
+        confirm.disabled = sel.length !== n;
+      });
+      row.appendChild(btn);
+    });
+    confirm.addEventListener('click', function () {
+      if (done || sel.length !== n) return;
+      done = true; confirm.disabled = true;
+      Array.prototype.forEach.call(row.children, function (x) { x.disabled = true; });
+      var list = [];
+      arr(b.options).forEach(function (o, i) {
+        var chosen = sel.indexOf(i) !== -1;
+        var r = chosen ? o.ifChosen : o.ifNot;
+        if (r) list.push({ type: 'note', html: '<strong>' + o.t + (chosen ? ' (chosen).' : ' (not chosen).') + '</strong> ' + r });
+      });
+      if (b.reveal) list = list.concat(typeof b.reveal === 'string' ? [{ type: 'note', html: b.reveal }] : b.reveal);
+      renderBlocks(list, results, group);
+      results.style.display = 'flex'; results.style.flexDirection = 'column'; results.style.gap = '10px';
+      animateBars(results);
+      RESULTS[id] = { chosen: sel.slice() };
+    });
+    var br = el('div', 'btnrow'); br.appendChild(count); br.appendChild(confirm);
+    wrap.appendChild(row); wrap.appendChild(br); wrap.appendChild(results);
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; return [(b.label || txt(b.prompt)) + ': ' + (done ? sel.map(function (i) { return txt(arr(b.options)[i].t); }).join('; ') : 'not answered')]; },
+      complete: function () { return done; },
+      play: function (mode) {
+        if (done) return;
+        var idx = arr(b.options).map(function (_, i) { return i; });
+        if (mode === 'random') idx.sort(function () { return rand() - 0.5; });
+        sel.slice().forEach(function (i) { row.children[i].click(); });
+        idx.slice(0, n).forEach(function (i) { row.children[i].click(); });
+        confirm.click();
+      },
+      questions: function () { return ['Pick ' + n + ': ' + txt(b.prompt) + ' Options: ' + arr(b.options).map(function (o) { return txt(o.t); }).join(' | ')]; }
+    });
+    return wrap;
+  }
+
+  /* custom: author-written interaction (a simulation, a drag task). See references/blocks.md. */
+  function renderCustom(b, group) {
+    var id = b.id || nid('custom');
+    var R = reg('custom', b.recordAs || group);
+    var wrap = el('div');
+    var lines = [], complete = false, player = null;
+    var api = {
+      el: wrap, id: id, random: rand, results: RESULTS, fmt: fmtNum,
+      record: function (x) { lines = arr(x).map(String); },
+      done: function () { complete = true; },
+      result: function (obj) { RESULTS[id] = obj; },
+      reveal: reveal, animateBars: animateBars, html: el, text: txt,
+      render: function (blocks, into) { renderBlocks(blocks, into || wrap, group); },
+      onAutoplay: function (fn) { player = fn; }
+    };
+    try { b.render(wrap, api); } catch (e) { wrap.appendChild(el('div', 'note caution', 'This part of the lab did not load: ' + e.message)); if (window.console) console.error(e); }
+    if (b.source) addSource(group, b.source);
+    Object.assign(R, {
+      id: id,
+      lines: function () { return b.record === false ? [] : (lines.length ? lines : [(b.label || 'Activity') + ': not completed']); },
+      complete: function () { return b.required === false || complete; },
+      play: function (mode) { if (player && !complete) player(mode); },
+      questions: function () { return arr(b.questions).map(function (q) { return 'Custom: ' + txt(q); }); }
+    });
+    return wrap;
+  }
+
+  /* ---------- sections and tabs ---------- */
+  var sections = arr(LAB.sections).slice();
+  var E = LAB.ending || { mode: 'none' };
+  if (E.mode && E.mode !== 'none') sections.push({ id: 'sec-ending', tab: E.tab || defaultEndingTab(E.mode), ending: true });
+  var sourcesAs = LAB.sourcesAs || 'tab';
+  if (sourcesAs === 'tab') sections.push({ id: 'sec-sources', tab: 'Sources', sources: true });
+  function defaultEndingTab(m) { return m === 'response' ? 'Your response sheet' : m === 'forum' ? 'Your forum post' : 'Talk about it'; }
+
+  var tablist = null;
+  if (sections.length > 1) { tablist = el('div', 'tabs'); tablist.setAttribute('role', 'tablist'); tablist.setAttribute('aria-label', 'Lab sections'); app.appendChild(tablist); }
+
+  sections.forEach(function (s, i) {
+    s.id = s.id || ('sec-' + (i + 1));
+    var node = el('div', 'section' + (i === 0 ? ' active' : '')); node.id = s.id;
+    if (tablist) {
+      var t = el('button', 'tab', s.tab); t.type = 'button'; t.id = 'tab-' + s.id;
+      t.setAttribute('role', 'tab'); t.setAttribute('aria-controls', s.id); t.setAttribute('aria-selected', i === 0 ? 'true' : 'false'); t.tabIndex = i === 0 ? 0 : -1;
+      t.addEventListener('click', function () { activate(s.id, true); });
+      t.addEventListener('keydown', function (e) {
+        var tabs = Array.prototype.slice.call(tablist.children), j = tabs.indexOf(t), k = null;
+        if (e.key === 'ArrowRight') k = (j + 1) % tabs.length; else if (e.key === 'ArrowLeft') k = (j - 1 + tabs.length) % tabs.length; else if (e.key === 'Home') k = 0; else if (e.key === 'End') k = tabs.length - 1;
+        if (k !== null) { e.preventDefault(); tabs[k].focus(); tabs[k].click(); }
+      });
+      tablist.appendChild(t);
+      node.setAttribute('role', 'tabpanel'); node.setAttribute('aria-labelledby', t.id); node.tabIndex = -1;
+    }
+    SECTIONS.push({ id: s.id, tab: s.tab, node: node });
+    app.appendChild(node);
+  });
+
+  function activate(id, fromTab) {
+    SECTIONS.forEach(function (s) {
+      var on = s.id === id;
+      s.node.classList.toggle('active', on);
+      var t = document.getElementById('tab-' + s.id);
+      if (t) { t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
+    });
+    var cur = document.getElementById(id);
+    animateBars(cur);
+    if (!fromTab && cur) { cur.focus({ preventScroll: true }); }
+    if (!fromTab && tablist) tablist.scrollIntoView({ block: 'start' });
+  }
+  function nextSectionName(node) {
+    var sec = node.closest ? node.closest('.section') : null;
+    if (!sec) return null;
+    for (var i = 0; i < SECTIONS.length - 1; i++) if (SECTIONS[i].id === sec.id) return SECTIONS[i + 1].tab;
+    return null;
+  }
+
+  /* fill content sections (ending and sources last, after all sources are known) */
+  sections.forEach(function (s, i) {
+    if (s.ending || s.sources) return;
+    var node = SECTIONS[i].node;
+    curSec = s.id;
+    var group = s.recordAs || s.tab || s.title || ('Part ' + (i + 1));
+    var panels = s.panels || [{ title: s.title, lede: s.lede, blocks: s.blocks }];
+    panels.forEach(function (p) {
+      var pn = el('div', 'panel');
+      if (p.title) pn.appendChild(el('h2', '', p.title));
+      if (p.lede) pn.appendChild(el('div', 'lede', p.lede));
+      renderBlocks(p.blocks, pn, p.recordAs || group);
+      if (p.source) { addSource(group, p.source); pn.appendChild(el('p', 'src', '<strong>Sources:</strong> ' + p.source)); }
+      node.appendChild(pn);
+    });
+    addNext(node, i);
+  });
+  function addNext(node, i) {
+    if (LAB.nextButtons === false || !tablist || i >= SECTIONS.length - 1) return;
+    var nx = SECTIONS[i + 1];
+    if (nx.id === 'sec-sources') return;
+    var r = el('div', 'nextrow'); var b = el('button', 'btn secondary', 'Next: ' + nx.tab); b.type = 'button';
+    b.addEventListener('click', function () { activate(nx.id, false); });
+    r.appendChild(b); node.appendChild(r);
+  }
+
+  /* ---------- ending ---------- */
+  var ending = { lines: null, build: null, fields: [] };
+  if (E.mode && E.mode !== 'none') {
+    var eIdx = SECTIONS.map(function (s) { return s.id; }).indexOf('sec-ending');
+    var enode = SECTIONS[eIdx].node;
+    var ep = el('div', 'panel');
+    enode.appendChild(ep);
+    if (E.mode === 'discussion') {
+      ep.appendChild(el('h2', '', E.title || 'Talk about it'));
+      if (E.intro) ep.appendChild(el('div', 'lede', E.intro));
+      var ul = el('ul', 'qs');
+      arr(E.questions).forEach(function (q) { ul.appendChild(el('li', '', typeof q === 'string' ? q : q.prompt)); });
+      ep.appendChild(ul);
+    } else {
+      buildWritten(ep, E);
+    }
+  }
+  function questionsOf(E) { return arr(E.questions).map(function (q, i) { return typeof q === 'string' ? { prompt: q, id: 'q' + (i + 1) } : q; }); }
+  function buildWritten(ep, E) {
+    var forum = E.mode === 'forum';
+    ep.appendChild(el('h2', '', E.title || (forum ? 'Your forum post' : 'Your response sheet')));
+    var dest = E.destination || (forum ? 'the discussion forum' : 'the assignment submission');
+    var intro = E.intro || (forum
+      ? 'Write your post in the boxes below. Then use the button at the bottom to put it together as one block of text, and paste that text into ' + dest + '.'
+      : 'Answer the questions below in complete sentences. Then use the button at the bottom to put your answers and your work from this lab into one block of text, and paste that text into ' + dest + (E.due ? ' ' + E.due : '') + '.');
+    ep.appendChild(el('div', 'lede', intro + ' Your answers stay on this page and are not sent anywhere until you paste them. If you close or reload the page, what you typed is lost, so submit before you leave.'));
+    if (forum && E.forum) {
+      var fd = el('div', 'forum'); var dl = el('dl');
+      [['What to post', E.forum.post], ['Replies', E.forum.reply], ['Due', E.forum.due]].forEach(function (p) { if (p[1]) { dl.appendChild(el('dt', '', p[0])); dl.appendChild(el('dd', '', p[1])); } });
+      fd.appendChild(dl); ep.appendChild(fd);
+    }
+    var nameIn = null;
+    if (E.name !== false) {
+      var nl = el('label', 'field'); nl.appendChild(el('span', 'qt', E.nameLabel || 'Your name'));
+      nameIn = document.createElement('input'); nameIn.type = 'text'; nameIn.autocomplete = 'name'; nameIn.placeholder = 'First and last name';
+      nl.appendChild(nameIn); ep.appendChild(nl);
+    }
+    var qs = questionsOf(E);
+    qs.forEach(function (q, i) {
+      var lab = el('label', 'field');
+      lab.appendChild(el('span', 'qt', (E.numbered === false ? '' : (i + 1) + '. ') + q.prompt));
+      var ta = document.createElement('textarea'); ta.id = 'ans-' + (q.id || i);
+      if (q.hint) { var hid = nid('h'); var hs = el('span', 'qh', q.hint); hs.id = hid; lab.appendChild(hs); ta.setAttribute('aria-describedby', hid); }
+      lab.appendChild(ta);
+      var wc = el('div', 'wc', '0 words'); wc.setAttribute('aria-hidden', 'true'); lab.appendChild(wc);
+      ta.addEventListener('input', function () { dirty = true; var n = (ta.value.trim().match(/\S+/g) || []).length; wc.textContent = n + (n === 1 ? ' word' : ' words'); });
+      ep.appendChild(lab);
+      ending.fields.push({ q: q, ta: ta, i: i });
+    });
+    var br = el('div', 'btnrow');
+    var build = el('button', 'btn', forum ? 'Put my post together' : 'Assemble my submission'); build.type = 'button';
+    var copy = el('button', 'btn secondary', 'Copy to clipboard'); copy.type = 'button'; copy.disabled = true;
+    br.appendChild(build); br.appendChild(copy);
+    var dl2 = null;
+    if (E.download) { dl2 = el('button', 'btn secondary', 'Download as a text file'); dl2.type = 'button'; dl2.disabled = true; br.appendChild(dl2); }
+    ep.appendChild(br);
+    var note = el('p', 'verdict'); note.setAttribute('aria-live', 'polite'); ep.appendChild(note);
+    var out = el('div', 'out'); var ota = document.createElement('textarea'); ota.readOnly = true; ota.setAttribute('aria-label', forum ? 'Your assembled post' : 'Your assembled submission'); out.appendChild(ota); ep.appendChild(out);
+    if (nameIn) nameIn.addEventListener('input', function () { dirty = true; });
+
+    function assemble() {
+      var L = [];
+      var name = nameIn ? (nameIn.value.trim() || '(no name entered)') : null;
+      if (forum) {
+        if (E.postTitle) L.push(E.postTitle, '');
+        ending.fields.forEach(function (f) {
+          var a = f.ta.value.trim();
+          if (E.labels !== false && qs.length > 1) L.push((f.q.short ? f.q.short : 'Question ' + (f.i + 1)) + '.');
+          L.push(a || '(blank)'); L.push('');
+        });
+        if (E.includeWork) { L.push('My work in the lab:'); workLines().forEach(function (x) { L.push(x); }); L.push(''); }
+        if (name && E.signName !== false) L.push(name);
+      } else {
+        L.push([LAB.course, LAB.labLabel, LAB.title].filter(Boolean).join(' · ').toUpperCase());
+        if (name) L.push('Name: ' + name);
+        L.push('Assembled: ' + new Date().toLocaleString());
+        L.push('');
+        if (E.includeWork !== false) { var w = workLines(); if (w.length) { L.push('YOUR WORK IN THE LAB'); w.forEach(function (x) { L.push(x); }); L.push(''); } }
+        ending.fields.forEach(function (f) {
+          L.push('QUESTION ' + (f.i + 1) + (f.q.short ? ' (' + f.q.short + ')' : ''));
+          if (E.includePrompts) L.push(txt(f.q.prompt));
+          L.push(f.ta.value.trim() || '(blank)'); L.push('');
+        });
+      }
+      return L.join('\n').replace(/\n+$/, '\n');
+    }
+    ending.build = assemble;
+    build.addEventListener('click', function () {
+      ota.value = assemble();
+      out.style.display = 'block'; copy.disabled = false; if (dl2) dl2.disabled = false;
+      var blanks = ending.fields.filter(function (f) { return !f.ta.value.trim(); }).length;
+      var unfinished = BLOCKS.filter(function (bk) { return !bk.complete(); }).length;
+      var msg = [];
+      if (blanks) msg.push(blanks + ' of ' + ending.fields.length + ' questions are still blank.');
+      if (unfinished && E.includeWork !== false && !forum) msg.push('Some parts of the lab are not finished yet, and they show as not answered.');
+      note.textContent = msg.length ? 'Assembled. ' + msg.join(' ') + ' You can finish them and assemble again.' : (forum ? 'Done. Copy the text below and paste it into ' + dest + '.' : 'Assembled. Copy the text below and paste it into ' + dest + '.');
+    });
+    copy.addEventListener('click', function () {
+      var okMsg = 'Copied. Paste it into ' + dest + '.';
+      var failMsg = 'Your browser blocked automatic copying. The text is selected, so press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+      ota.focus(); ota.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      function done(v) { note.textContent = v ? okMsg : failMsg; if (v) dirty = false; }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ota.value).then(function () { done(true); }, function () { done(ok); });
+      else done(ok);
+    });
+    if (dl2) dl2.addEventListener('click', function () {
+      try {
+        var blob = new Blob([ota.value], { type: 'text/plain' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = (E.fileName || (LAB.labLabel || LAB.title || 'lab').replace(/[^A-Za-z0-9]+/g, '_')) + '_' + ((nameIn && nameIn.value.trim()) || 'answers').replace(/[^A-Za-z0-9]+/g, '_') + '.txt';
+        document.body.appendChild(a); a.click(); a.remove(); dirty = false;
+        note.textContent = 'Downloaded. If nothing appeared, use the copy button instead.';
+      } catch (e) { note.textContent = 'This browser blocked the download. Use the copy button instead.'; }
+    });
+  }
+  function workLines() {
+    var L = [], lastGroup = null;
+    BLOCKS.forEach(function (bk) {
+      var lines = bk.lines(); if (!lines.length) return;
+      if (bk.group !== lastGroup) { if (lastGroup !== null) L.push(''); L.push(txt(bk.group).toUpperCase()); lastGroup = bk.group; }
+      lines.forEach(function (x) { L.push(x); });
+    });
+    return L;
+  }
+  window.addEventListener('beforeunload', function (e) { if (dirty && LAB.warnOnLeave !== false) { e.preventDefault(); e.returnValue = ''; return ''; } });
+
+  /* ---------- sources ---------- */
+  arr(LAB.sources).forEach(function (s) { addSource(typeof s === 'string' ? 'Readings and other sources' : (s.group || 'Readings and other sources'), typeof s === 'string' ? s : s.html); });
+  function renderSources(container) {
+    var groups = [];
+    SOURCES.forEach(function (s) { var g = groups.filter(function (x) { return x.name === s.group; })[0]; if (!g) { g = { name: s.group, items: [] }; groups.push(g); } g.items.push(s.html); });
+    var box = el('div', 'srclist');
+    groups.forEach(function (g) { box.appendChild(el('h3', '', g.name)); g.items.forEach(function (h) { box.appendChild(el('p', '', h)); }); });
+    if (LAB.retrieved) box.appendChild(el('p', 'src', 'Sources retrieved ' + LAB.retrieved + '.'));
+    container.appendChild(box);
+  }
+  if (SOURCES.length || LAB.retrieved) {
+    var sp = el('div', 'panel'); sp.appendChild(el('h2', '', 'Sources'));
+    renderSources(sp);
+    if (sourcesAs === 'tab') { SECTIONS[SECTIONS.length - 1].node.appendChild(sp); }
+    else app.appendChild(sp);
+  } else if (sourcesAs === 'tab') {
+    var last = SECTIONS.pop(); last.node.remove(); var lt = document.getElementById('tab-' + last.id); if (lt) lt.remove();
+  }
+
+  /* ---------- footer ---------- */
+  var foot = el('footer');
+  foot.setAttribute('role', 'contentinfo');
+  foot.innerHTML = LAB.footer || ('Built for ' + ([LAB.course, LAB.institution].filter(Boolean).join(', ') || 'this course') + '.' + (LAB.retrieved ? ' Sources retrieved ' + LAB.retrieved + '.' : '') + (['response', 'forum'].indexOf(E.mode) !== -1 ? ' Your clicks and answers stay on this page. Nothing is recorded or sent anywhere unless you copy or download it yourself.' : ' Your clicks stay on this page. Nothing is recorded or sent anywhere.'));
+  app.appendChild(foot);
+
+  /* ---------- small screen notice ---------- */
+  if (window.innerWidth < 740 && LAB.smallScreenNotice !== false) {
+    var nb = el('div', 'notice'); nb.setAttribute('role', 'region'); nb.setAttribute('aria-label', 'Display notice');
+    nb.appendChild(el('span', '', 'You are on a small screen. This page works here, but it is easier to use on a computer.'));
+    var ok = el('button', '', 'OK'); ok.type = 'button'; ok.addEventListener('click', function () { nb.remove(); }); nb.appendChild(ok);
+    document.body.insertBefore(nb, document.body.firstChild);
+  }
+
+  requestAnimationFrame(function () { animateBars(SECTIONS[0] && SECTIONS[0].node); });
+
+  /* ---------- test and review hooks (used by scripts/check_lab.py) ---------- */
+  window.__LAB = {
+    config: LAB,
+    sections: function () { return SECTIONS.map(function (s) { return { id: s.id, tab: s.tab }; }); },
+    activate: function (id) { activate(id, true); },
+    blocks: function () { return BLOCKS.map(function (b) { return { id: b.id, kind: b.kind, group: txt(b.group), complete: b.complete() }; }); },
+    incomplete: function () { return BLOCKS.filter(function (b) { return !b.complete(); }).map(function (b) { return b.id + ' (' + b.kind + ')'; }); },
+    autoplay: function (mode) {
+      for (var pass = 0; pass < 4; pass++) SECTIONS.forEach(function (s) { activate(s.id, true); BLOCKS.forEach(function (b) { if (b.sec !== s.id || !b.play) return; try { b.play(mode || 'first'); } catch (e) { console.error('autoplay ' + b.id + ': ' + e.message); } }); });
+      activate(SECTIONS[0].id, true);
+    },
+    fillEnding: function (prefix) { ending.fields.forEach(function (f) { f.ta.value = (prefix || 'Test answer') + ' ' + (f.i + 1); f.ta.dispatchEvent(new Event('input')); }); var n = app.querySelector('input[autocomplete=name]'); if (n) n.value = 'Test Student'; },
+    submission: function () { return ending.build ? ending.build() : null; },
+    endingQuestions: function () { return ending.fields.map(function (f) { return { prompt: txt(f.q.prompt), short: f.q.short || null }; }); },
+    results: RESULTS,
+    sources: function () { return SOURCES.map(function (s) { return s.group + ': ' + txt(s.html); }); },
+    questionList: function () {
+      var L = ['# Question list: ' + txt(LAB.title), ''];
+      var lastG = null;
+      BLOCKS.forEach(function (b) { var g = txt(b.group); if (g !== lastG) { L.push('', '## ' + g); lastG = g; } b.questions().forEach(function (q) { L.push('- ' + q); }); });
+      if (E.mode && E.mode !== 'none') {
+        L.push('', '## ' + (E.tab || defaultEndingTab(E.mode)) + ' (' + E.mode + ')');
+        arr(E.questions).forEach(function (q, i) { var p = typeof q === 'string' ? q : q.prompt; L.push((i + 1) + '. ' + txt(p) + (q.hint ? ' [' + txt(q.hint) + ']' : '')); });
+      }
+      return L.join('\n');
+    },
+    seed: seed
+  };
+})();
+</script>
 </body>
 </html>

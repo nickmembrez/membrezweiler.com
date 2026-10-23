@@ -24,10 +24,12 @@ LABS = [
      "A runnable agent model in which nobody prefers segregation and every agent only wants not to be badly outnumbered on its own block. Students set the tolerance threshold and watch the neighborhood sort itself anyway."),
     ("SOC1113_WholePie.html", "intro", "Introduction to Sociology", "The Whole Pie, Guessed First",
      "Students guess the composition of American incarceration before seeing it, then compare their estimate against the published breakdown and consider what labeling theory predicts about who ends up counted."),
-    ("SOC1113_LifeChances.html", "intro", "Introduction to Sociology", "Life Chances",
-     "Weber's concept made measurable. Students trace how position at birth translates into differing probabilities across education, health, and income."),
-    ("SOC1113_BornLucky.html", "intro", "Introduction to Sociology", "Born Lucky",
-     "Nobody chooses where they start. An extended interactive treatment of ascribed position and the cumulative advantage that follows from it."),
+    ('SOC1113_DrugLaws.html', 'intro', 'Introduction to Sociology', 'Where Would You Put It? Drug Laws',
+     'Drug laws sort substances into categories, and each category brings a different reaction, from a pharmacy shelf to a prison sentence. Students work through a simplified version of the federal scheduling system and decide where substances belong before seeing where the law puts them.'),
+    ('SOC1113_LifeChances.html', 'intro', 'Introduction to Sociology', 'Life Chances',
+     "Weber's concept made measurable. Students set the circumstances of a birth, including parents' income, race and ethnicity, and gender, and see what published data on millions of Americans say about that child's odds in education, health, and income."),
+    ('SOC1113_BornLucky.html', 'intro', 'Introduction to Sociology', 'Born Lucky',
+     'Nobody chooses where they start. Students live two childhoods side by side, one that starts in the bottom fifth and one in the top fifth, make the same kinds of choices at five stages of each, and see what the starting point did to every outcome.'),
     ("SOC1113_PayGap.html", "intro", "Introduction to Sociology", "The Pay Gap, Taken Apart",
      "The raw gender pay gap, then what survives when occupation, hours, and experience are held constant, then what is left over. Students take the number apart rather than accepting or dismissing it whole."),
     ("SOC1113_FamilyMeasured.html", "intro", "Introduction to Sociology", "The Family, Measured",
@@ -96,14 +98,48 @@ LABS = [
      "A guided exercise in the Environmental Protection Agency's public compliance database, in which students look up real facilities, read what inspectors found, and see what was done about it."),
     ("WCC_Lab10_ThePaycheck.html", "wcc", "White-Collar Crime", "The Paycheck",
      "Wage theft as a property crime, worked through a pay stub. Students calculate what was taken, identify the mechanism, and compare it against the enforcement route available to the worker."),
+    ('WCC_Lab10_ThePaycheck_Texas.html', 'wcc', 'White-Collar Crime', 'The Paycheck: Texas',
+     'The Texas version of The Paycheck. Students audit eight pay records against the Fair Labor Standards Act and the Texas Payday Law, compute what each worker is owed, and look at enforcement in a state with no minimum wage or overtime law of its own.'),
     ("WCC_Lab11_SwapOrBet.html", "wcc", "White-Collar Crime", "Swap or Bet",
      "A contract that pays if a team wins is a swap under the Commodity Exchange Act and a bet under the Texas Penal Code. Students classify real products and defend the line they drew."),
     ("WCC_Lab12_TheDeal.html", "wcc", "White-Collar Crime", "The Deal",
      "Most corporate crime in the United States is resolved by agreement rather than by trial. Students read real deferred and non-prosecution agreements and weigh what each side obtained."),
+
+    ('SOCL3633_Lab01_YourFirstChartInR.html', 'methods', 'Research Methods', 'Your First Chart in R',
+     'Students make a chart from real survey data in RStudio, change it, and then make a chart of their own. The lab is written for students who have never written code, and every step says what to click and what they should see.'),
+    ('SOCL3633_Lab02_LookAtTheData.html', 'methods', 'Research Methods', 'Look at the Data',
+     'Students open the General Social Survey, find out what it contains and what is missing from it, and fill in and run the code themselves for the first time.'),
+    ('SOCL3633_Lab03_EthicsCasework.html', 'methods', 'Research Methods', 'Ethics Casework',
+     "Students register for CITI research ethics training, then apply a five-item ethics checklist to three famous studies: the Tuskegee syphilis study, Tearoom Trade, and Milgram's obedience experiments."),
+    ('SOCL3633_Lab04_GroupingCategories.html', 'methods', 'Research Methods', 'Grouping Categories',
+     'Combining the categories of a variable is a measurement decision, and it can change the answer. Students group the same party identification answers two ways, group religion their own way, and read four GSS questions closely.'),
+    ('SOCL3633_Lab05_SamplingVariation.html', 'methods', 'Research Methods', 'Sampling Variation',
+     'Students treat the 21,483 GSS respondents as a population, draw random samples from it, and watch the answer move from sample to sample. Then they see what happens when the sampling list leaves people out.'),
+    ('SOCL3633_Lab06_RivalExplanation.html', 'methods', 'Research Methods', 'Testing a Rival Explanation',
+     'Older people in the GSS report watching more TV. Students find the pattern and then test whether work or marriage explains it better than age does.'),
+    ('SOCL3633_Lab07_AISurveyQuestions.html', 'methods', 'Research Methods', 'Survey Questions Written by an AI Tool',
+     "A free AI tool drafts ten survey questions on the concept in each student's research question. Students find the problems in each question and repair the three worst."),
+    ('SOCL3633_Lab08_BuildYourSurvey.html', 'methods', 'Research Methods', 'Build and Launch Your Survey',
+     "Students build a ten-question survey in Google Forms and send it to their first respondents. Three questions are shared across the class so that one R script can read everyone's data."),
+    ('SOCL3633_Lab09_ChartYourSurvey.html', 'methods', 'Research Methods', 'Chart Your Own Survey',
+     'Students load their own survey responses into R, chart a shared question and one of their own, and count how many respondents fall into each group.'),
+    ('SOCL3633_Lab10_FromTalkToText.html', 'methods', 'Research Methods', 'From Talk to Text',
+     'Students transcribe ten minutes of their own interview and see how each choice about what to keep shapes what the analysis can find later.'),
+    ('SOCL3633_Lab11_CodingYourInterview.html', 'methods', 'Research Methods', 'Coding Your Interview',
+     "Students code their transcript in Taguette with a class codebook, check their coding against a partner's on a practice transcript, and write a memo and a model of how their codes connect."),
+    ('SOCL3633_Lab12_Observation.html', 'methods', 'Research Methods', 'Structured Observation',
+     'Nobody can see community directly. Students plan a 30-minute observation in a public place, decide in advance which actions will count as evidence, and then write up what they found.'),
+    ('SOCL3633_Lab13_NetworksI.html', 'methods', 'Research Methods', 'Your Personal Network',
+     'Students answer two name generators, describe the people they name, and say who knows whom. The lab shows how much a single survey question shapes the network a study finds.'),
+    ('SOCL3633_Lab14_ChartYourNetwork.html', 'methods', 'Research Methods', 'Chart Your Personal Network',
+     'Students load their Lab 13 network into R, measure how connected it is, and draw it twice, once plain and once colored by the question that named each person.'),
+    ('SOCL3633_Lab15_CountTheWords.html', 'methods', 'Research Methods', 'Count the Words',
+     'After coding ten court texts by hand, students have the computer count every word in a twenty-text corpus, chart the most frequent words, and use a short word list as a second coder.'),
 ]
 
 COURSES = [("all", "All labs"), ("intro", "Introduction to Sociology"),
-           ("criminology", "Criminology"), ("wcc", "White-Collar Crime")]
+           ("criminology", "Criminology"), ("wcc", "White-Collar Crime"),
+           ("methods", "Research Methods")]
 
 HEAD = """<!doctype html>
 <html lang="en">
@@ -111,18 +147,20 @@ HEAD = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Teaching Resources | Nicholas J. Membrez-Weiler</title>
-<meta name="description" content="A free repository of {n} browser-based sociology and criminology teaching labs covering introductory sociology, criminology, and white-collar crime. No accounts, no tracking, free to adapt.">
+<meta name="description" content="A free repository of {n} browser-based sociology and criminology teaching labs covering introductory sociology, criminology, white-collar crime, and research methods. No accounts, no tracking, free to adapt.">
 <link rel="canonical" href="https://membrezweiler.com/teaching-resources.html">
 <meta property="og:title" content="Teaching Resources | Nicholas J. Membrez-Weiler">
 <meta property="og:description" content="{n} free browser-based teaching labs for sociology and criminology courses.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://membrezweiler.com/teaching-resources.html">
-<meta property="og:image" content="https://membrezweiler.com/assets/img/nicholas-membrez-weiler.jpg">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://membrezweiler.com/assets/img/og-card.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/site.css">
 <script>(function(){{try{{var t=localStorage.getItem('mw-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}}catch(e){{}}}})();</script>
 </head>
@@ -154,7 +192,7 @@ HEAD = """<!doctype html>
     <div class="wrap">
       <p class="eyebrow">Teaching Resources</p>
       <h1>Sociology labs, free to use</h1>
-      <p class="lede">{n} self-contained teaching labs for introductory sociology, criminology, and white-collar crime. Each one opens in a browser, holds real published data or real cases, and asks students for a judgment before it shows them the evidence.</p>
+      <p class="lede">{n} self-contained teaching labs for introductory sociology, criminology, white-collar crime, and research methods. Each one opens in a browser, holds real published data or real cases, and asks students for a judgment before it shows them the evidence.</p>
     </div>
   </div>
 
@@ -236,7 +274,8 @@ HEAD = """<!doctype html>
 """
 
 def main():
-    site = os.path.join(os.path.dirname(os.path.abspath(__file__)), "site")
+    here = os.path.dirname(os.path.abspath(__file__))
+    site = os.path.join(here, "site") if os.path.isdir(os.path.join(here, "site")) else here
     missing = [f for f, *_ in LABS if not os.path.exists(os.path.join(site, "labs", f))]
     if missing:
         raise SystemExit("Missing lab files: " + ", ".join(missing))
@@ -246,7 +285,7 @@ def main():
             k=k, l=html.escape(l), p="true" if k == "all" else "false")
         for k, l in COURSES)
 
-    anchors = {"intro": "intro", "criminology": "criminology", "wcc": "wcc"}
+    anchors = {"intro": "intro", "criminology": "criminology", "wcc": "wcc", "methods": "methods"}
     seen = set()
     cards = []
     for fn, key, label, title, desc in LABS:

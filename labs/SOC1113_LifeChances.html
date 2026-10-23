@@ -104,7 +104,7 @@ footer a{color:var(--accent)}
 </header>
 
 <div class="card">
-  <p class="small muted" style="margin:0">Max Weber argued that class is really a bundle of life chances: the odds a person carries into the world before making a single choice. Set the circumstances of a birth below. Every chart on this page answers for that child, using published data on millions of real Americans. The first three levers nobody chooses. The fourth one is the kind sociologists call achieved, and the second section shows how much the first lever shapes it.</p>
+  <p class="small muted" style="margin:0">Max Weber used the term <b>life chances</b> for the odds of good or bad outcomes that come with a class position. Set the circumstances of a birth below. Every chart on this page shows what published data on millions of real Americans say about a child born into those circumstances. Nobody chooses the first three settings: parents’ income, race and ethnicity, and gender. The fourth, education, is what sociologists call achieved, and the second section shows how strongly parents’ income shapes it.</p>
   <div class="levers">
     <div class="lever"><div class="lab">Parents’ income</div><div class="seg" data-k="q">
       <button data-v="1">Bottom fifth</button><button data-v="2">Second</button><button data-v="3">Middle</button><button data-v="4">Fourth</button><button data-v="5">Top fifth</button></div></div>
@@ -154,7 +154,7 @@ footer a{color:var(--accent)}
   <div class="sect">Health and years of life</div>
   <div class="big">How long this child can expect to live</div>
   <div class="tiles" id="lifeTiles"></div>
-  <p class="small" style="margin:14px 0 2px"><b>Pick an intersection to see</b> <span class="muted">(the grayed ones explain themselves)</span></p>
+  <p class="small" style="margin:14px 0 2px"><b>Pick two circumstances to see together</b> <span class="muted">(a grayed-out option cannot be shown; click it to read why)</span></p>
   <div class="seg" id="interPick" style="margin:6px 0 10px"></div>
   <div id="interChart"></div>
   <p class="small muted" id="lifeNote">Between 2001 and 2014, the richest 5 percent of Americans gained about 3 years of life expectancy. The poorest 5 percent gained roughly none.</p>
@@ -163,7 +163,7 @@ footer a{color:var(--accent)}
 
 <div class="card">
   <div class="sect">Prison and wealth</div>
-  <div class="big">The sharpest edges</div>
+  <div class="big">Incarceration and family wealth</div>
   <p class="small" style="margin:0 0 2px"><b>Percent of men incarcerated on a single day</b> <span class="muted">(April 1, 2010, ages 27 to 32, by parents’ income)</span></p>
   <div id="prisonNote"></div>
   <div id="prisonBars"></div>
@@ -176,20 +176,19 @@ footer a{color:var(--accent)}
 <div class="card">
   <div class="big">Talk about it</div>
   <ul class="qs">
-    <li>Weber said a person’s class position is really a set of life chances. After using this page, how would you explain that phrase to a friend in one sentence?</li>
-    <li>Move one lever at a time. Which single circumstance of birth moved the charts the most? Is that the one you expected?</li>
-    <li>Why do the children of the rich stay rich? Name the actual machinery: what exactly gets handed down, and at what ages does the handing down happen?</li>
-    <li>Why would money buy years of life? List every pathway you can think of that runs from a paycheck to a body.</li>
-    <li>Why does more schooling pay more? Is it what people learn, what the diploma signals, who they meet, or something else?</li>
-    <li>The black-white income gap in these data is driven almost entirely by men’s outcomes, not women’s. Why would a gap show up so much more strongly for men?</li>
-    <li>Incomes and wealth tell different stories. The typical white family earns maybe twice what the typical Black family earns, but holds six times the wealth. Why is the wealth gap so much wider? What history is stored in a number like that?</li>
-    <li>Who benefits from these patterns staying as they are? What would changing them cost, and who would pay that cost?</li>
-    <li>Everything on this page is a chance, not a fate. What do numbers like these say about any one person’s life? What do they fail to say?</li>
+    <li>Weber’s term <i>life chances</i> means the odds of good or bad outcomes that come with a class position. Pick one chart in the lab and use its numbers to explain the term in your own words.</li>
+    <li>Of every 100 children raised in the top fifth, 36.5 were still in the top fifth around age 30. Name two things high-income parents pass on to their children (for example, money, connections, or help with school), and say at what age each one matters most.</li>
+    <li>A 40-year-old man with income in the top fifth can expect to live to about 85.4. A man in the bottom fifth can expect to live to about 76.4. Name two ways that higher income could lead to a longer life.</li>
+    <li>Workers with a bachelor’s degree earn a median of $1,543 a week, compared with $930 for workers with only a high school diploma. Which explanation do you find most convincing: what people learn in college, what a diploma tells employers, or the people students meet? Explain your choice.</li>
+    <li>Black and white women raised in families with the same income grow up to earn about the same. Black and white men do not. Among men raised in the poorest families, 21.0% of Black men and 6.4% of white men were incarcerated on a single day in 2010. How might incarceration help explain why the gap shows up mainly among men?</li>
+    <li>The typical white family holds about $285,000 in wealth, and the typical Black family holds about $44,900. Name one way wealth passes from parents to children, and explain how that could keep a wealth gap going across generations.</li>
+    <li>Pick one figure from the lab. How would the functionalist view (Davis and Moore) explain it, and how would the conflict view explain it?</li>
+    <li>Every figure in the lab describes the odds for large groups of people. What can these figures tell you about one person’s life, and what can they not tell you?</li>
   </ul>
 </div>
 
 <footer role="presentation" id="sources">
-Built for SOC 1113. Every number on this page is a published estimate for millions of real Americans. Nothing here is simulated.<br>
+Built for SOCL 1133. Every number on this page is a published estimate for millions of real Americans. Nothing here is simulated.<br>
 Sources: Chetty, Hendren, Kline, Saez, <i>Where Is the Land of Opportunity?</i> QJE 2014. Chetty, Hendren, Jones, Porter, <i>Race and Economic Opportunity in the United States</i>, QJE 2020. Chetty et al., <i>The Association Between Income and Life Expectancy in the United States</i>, JAMA 2016. CDC/NCHS United States Life Tables 2023 and Mortality in the United States 2023. Federal Reserve, Survey of Consumer Finances 2022. US Bureau of Labor Statistics, Education Pays 2024. Chetty, Friedman, Saez, Turner, Yagan, <i>Mobility Report Cards</i>, QJE 2020.
 </footer>
 </div>
@@ -252,7 +251,7 @@ function bornSentence(){
   const raceW = { white:'white', black:'Black', hisp:'Hispanic', asian:'Asian', aian:'American Indian' }[P.race];
   const eduW = { none:'leaves school without a diploma', hs:'finishes high school', some:'gets some college but no degree',
     assoc:'earns an associate degree', ba:'earns a bachelor’s degree', adv:'earns an advanced degree' }[P.edu];
-  return `${child}, born to ${raceW} parents whose income is in the <b>${QWORD[P.q-1]}</b> of American families. ${P.sex==='w'?'She':'He'} goes on to ${eduW}.`;
+  return `${child}, born to ${raceW} parents whose income is in the <b>${QWORD[P.q-1]}</b> of American families. Later, ${P.sex==='w'?'she':'he'} ${eduW}.`;
 }
 function buildTiles(){
   const row = MATRIX[P.q-1];
