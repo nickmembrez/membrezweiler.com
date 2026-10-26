@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coding Your Interview · SOCL 3633 · Lab 11</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .yn { flex-wrap: wrap; flex-shrink: 1; min-width: 0; }
+  .ynb { white-space: normal; text-align: left; }
+</style>
+<style>
+  .checks { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 10px 0 6px; }
+  .checks li label { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.5; cursor: pointer; }
+  .checks input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  .steps { margin: 8px 0 8px 22px; display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; line-height: 1.55; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 1px 5px; border-radius: 5px; }
+  pre { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 10px 12px; border-radius: 8px; margin-top: 6px; overflow-x: auto; white-space: pre; }
+  img.chart { display: block; width: 100%; max-width: 760px; height: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+  table.errs { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; margin-top: 6px; }
+  table.errs th, table.errs td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.errs th { color: var(--text-secondary); font-size: 12.5px; }
+  .defs .def .hinge { font-size: 14px; }
+  @media (max-width: 600px) { .viz-root { padding: 12px; } .card { padding: 16px 14px; } }
+  .pkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 14px; margin-top: 10px; }
+  .pk { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; cursor: pointer; padding: 4px 0; }
+  .pk input { margin-top: 2px; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+  .quote { font-size: 15px; line-height: 1.55; margin-top: 6px; font-style: italic; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Coding Your Interview <span class="sub">SOCL 3633 Research Methods · Lab 11 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Today your transcript becomes evidence for a claim.</strong> You code your transcript in Taguette with the class codebook, check your coding against a partner's on a practice transcript, then write a memo and draw a model of how your codes connect. Work through the tabs in order. Submit your response sheet and the picture of your model in the Lab 11 submission on D2L by Thursday, April 8, at 11:59 p.m.</p>
+      <div class="teach"><strong>Keep this page open while you work.</strong> Your entries on this page are not saved anywhere. Your coding in Taguette is saved in your Taguette account.</div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-setup" type="button">1. Set up Taguette</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-book" type="button">2. The class codebook</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-code" type="button">3. Code your transcript</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-pair" type="button">4. Two coders</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-model" type="button">5. Memo and model</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">6. Response sheet</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sources" type="button">Sources</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-setup">
+      <div class="card">
+        <h2>Set up Taguette</h2>
+        <ul class="checks">
+          <li><label><input type="checkbox"><span>Go to <code>app.taguette.org</code> and click <strong>Register</strong>. Create an account with a username and password you will remember.</span></label></li>
+          <li><label><input type="checkbox"><span>Click <strong>Create a project</strong>. Title it "Lab 11 interview" and click <strong>Create</strong>.</span></label></li>
+          <li><label><input type="checkbox"><span>In the <strong>Documents</strong> tab, click <strong>Add a document</strong>, choose your transcript file from your campus storage (.docx, .pdf, .txt, .odt, .md, or .html), give it a name, and click <strong>Import</strong>.</span></label></li>
+          <li><label><input type="checkbox"><span>Check that your transcript has no real names. If you find one, fix it in your file and import it again.</span></label></li>
+        </ul>
+        <div class="teach">Upload only your transcript, with names removed. Do not upload your recording. Your consent text told your respondent that the typed version, with names removed, would be stored in Taguette.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-book">
+      <div class="card">
+        <h2>The class codebook</h2>
+        <p class="lede">Everyone starts with the same five codes, so that we can compare coding across the class. Create each one as a tag in Taguette: open the <strong>Highlights</strong> tab, click <strong>Create a tag</strong>, and copy in the name and description below.</p>
+        <div id="bookList"></div>
+        <h3>Your own codes</h3>
+        <p>As you code, you may find passages that fit none of these. You may add up to two codes of your own. Each one needs a name, a one-sentence description, and in your notes one example that counts and one that does not. Response sheet question 2 asks about them.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-code">
+      <div class="card">
+        <h2>Code your transcript</h2>
+        <ol class="steps">
+          <li>Read your whole transcript once without coding. Notice what repeats.</li>
+          <li>Go back to the start. Select a passage by clicking and dragging. Click <strong>new highlight</strong>, choose one or more tags, and click <strong>Save &amp; Close</strong>.</li>
+          <li>Code passages, not single words. A passage is usually one to four sentences that make one point.</li>
+          <li>Code the respondent's words, not your own opinion of them. "Something felt unfair" needs the respondent to present it as unfair.</li>
+          <li>Skip your own questions unless the respondent's answer only makes sense with them.</li>
+          <li>When you hesitate over a passage, write a line in a notes file: the passage, the code you chose, and why. Those notes become your memo.</li>
+        </ol>
+        <div class="teach"><strong>Checkpoint.</strong> After 20 minutes, every one of the five codes should be applied at least once, or you should be able to say why a code does not fit your interview.</div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-pair">
+      <div class="card">
+        <h2>Two coders: the practice transcript</h2>
+        <p class="lede">You and a partner code the same practice transcript, then compare. The respondent is a woman in her 30s who worked as a server at a chain restaurant. The transcript was written for this course. Do not show your own transcript to your partner.</p>
+        <ol class="steps">
+          <li>Code each passage on your own, using the class codebook. Check every code that fits, or "No code fits."</li>
+          <li>When you and your partner have both finished, take turns reading your codes for each passage aloud. Mark whether your codes were the same.</li>
+          <li>Pick one passage where you disagreed. Talk about why, and write the rule you would add to the codebook.</li>
+        </ol>
+        <div id="pList"></div>
+        <div class="teach" id="pTally" aria-live="polite">Same codes as your partner: 0 of 0 passages compared so far.</div>
+        <div class="rq"><div class="qt">One disagreement, and the rule you would add</div><div class="qh">Name the passage number. This goes into question 3 of the response sheet.</div><textarea id="pRule"></textarea></div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-model">
+      <div class="card">
+        <h2>Memo and model</h2>
+        <h3>Memo</h3>
+        <p>Write one paragraph about your interview, using your codes and your notes. What do the codes suggest about how your respondent experienced the job? Quote at least one passage. This is response sheet question 4.</p>
+        <h3>Model</h3>
+        <ol class="steps">
+          <li>Go to <code>app.diagrams.net</code>. When it asks where to save, choose <strong>Device</strong>. Choose <strong>Create New Diagram</strong>, then <strong>Blank Diagram</strong>.</li>
+          <li>Add one rectangle for each of two or three codes that seem connected in your interview. Type the code name in each.</li>
+          <li>Draw arrows between them. Label each arrow with a few words that say how the codes connect, for example "led to" or "made worse."</li>
+          <li>Click <strong>File</strong>, then <strong>Export as</strong>, then <strong>PNG</strong>. Save it as <code>lastname_lab11_model.png</code>.</li>
+        </ol>
+        <div class="teach">Then look for a negative case: a part of your interview that does not fit your model. Response sheet question 5 asks about it. Finding one does not mean the model failed; it shows where the model needs a limit or a change.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6 -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 11 response sheet</h2>
+        <p class="lede">Answer in complete sentences. Then assemble your answers and paste them into the Lab 11 submission on D2L. In the same submission, upload the picture of your model. Both are due Thursday, April 8, at 11:59 p.m.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" autocomplete="name"></div>
+        <div class="rq">
+          <div class="qt">1. Which code was easiest to apply to your transcript, and which was hardest? Quote one passage for the hardest.</div>
+          <div class="qh">Two to three sentences.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Did you add a code? Give its name, its description, one example that counts, and one that does not.</div>
+          <div class="qh">If you did not add a code, say which passage came closest to needing one, and why you used an existing code instead.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. On the practice transcript, on how many passages did you and your partner apply the same codes? Describe one disagreement and the rule you would add to settle it.</div>
+          <div class="qh">The count and your rule fill in from the Two coders tab. Add a sentence on why you disagreed.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. Your memo: what do your codes suggest about how your respondent experienced the job?</div>
+          <div class="qh">One paragraph, with at least one quoted passage.</div>
+          <textarea id="r4" style="min-height:140px"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">5. Your model: explain the arrows in your diagram. Then name one part of your interview that does not fit the model.</div>
+          <div class="qh">Three to four sentences.</div>
+          <textarea id="r5"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <div class="verdict" id="buildNote" aria-live="polite"></div>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <!-- TAB 7 -->
+    <div class="section" id="sec-sources">
+      <div class="card">
+        <h2>Sources</h2>
+        <div class="srcnote" style="font-size:13px">
+          Bernard, H. Russell, and Amber Wutich. 2026. <em>Social Research Methods: Qualitative and Quantitative Approaches</em>. 3rd ed. Thousand Oaks, CA: SAGE. Chapter 12.<br>
+          Rampin, Rémi, and Vicky Rampin. 2021. "Taguette: Open-Source Qualitative Data Analysis." <em>Journal of Open Source Software</em> 6(68):3522. https://www.taguette.org<br>
+          diagrams.net (draw.io). Free diagram software. https://app.diagrams.net<br><br>
+          The practice transcript was written for this course and does not describe a real person.
+        </div>
+      </div>
+    </div>
+
+    <footer>Built for SOCL 3633 Research Methods, Midwestern State University, Spring 2027. Your answers stay on this page and are never recorded or sent anywhere until you copy and paste them yourself.</footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+    if (sec === 'sec-response') fillQ3();
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+  function copyText(t, el, okMsg){
+    const fail = () => { el.textContent = 'Your browser blocked automatic copying. Select the text and press Ctrl+C (Cmd+C on a Mac).'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(() => { el.textContent = okMsg; }, fail); else fail();
+  }
+
+  const CODES = [
+    ['learn', 'Learning the job', 'How the respondent learned to do the work: training, being shown, or figuring it out alone.', 'Counts: "Nobody showed me how the scanner worked." Does not count: a description of the work itself with no learning in it.'],
+    ['super', 'Supervisor control', 'A supervisor or manager directing, watching, or limiting how the respondent works.', 'Counts: "He checked our break times every day." Does not count: a company rule with no supervisor involved.'],
+    ['unfair', 'Something felt unfair', 'The respondent describes treatment or a rule as unfair, in their own words or by the way they tell it.', 'Counts: "They took the time off our checks even though we were there." Does not count: a hard situation the respondent does not present as unfair.'],
+    ['getby', 'Getting by', 'Ways the respondent coped with or worked around problems on the job.', 'Counts: "We covered for each other." Does not count: simply doing the assigned work.'],
+    ['stay', 'Staying or leaving', 'Reasons the respondent gives for staying in the job or leaving it.', 'Counts: "I left when I found something closer to home." Does not count: other people leaving, unless the respondent ties it to their own choice.']
+  ];
+  $('bookList').innerHTML = CODES.map((c, i) =>
+    '<div class="ev"><div class="evtitle">' + c[1] + '</div><div class="evtext"><strong>Description for Taguette:</strong> ' + c[2] + '</div><div class="evsrc">' + c[3] + '</div>' +
+    '<div class="drow"><button class="gbtn secondary" type="button" data-cpn="' + i + '">Copy name</button><button class="gbtn secondary" type="button" data-cpd="' + i + '">Copy description</button><span class="verdict" id="cpn-' + i + '" style="margin-top:0" aria-live="polite"></span></div></div>').join('');
+  $('bookList').addEventListener('click', e => {
+    const n = e.target.closest('[data-cpn]'), d = e.target.closest('[data-cpd]');
+    if (n) copyText(CODES[+n.dataset.cpn][1], $('cpn-' + n.dataset.cpn), 'Name copied.');
+    if (d) copyText(CODES[+d.dataset.cpd][2], $('cpn-' + d.dataset.cpd), 'Description copied.');
+  });
+
+  const PASS = [
+    '"My trainer was this girl, [name], who\'d been there two years. I followed her for three shifts and then I was on my own."',
+    '"The manager would check the tablet to see how many desserts we upsold, and if your number was low he\'d pull you aside."',
+    '"They made us tip out the bussers and the bar even on nights the bar was closed. That money just went somewhere."',
+    '"We all knew to give the new girl the easy tables, so she wouldn\'t get slammed her first week."',
+    '"I stayed because the schedule worked around my son\'s school."',
+    '"Honestly, some nights I\'d sit in my car for ten minutes before I could make myself walk in."',
+    '"The new manager changed the section chart every week, and nobody told you until you got there."',
+    '"My regulars would ask for me. That\'s what kept me going."',
+    '"After the second time they cut my hours, I started applying at the hospital cafeteria."',
+    '"I learned more about people in that job than anywhere else."'
+  ];
+  const mine = PASS.map(() => new Set());
+  const same = PASS.map(() => null);
+  $('pList').innerHTML = PASS.map((t, i) =>
+    '<div class="ev"><div class="evhead"><span class="evnum">PASSAGE ' + (i + 1) + '</span></div><div class="quote">' + t + '</div>' +
+    '<div class="pkgrid" role="group" aria-label="Your codes for passage ' + (i + 1) + '">' +
+    CODES.map(c => '<label class="pk"><input type="checkbox" data-p="' + i + '" data-c="' + c[0] + '"><span>' + c[1] + '</span></label>').join('') +
+    '<label class="pk"><input type="checkbox" data-p="' + i + '" data-c="none"><span>No code fits</span></label></div>' +
+    '<div class="drow"><span class="dlabel">Same codes as your partner?</span><div class="yn">' +
+    '<button class="ynb" type="button" data-s="' + i + '" data-v="Y">Same</button><button class="ynb" type="button" data-s="' + i + '" data-v="N">Different</button></div></div></div>').join('');
+  $('pList').addEventListener('change', e => {
+    const b = e.target.closest('input[data-p]'); if (!b) return;
+    const i = +b.dataset.p, c = b.dataset.c, s = mine[i];
+    if (b.checked) { s.add(c); if (c === 'none') CODES.forEach(x => s.delete(x[0])); else s.delete('none'); } else s.delete(c);
+    $('pList').querySelectorAll('input[data-p="' + i + '"]').forEach(x => { x.checked = s.has(x.dataset.c); });
+  });
+  function tally(){
+    const done = same.filter(v => v !== null).length, k = same.filter(v => v === 'Y').length;
+    $('pTally').textContent = done === 10 ? 'Same codes as your partner: ' + k + ' of 10 passages.' : 'Same codes as your partner: ' + k + ' of ' + done + ' passages compared so far.';
+    return { done, k };
+  }
+  $('pList').addEventListener('click', e => {
+    const b = e.target.closest('[data-s]'); if (!b) return;
+    const i = +b.dataset.s;
+    same[i] = b.dataset.v;
+    $('pList').querySelectorAll('[data-s="' + i + '"]').forEach(x => x.classList.toggle('sel', x === b));
+    tally();
+  });
+  let autoQ3 = '';
+  function fillQ3(){
+    const t = tally();
+    if (!t.done) return;
+    const line = 'My partner and I applied the same codes on ' + t.k + ' of ' + t.done + ' passages.' + ($('pRule').value.trim() ? ' ' + $('pRule').value.trim() : '');
+    const cur = $('r3').value.trim();
+    if (!cur || cur === autoQ3) { $('r3').value = line; autoQ3 = line; }
+  }
+
+  const QS = [['r1', 'QUESTION 1 (easiest and hardest code)'], ['r2', 'QUESTION 2 (a code you added)'], ['r3', 'QUESTION 3 (two coders on the practice transcript)'], ['r4', 'QUESTION 4 (memo)'], ['r5', 'QUESTION 5 (model and a part that does not fit)']];
+  $('buildBtn').addEventListener('click', () => {
+    fillQ3();
+    const name = $('rName').value.trim() || '(no name entered)';
+    const L = [];
+    L.push('SOCL 3633 RESEARCH METHODS · LAB 11 · CODING YOUR INTERVIEW');
+    L.push('Name: ' + name);
+    L.push('Assembled: ' + new Date().toLocaleString());
+    L.push('');
+    QS.forEach(q => { L.push(q[1]); L.push($(q[0]).value.trim() || '(blank)'); L.push(''); });
+    L.push('Reminder: upload the picture of your model in this same submission.');
+    $('outText').value = L.join('\n');
+    $('outWrap').style.display = 'block';
+    $('copyBtn').disabled = false;
+    const blanks = QS.filter(q => !$(q[0]).value.trim()).length;
+    $('buildNote').textContent = blanks ? 'Assembled. ' + blanks + ' of 5 questions are still blank. You can fill them in and assemble again.' : 'Assembled. Copy the text below, paste it into the Lab 11 submission on D2L, and upload the picture of your model there too.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText');
+    ta.focus(); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const okMsg = 'Copied. Paste it into the Lab 11 submission on D2L, and upload the picture of your model there too.';
+    const failMsg = 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(() => { $('buildNote').textContent = okMsg; }, () => { $('buildNote').textContent = ok ? okMsg : failMsg; });
+    } else {
+      $('buildNote').textContent = ok ? okMsg : failMsg;
+    }
+  });
+  window.__S = { activate };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

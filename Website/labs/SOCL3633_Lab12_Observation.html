@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structured Observation · SOCL 3633 · Lab 12</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --accent: #266cc1;
+    --now: #266cc1;
+    --warn: #ae4d26;
+    --good: #2e8b57;
+    --amber: #9a7100;
+    --wash: rgba(42,120,214,0.08);
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9b9a94;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.10);
+    --accent: #3c8ff3;
+    --now: #3c8ff3;
+    --warn: #ef622a;
+    --good: #43a86b;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root { min-height: 100vh; background: var(--page); color: var(--text-primary); padding: 20px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; }
+  h1 .sub { color: var(--text-muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font: inherit; font-size: 13px; padding: 5px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text-primary); }
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-1); color: var(--text-secondary); }
+  .tab[aria-selected="true"] { background: var(--text-primary); color: var(--page); border-color: var(--text-primary); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .lede { font-size: 15px; line-height: 1.55; color: var(--text-secondary); }
+  .lede strong { color: var(--text-primary); }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 14px; font-weight: 700; margin: 14px 0 6px; color: var(--text-secondary); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0 6px; }
+  .def { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .def .who { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .def .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .def .hinge { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+  .def .hinge strong { color: var(--text-primary); }
+
+  .statrow { display: flex; gap: 14px; flex-wrap: wrap; margin: 10px 0 4px; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-top: 2px; }
+  .stat.warn .v { color: var(--warn); }
+  .stat.ok .v { color: var(--accent); }
+
+  .bars { margin: 12px 0 4px; }
+  .brow { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .blabel { font-size: 13px; min-width: 235px; text-align: right; color: var(--text-secondary); }
+  .btrack { flex: 1; height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; position: relative; }
+  .bfill { height: 100%; border-radius: 8px; background: var(--now); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); }
+  .bfill.good { background: var(--good); }
+  .bfill.amber { background: var(--amber); }
+  .bval { font-size: 12.5px; font-variant-numeric: tabular-nums; min-width: 12ch; font-weight: 700; color: var(--text-secondary); }
+
+  .veiled { display: none; }
+  .guessbox { background: var(--wash); border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+  .guessbox .gq { font-size: 14px; font-weight: 600; margin-bottom: 10px; line-height: 1.45; }
+  .gr { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gr input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .gbtn { font: inherit; font-size: 13.5px; font-weight: 700; padding: 8px 16px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  .gbtn:hover { filter: brightness(1.1); }
+  .gbtn:disabled { opacity: 0.45; cursor: default; }
+  .gbtn.secondary { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .verdict { font-size: 14px; margin-top: 10px; line-height: 1.5; font-weight: 600; }
+
+  .teach { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; }
+  .teach strong { color: var(--text-primary); }
+  .srcnote { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+  .pickrow { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .pick { font: inherit; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; text-align: left; }
+  .pick:hover { color: var(--text-primary); }
+  .pick.chosen { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pick.chosen::after { content: " · your pick"; font-weight: 500; font-size: 11.5px; }
+  .pick.answer { border-color: var(--good); color: var(--good); }
+  .pick.chosen.answer { background: var(--good); border-color: var(--good); color: #fff; }
+  .pick:disabled { cursor: default; opacity: 0.95; }
+
+  .ev { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; margin-top: 12px; }
+  .evhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .evnum { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; }
+  .evtitle { font-size: 15px; font-weight: 700; }
+  .evtext { font-size: 14px; line-height: 1.55; color: var(--text-secondary); margin-top: 6px; }
+  .evsrc { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.45; }
+  .drow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .dlabel { font-size: 13px; font-weight: 700; min-width: 150px; color: var(--text-secondary); }
+  .yn { display: flex; gap: 6px; flex-shrink: 0; }
+  .ynb { font: inherit; font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text-secondary); cursor: pointer; }
+  .ynb:hover { color: var(--text-primary); }
+  .ynb.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .ynb:disabled { cursor: default; }
+  .ref { display: none; font-size: 13px; line-height: 1.5; color: var(--text-secondary); flex: 1; min-width: 240px; }
+  .ref strong { color: var(--text-primary); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; }
+  .tag.yes { color: var(--good); }
+  .tag.no { color: var(--warn); }
+  .tag.arg { color: var(--amber); }
+  .evnote { display: none; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .evnote strong { color: var(--text-primary); }
+  .progress { font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 10px; counter-reset: q; }
+  .qs li { font-size: 14.5px; line-height: 1.5; padding-left: 30px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--text-primary); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 14px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); margin-top: 6px; }
+  textarea { min-height: 96px; resize: vertical; }
+  .rq { margin-top: 14px; }
+  .rq .qt { font-size: 14.5px; line-height: 1.5; font-weight: 600; }
+  .rq .qh { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-top: 2px; }
+  .out { display: none; margin-top: 12px; }
+  .out textarea { min-height: 200px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  footer { font-size: 12.5px; color: var(--text-muted); line-height: 1.55; padding: 8px 2px 20px; }
+  .yn { flex-wrap: wrap; flex-shrink: 1; min-width: 0; }
+  .ynb { white-space: normal; text-align: left; }
+</style>
+<style>
+  .checks { list-style: none; display: flex; flex-direction: column; gap: 10px; margin: 10px 0 6px; }
+  .checks li label { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.5; cursor: pointer; }
+  .checks input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  .steps { margin: 8px 0 8px 22px; display: flex; flex-direction: column; gap: 8px; font-size: 14.5px; line-height: 1.55; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 1px 5px; border-radius: 5px; }
+  pre { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--wash); padding: 10px 12px; border-radius: 8px; margin-top: 6px; overflow-x: auto; white-space: pre; }
+  img.chart { display: block; width: 100%; max-width: 760px; height: auto; margin: 14px 0; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+  table.errs { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.45; margin-top: 6px; }
+  table.errs th, table.errs td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.errs th { color: var(--text-secondary); font-size: 12.5px; }
+  .defs .def .hinge { font-size: 14px; }
+  @media (max-width: 600px) { .viz-root { padding: 12px; } .card { padding: 16px 14px; } }
+  .pkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px 14px; margin-top: 10px; }
+  .pk { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; line-height: 1.4; cursor: pointer; padding: 4px 0; }
+  .pk input { margin-top: 2px; width: 17px; height: 17px; accent-color: var(--accent); flex: none; }
+  .quote { font-size: 15px; line-height: 1.55; margin-top: 6px; font-style: italic; }
+  .tg { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; align-items: flex-end; }
+  .tgc { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-secondary); }
+  .tgc input { font: inherit; font-size: 14px; width: 6em; padding: 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--page); color: var(--text-primary); }
+  .tgc strong { font-size: 20px; color: var(--text-primary); padding: 4px 0; }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, or Edge. A computer works best. On a phone, use the link in the course module instead of the downloaded file.</div></noscript>
+
+<div class="viz-root">
+  <div class="frame" role="main">
+    <header role="presentation">
+      <h1>Structured Observation in a Public Place <span class="sub">SOCL 3633 Research Methods · Lab 12 · Midwestern State University</span></h1>
+      <button class="theme-btn" id="themeBtn" type="button">Dark mode</button>
+    </header>
+
+    <div class="card">
+      <p class="lede"><strong>Nobody can see "community" or "sociability" directly. An observer can only see the actions they decided in advance would count as evidence.</strong> In class on Tuesday, April 13, you plan a 30-minute observation and get it approved. You observe on your own before April 20. Then you come back to this page to write up what you found. Submit the response sheet and your photos in the Lab 12 submission on D2L by Tuesday, April 20, before class.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-sec="sec-plan" type="button">1. Your plan</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-ethics" type="button">2. Rules for observing</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-field" type="button">3. In the field</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-response" type="button">4. Response sheet</button>
+      <button class="tab" role="tab" aria-selected="false" data-sec="sec-sources" type="button">Sources</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="section active" id="sec-plan">
+      <div class="card">
+        <h2>Your plan, built in class</h2>
+        <p class="lede">Fill in the printed plan and tally sheet (SOCL3633_Lab12_PlanAndTallySheet on D2L) in class. Your instructor initials it before you leave. Do not observe without an initialed plan.</p>
+        <ol class="steps">
+          <li><strong>Setting.</strong> A public place where people gather and no one expects privacy: a coffee shop, a library floor, a food court, a gym lobby, a park, a laundromat. Not a private home, not a classroom during class, and not a place where drinking alcohol is the main activity. You observe for 30 minutes from one spot.</li>
+          <li><strong>Concept.</strong> One concept from your proposal topic that can show up in public behavior.</li>
+          <li><strong>Indicators.</strong> Three or four specific behaviors that will count as your concept. Each one must pass the test from today's activity: a stranger with your tally sheet would get nearly the same count. "Being friendly" is not an indicator. "Starts a conversation with someone they did not arrive with" is.</li>
+          <li><strong>How your indicators could mislead.</strong> Write two things: a behavior that looks like your concept but is not, and a way your concept could be present but invisible.</li>
+        </ol>
+        <div class="teach"><strong>Checkpoint.</strong> Before you ask for initials, read each indicator aloud to the person next to you. If they ask "what counts as that?", add a rule to the definition.</div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="section" id="sec-ethics">
+      <div class="card">
+        <h2>Rules for observing</h2>
+        <p class="lede">These follow the class-project rules from week 3. They are not optional.</p>
+        <ul class="checks">
+          <li><label><input type="checkbox"><span>Public settings only.</span></label></li>
+          <li><label><input type="checkbox"><span>Watch, count, and take notes. Do not record audio or video, and do not photograph faces.</span></label></li>
+          <li><label><input type="checkbox"><span>Do not follow anyone.</span></label></li>
+          <li><label><input type="checkbox"><span>Do not write names or identifying details. "Man in a red cap" is fine. A description that identifies a specific person is not.</span></label></li>
+          <li><label><input type="checkbox"><span>Do not make children the focus of your observation.</span></label></li>
+          <li><label><input type="checkbox"><span>If someone asks what you are doing, tell the truth: a class exercise. Offer to leave that person out of your notes, and do so.</span></label></li>
+          <li><label><input type="checkbox"><span>If a business asks you to stop or leave, stop and leave, and choose another setting.</span></label></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="section" id="sec-field">
+      <div class="card">
+        <h2>In the field: 30 minutes</h2>
+        <ol class="steps">
+          <li>Choose one spot where you can see without being in the way. Write down the date, the start time, and where you are sitting.</li>
+          <li>Tally each indicator in three 10-minute columns on your tally sheet.</li>
+          <li>Keep open fieldnotes on a separate page: what the place is like, what surprised you, and anything your tally sheet had no row for.</li>
+          <li>Write up your fieldnotes within 24 hours, while you still remember the details.</li>
+          <li>Take clear photos of your plan and tally sheet. Type or photograph your fieldnotes.</li>
+        </ol>
+        <div class="teach">Thirty minutes is short. You will miss things, and that is part of what the response sheet asks about.</div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="section" id="sec-response">
+      <div class="card">
+        <h2>Lab 12 response sheet</h2>
+        <p class="lede">Complete this after your observation. Answer in complete sentences, assemble, and paste into the Lab 12 submission on D2L. In the same submission, upload photos of your initialed plan and your tally sheet, and your fieldnotes. Due Tuesday, April 20, before class. Your entries are not saved; finish the sheet in one sitting.</p>
+        <div class="rq"><div class="qt">Your name</div><input type="text" id="rName" autocomplete="name"></div>
+        <div class="rq"><div class="qt">Setting, date, and time</div><div class="qh">For example, "Food court in the student union, Wednesday, April 14, 12:00 to 12:30 p.m."</div><input type="text" id="rSet" autocomplete="off"></div>
+        <div class="rq"><div class="qt">Concept</div><input type="text" id="rCon" autocomplete="off"></div>
+        <div class="rq">
+          <div class="qt">Your tallies</div>
+          <div class="qh">One row per indicator. Enter the count for each 10-minute interval; the total fills in.</div>
+          <div id="tallyGrid"></div>
+        </div>
+        <div class="rq">
+          <div class="qt">1. Did your indicators measure your concept, or the behaviors that were easy to count? Point to the indicator where the gap was widest.</div>
+          <div class="qh">Three to four sentences.</div>
+          <textarea id="r1"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">2. Name one thing you observed that had no row on your tally sheet and that changed your understanding of the setting.</div>
+          <div class="qh">Two to three sentences.</div>
+          <textarea id="r2"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">3. Did anyone notice you observing? Did it seem to change what they did?</div>
+          <div class="qh">Two to three sentences.</div>
+          <textarea id="r3"></textarea>
+        </div>
+        <div class="rq">
+          <div class="qt">4. For your concept, which gap is larger: the gap between what people say and what they do, or the gap between what they do and what one person can see from one spot in 30 minutes? Why?</div>
+          <div class="qh">Three to four sentences.</div>
+          <textarea id="r4"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="gbtn" id="buildBtn" type="button">Assemble my submission</button>
+          <button class="gbtn secondary" id="copyBtn" type="button" disabled>Copy to clipboard</button>
+        </div>
+        <div class="verdict" id="buildNote" aria-live="polite"></div>
+        <div class="out" id="outWrap"><textarea id="outText" readonly aria-label="Assembled submission text"></textarea></div>
+      </div>
+    </div>
+
+    <!-- TAB 5 -->
+    <div class="section" id="sec-sources">
+      <div class="card">
+        <h2>Sources</h2>
+        <div class="srcnote" style="font-size:13px">
+          Bernard, H. Russell, and Amber Wutich. 2026. <em>Social Research Methods: Qualitative and Quantitative Approaches</em>. 3rd ed. Thousand Oaks, CA: SAGE. Chapter 11.<br>
+          LaPiere, Richard T. 1934. "Attitudes vs. Actions." <em>Social Forces</em> 13(2):230-237.<br>
+          Midwestern State University Institutional Review Board. n.d. "Guidelines for Class Related Projects." https://msutexas.edu/irb/_assets/files/guidelines-for-class-related-projects.pdf
+        </div>
+      </div>
+    </div>
+
+    <footer>Built for SOCL 3633 Research Methods, Midwestern State University, Spring 2027. Your answers stay on this page and are never recorded or sent anywhere until you copy and paste them yourself.</footer>
+  </div>
+</div>
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  function activate(sec){
+    tabs.forEach(t => t.setAttribute('aria-selected', String(t.dataset.sec === sec)));
+    document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === sec));
+    window.scrollTo(0, 0);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.sec)));
+  $('themeBtn').addEventListener('click', () => {
+    const r = document.documentElement;
+    const dark = r.getAttribute('data-theme') === 'dark';
+    if (dark) { r.removeAttribute('data-theme'); $('themeBtn').textContent = 'Dark mode'; }
+    else { r.setAttribute('data-theme', 'dark'); $('themeBtn').textContent = 'Light mode'; }
+  });
+
+  const ROWS = 4;
+  let g = '';
+  for (let r = 0; r < ROWS; r++) {
+    g += '<div class="ev"><div class="evhead"><span class="evnum">INDICATOR ' + (r + 1) + (r === 3 ? ' (OPTIONAL)' : '') + '</span></div>' +
+      '<input type="text" id="ind' + r + '" aria-label="Indicator ' + (r + 1) + '" placeholder="The behavior you tallied">' +
+      '<div class="tg">' + ['0 to 10 min', '10 to 20 min', '20 to 30 min'].map((lab, c) => '<label class="tgc"><span>' + lab + '</span><input type="number" min="0" inputmode="numeric" id="c' + r + '_' + c + '"></label>').join('') +
+      '<div class="tgc"><span>Total</span><strong id="tot' + r + '">0</strong></div></div></div>';
+  }
+  $('tallyGrid').innerHTML = g;
+  const val = (id) => { const v = parseInt($(id).value, 10); return isNaN(v) ? 0 : v; };
+  function totals(){ for (let r = 0; r < ROWS; r++) $('tot' + r).textContent = val('c' + r + '_0') + val('c' + r + '_1') + val('c' + r + '_2'); }
+  $('tallyGrid').addEventListener('input', totals);
+
+  const QS = [['r1', 'QUESTION 1 (did the indicators measure the concept?)'], ['r2', 'QUESTION 2 (something with no row on the tally sheet)'], ['r3', 'QUESTION 3 (being noticed)'], ['r4', 'QUESTION 4 (which gap is larger)']];
+  $('buildBtn').addEventListener('click', () => {
+    totals();
+    const name = $('rName').value.trim() || '(no name entered)';
+    const L = [];
+    L.push('SOCL 3633 RESEARCH METHODS · LAB 12 · STRUCTURED OBSERVATION');
+    L.push('Name: ' + name);
+    L.push('Assembled: ' + new Date().toLocaleString());
+    L.push('Setting, date, and time: ' + ($('rSet').value.trim() || '(blank)'));
+    L.push('Concept: ' + ($('rCon').value.trim() || '(blank)'));
+    L.push('');
+    L.push('TALLIES (0-10 / 10-20 / 20-30 minutes = total)');
+    let rowsUsed = 0;
+    for (let r = 0; r < ROWS; r++) {
+      const ind = $('ind' + r).value.trim();
+      if (!ind) continue;
+      rowsUsed++;
+      L.push(ind + ': ' + val('c' + r + '_0') + ' / ' + val('c' + r + '_1') + ' / ' + val('c' + r + '_2') + ' = ' + $('tot' + r).textContent);
+    }
+    if (!rowsUsed) L.push('(no indicators entered)');
+    L.push('');
+    QS.forEach(q => { L.push(q[1]); L.push($(q[0]).value.trim() || '(blank)'); L.push(''); });
+    L.push('Reminder: upload photos of your initialed plan and tally sheet, and your fieldnotes, in this same submission.');
+    $('outText').value = L.join('\n');
+    $('outWrap').style.display = 'block';
+    $('copyBtn').disabled = false;
+    const miss = [];
+    const blanks = QS.filter(q => !$(q[0]).value.trim()).length;
+    if (blanks) miss.push(blanks + ' of 4 questions are blank');
+    if (rowsUsed < 3) miss.push('fewer than three indicators are entered');
+    if (!$('rSet').value.trim() || !$('rCon').value.trim()) miss.push('the setting or concept is blank');
+    $('buildNote').textContent = miss.length ? 'Assembled. Still to do: ' + miss.join('; ') + '. You can fill them in and assemble again.' : 'Assembled. Copy the text below, paste it into the Lab 12 submission on D2L, and upload your photos and fieldnotes there too.';
+  });
+  $('copyBtn').addEventListener('click', () => {
+    const ta = $('outText');
+    ta.focus(); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    const okMsg = 'Copied. Paste it into the Lab 12 submission on D2L, and upload your photos and fieldnotes there too.';
+    const failMsg = 'Your browser blocked automatic copying. The text is selected; press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(() => { $('buildNote').textContent = okMsg; }, () => { $('buildNote').textContent = ok ? okMsg : failMsg; });
+    } else {
+      $('buildNote').textContent = ok ? okMsg : failMsg;
+    }
+  });
+  let copied = false;
+  document.addEventListener('input', () => { copied = false; });
+  $('copyBtn').addEventListener('click', () => { copied = true; });
+  window.addEventListener('beforeunload', (e) => {
+    const typed = Array.from(document.querySelectorAll('#sec-response textarea:not([readonly])')).some(t => t.value.trim());
+    if (typed && !copied) { e.preventDefault(); e.returnValue = ''; }
+  });
+  window.__S = { activate };
+})();
+</script>
+
+<script>
+(function () {
+  if (window.innerWidth >= 740) return;
+  var b = document.createElement('div');
+  b.setAttribute('role', 'region');
+  b.setAttribute('aria-label', 'Display notice');
+  b.setAttribute('style', 'font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;padding:10px 14px;background:#F9EBC8;color:#1a1a1a;border-bottom:1px solid #9A7100;display:flex;gap:10px;align-items:center;justify-content:space-between');
+  var t = document.createElement('span');
+  t.textContent = 'You are on a small screen. This page works here, but it is easier to use on a computer.';
+  var x = document.createElement('button');
+  x.textContent = 'OK';
+  x.setAttribute('style', 'font:inherit;font-weight:600;padding:4px 12px;border:1px solid #9A7100;border-radius:8px;background:#ffffff;color:#1a1a1a;cursor:pointer;flex:none');
+  x.addEventListener('click', function () { b.remove(); });
+  b.appendChild(t); b.appendChild(x);
+  document.body.insertBefore(b, document.body.firstChild);
+})();
+</script>
+<script type="application/json" id="a11yOverrides">{}</script>
+<script>
+/* Accessibility enhancements. Runs after the page scripts have built the UI. */
+(function () {
+  var OVERRIDES = {};
+  try { OVERRIDES = JSON.parse(document.getElementById('a11yOverrides').textContent); } catch (e) {}
+  function textOf(el, cap) {
+    if (!el) return '';
+    var t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    return t.length > (cap || 140) ? t.slice(0, cap || 140) : t;
+  }
+  var tablists = document.querySelectorAll('[role="tablist"]');
+  tablists.forEach(function (list) {
+    var tabs = Array.prototype.slice.call(list.querySelectorAll('[role="tab"]'));
+    tabs.forEach(function (tab, i) {
+      var sec = tab.getAttribute('data-sec');
+      if (sec) {
+        if (!tab.id) tab.id = 'tabbtn-' + sec;
+        tab.setAttribute('aria-controls', sec);
+        var panel = document.getElementById(sec);
+        if (panel) { panel.setAttribute('role', 'tabpanel'); panel.setAttribute('aria-labelledby', tab.id); }
+      }
+      tab.addEventListener('keydown', function (e) {
+        var j = null;
+        if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') j = 0;
+        else if (e.key === 'End') j = tabs.length - 1;
+        if (j !== null) { e.preventDefault(); tabs[j].focus(); tabs[j].click(); }
+      });
+    });
+  });
+  function hasName(el) {
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby') || el.getAttribute('title')) return true;
+    if (el.id && document.querySelector('label[for="' + el.id + '"]')) return true;
+    if (el.closest('label')) return true;
+    return false;
+  }
+  function deriveName(el) {
+    if (el.id && OVERRIDES[el.id]) return OVERRIDES[el.id];
+    var box = el.closest('.guessbox');
+    if (box) { var q = box.querySelector('.gq'); if (q) return textOf(q); }
+    var rq = el.closest('.rq');
+    if (rq) { var qt = rq.querySelector('.qt'); if (qt) return textOf(qt, 200); }
+    var node = el.previousElementSibling, hops = 0, parent = el.parentElement;
+    while (hops < 6) {
+      while (node) {
+        if (!node.matches('input, button, select, textarea, svg, canvas')) {
+          var t = textOf(node);
+          if (t.length > 2) return t;
+        }
+        node = node.previousElementSibling;
+      }
+      if (!parent || parent === document.body) break;
+      node = parent.previousElementSibling; parent = parent.parentElement; hops++;
+    }
+    return '';
+  }
+  document.querySelectorAll('input, select, textarea').forEach(function (el) {
+    if (el.type === 'hidden' || hasName(el)) return;
+    var name = deriveName(el);
+    if (name) el.setAttribute('aria-label', name);
+  });
+  document.querySelectorAll('.ynb[data-ev]').forEach(function (b) {
+    var ev = b.closest('.ev'), title = ev ? textOf(ev.querySelector('.evtitle'), 80) : '';
+    var row = b.closest('.drow'), def = row ? textOf(row.querySelector('.dlabel'), 40) : '';
+    b.setAttribute('aria-label', title + ', ' + def + ': ' + b.textContent);
+  });
+})();
+</script>
+</body>
+</html>

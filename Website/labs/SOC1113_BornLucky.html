@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Born Lucky · SOCL 1133 Introductory Sociology · In-class lab</title>
+<style>
+  /* ---------- tokens (light) ---------- */
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --page: #f9f9f7;
+    --text: #0b0b0b;
+    --text-2: #52514e;
+    --muted: #6e6c67;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.12);
+    --accent: #266cc1;
+    --on-accent: #ffffff;
+    --warn: #ae4d26;
+    --good: #27774a;
+    --amber: #8a6500;
+    --wash: rgba(42,120,214,0.08);
+    --focus: #1a56a0;
+  }
+  /* ---------- tokens (dark) ---------- */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --page: #0d0d0d;
+    --text: #ffffff;
+    --text-2: #c3c2b7;
+    --muted: #a3a29c;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,0.14);
+    --accent: #3c8ff3;
+    --on-accent: #0d0d0c;
+    --warn: #ef7a4a;
+    --good: #4fb878;
+    --amber: #d9a621;
+    --wash: rgba(57,135,229,0.12);
+    --focus: #8cbcff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--page); }
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); }
+  .root { min-height: 100vh; background: var(--page); color: var(--text); padding: 20px 16px; }
+  .frame { max-width: 1040px; margin: 0 auto; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  header.top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  h1 { font-size: 22px; font-weight: 700; line-height: 1.3; }
+  h1 .sub { display: inline-block; color: var(--muted); font-weight: 500; font-size: 14px; margin-left: 8px; }
+  .theme-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--text-2); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+  .theme-btn:hover { color: var(--text); }
+
+  .tabs { display: flex; gap: 8px; margin: 14px 0 16px; flex-wrap: wrap; }
+  .tab { font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; padding: 9px 16px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); }
+  .tab[aria-selected="true"] { background: var(--text); color: var(--page); border-color: var(--text); }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 14px; }
+  .panel > * + * { margin-top: 12px; }
+  h2 { font-size: 17px; font-weight: 700; line-height: 1.35; }
+  h3 { font-size: 14.5px; font-weight: 700; color: var(--text-2); margin-top: 18px; }
+  .prose { font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  .prose p + p { margin-top: 10px; }
+  .prose strong, .prose b { color: var(--text); }
+  .prose ul, .prose ol { margin: 8px 0 0 22px; }
+  .prose li + li { margin-top: 4px; }
+  .lede { font-size: 15px; line-height: 1.6; color: var(--text-2); }
+  .lede strong { color: var(--text); }
+  .note { background: var(--wash); border-radius: 10px; padding: 12px 14px; font-size: 14px; line-height: 1.55; color: var(--text-2); }
+  .note strong, .note b { color: var(--text); }
+  .note.caution { background: transparent; border: 1px solid var(--amber); border-left-width: 4px; }
+  .src { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+  .src strong { color: var(--text-2); }
+  .veiled { display: none; }
+
+  /* entries: definitions, systems, profiles */
+  .entries { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .entry { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+  .entry .kicker { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .entry .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .entry .quote { font-size: 14.5px; line-height: 1.5; margin-bottom: 8px; }
+  .entry .body { font-size: 13.5px; line-height: 1.55; color: var(--text-2); }
+  .entry .body strong { color: var(--text); }
+  .entry .row { font-size: 13.5px; line-height: 1.5; color: var(--text-2); margin-top: 6px; }
+  .entry .row .lab { display: inline-block; font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); margin-right: 6px; }
+
+  /* stats */
+  .stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 150px; background: var(--wash); border-radius: 10px; padding: 12px 14px; }
+  .stat .v { font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .stat .l { font-size: 12.5px; color: var(--text-2); line-height: 1.45; margin-top: 4px; }
+  .stat.warn .v { color: var(--warn); } .stat.good .v { color: var(--good); } .stat.accent .v { color: var(--accent); } .stat.amber .v { color: var(--amber); }
+
+  /* bars: one encoding, length only */
+  .bars { display: flex; flex-direction: column; gap: 8px; }
+  .brow { display: grid; grid-template-columns: minmax(120px, 34%) 1fr auto; align-items: center; gap: 10px; }
+  .blabel { font-size: 13.5px; color: var(--text-2); text-align: right; line-height: 1.35; }
+  .btrack { height: 16px; border-radius: 8px; background: var(--grid); overflow: hidden; }
+  .bfill { height: 100%; width: 0; border-radius: 8px; background: var(--accent); transition: width 0.7s ease; }
+  .bfill.warn { background: var(--warn); } .bfill.good { background: var(--good); } .bfill.amber { background: var(--amber); }
+  .bval { font-size: 13px; font-weight: 700; color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 6ch; }
+
+  /* interactive boxes */
+  .box { background: var(--wash); border-radius: 10px; padding: 14px 16px; }
+  .box > * + * { margin-top: 10px; }
+  .prompt { font-size: 14.5px; font-weight: 600; line-height: 1.5; }
+  .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+  .choices.column { flex-direction: column; align-items: stretch; }
+  .opt { font: inherit; font-size: 14px; font-weight: 600; line-height: 1.4; padding: 9px 14px; min-height: 40px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; text-align: left; }
+  .choices.column .opt { border-radius: 10px; }
+  .opt:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+  .opt:disabled { cursor: default; }
+  .opt.chosen { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .opt.chosen::after { content: " (your pick)"; font-weight: 500; font-size: 12px; }
+  .opt.answer { border: 2px solid var(--good); color: var(--good); }
+  .opt.answer::before { content: "Reference: "; font-weight: 500; font-size: 12px; }
+  .opt.chosen.answer { background: var(--good); border-color: var(--good); color: var(--on-accent); }
+  .opt.chosen.answer::before { content: ""; }
+  .opt.toggled { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .verdict { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .verdict:empty { display: none; }
+  .slider { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .slider input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); height: 32px; }
+  .slider .gval { font-size: 20px; font-weight: 800; min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+  .btn { font: inherit; font-size: 14px; font-weight: 700; padding: 9px 16px; min-height: 40px; border-radius: 8px; border: none; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+  .btn:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+  .btn.secondary { background: none; border: 1px solid var(--border); color: var(--text-2); }
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+  /* items to sort or code */
+  .item { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; background: var(--surface); }
+  .item + .item { margin-top: 12px; }
+  .item .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .item .num { font-size: 12px; font-weight: 800; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
+  .item .title { font-size: 15px; font-weight: 700; line-height: 1.45; }
+  .item .text { font-size: 14px; line-height: 1.6; color: var(--text-2); margin-top: 6px; }
+  .item .meta { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+  .item .meta strong { color: var(--text-2); }
+  .dim { margin-top: 10px; }
+  .dim .dlabel { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 6px; }
+  .dim.inline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dim.inline .dlabel { margin-bottom: 0; min-width: 150px; }
+  .ref { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-2); margin-top: 8px; padding-left: 12px; border-left: 3px solid var(--border); }
+  .ref strong { color: var(--text); }
+  .tag { font-size: 11.5px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; margin-right: 6px; color: var(--accent); }
+  .tag.yes, .tag.good { color: var(--good); } .tag.no, .tag.warn { color: var(--warn); } .tag.arg, .tag.amber { color: var(--amber); }
+  .itemnote { display: none; font-size: 13.5px; line-height: 1.55; color: var(--text-2); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .itemnote strong { color: var(--text); }
+  .progress { font-size: 13.5px; color: var(--muted); }
+
+  /* ending */
+  .qs { list-style: none; display: flex; flex-direction: column; gap: 12px; counter-reset: q; }
+  .qs li { font-size: 15px; line-height: 1.55; padding-left: 32px; position: relative; counter-increment: q; }
+  .qs li::before { content: counter(q); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: var(--page); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .field { display: block; }
+  .field + .field { margin-top: 16px; }
+  .field .qt { display: block; font-size: 15px; line-height: 1.5; font-weight: 600; }
+  .field .qh { display: block; font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 2px; }
+  textarea, input[type=text] { width: 100%; font: inherit; font-size: 15px; line-height: 1.5; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--page); color: var(--text); margin-top: 6px; }
+  textarea { min-height: 110px; resize: vertical; }
+  .wc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .out { display: none; }
+  .out textarea { min-height: 220px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+  .forum dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14.5px; line-height: 1.5; }
+  .forum dt { font-weight: 700; color: var(--text); }
+  .forum dd { color: var(--text-2); }
+  .nextrow { display: flex; justify-content: flex-end; margin-top: 4px; }
+  footer { font-size: 12.5px; color: var(--muted); line-height: 1.6; padding: 8px 2px 24px; }
+  .srclist { font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  .srclist h3 { margin-top: 14px; }
+  .srclist h3:first-child { margin-top: 0; }
+  .srclist p { margin-top: 6px; }
+  .notice { font-size: 14px; line-height: 1.45; padding: 10px 14px; background: #F9EBC8; color: #1a1a1a; border-bottom: 1px solid #9A7100; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .notice button { font: inherit; font-weight: 600; padding: 4px 12px; border: 1px solid #9A7100; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; flex: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  @media (max-width: 600px) {
+    .root { padding: 12px 10px; }
+    .panel { padding: 16px 14px; }
+    .brow { grid-template-columns: 1fr auto; }
+    .blabel { grid-column: 1 / -1; text-align: left; }
+    .btrack { grid-column: 1; }
+    .dim.inline .dlabel { min-width: 0; width: 100%; }
+    .forum dl { grid-template-columns: 1fr; }
+    h1 .sub { display: block; margin-left: 0; margin-top: 2px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  }
+  @media print {
+    .tabs, .theme-btn, .btnrow, .nextrow, .notice { display: none !important; }
+    .section { display: block !important; }
+    .panel { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<noscript><div style="max-width:640px;margin:24px auto;padding:16px 20px;border:2px solid #840028;border-radius:10px;font-family:system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.5;background:#ffffff;color:#1a1a1a"><strong>This is a file preview, and the interactive parts of this page cannot run here.</strong> Open this file in a web browser such as Chrome, Safari, Firefox, or Edge. A computer works best. On a phone, use the link your instructor posted instead of the downloaded file.</div></noscript>
+
+<div class="root"><div class="frame" id="app" role="main"></div></div>
+
+<script>
+/* ===================== LAB CONFIG ===================== */
+/* Simulation model for the Run 500 lives tab, carried over unchanged from the earlier Born Lucky page.
+ Its rules were written by hand. SIGMA and CUTS were calibrated on 2026-08-04 against Chetty et al. 2014, Table II. */
+var BL_MODEL = (function () {
+"use strict";
+let RNG = Math.random;
+const R = () => RNG();
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const jit = () => [-1,0,0,1][Math.floor(R()*4)];
+
+
+/* ---------------- the deal ---------------- */
+function deal(){
+  const inc = 1 + Math.floor(R()*5);
+  const wealth = clamp(inc - 1 + jit(), 0, 4);
+  const pedu = clamp(Math.round((inc-1)*0.7) + jit(), 0, 3);
+  const hood = clamp(Math.round((inc + wealth)/2) + jit(), 1, 5);
+  const fam = R() < 0.55 ? 2 : (R() < 0.75 ? 1 : 0);
+  const sibs = Math.floor(R()*4);
+  const raw = inc*2.6 + wealth*2.2 + pedu*1.7 + hood*1.7 + (fam===2?1.6:fam===1?0.6:0) - sibs*0.35;
+  const start = clamp(Math.round((raw - 1) / (25.8 - 1) * 100), 2, 98);
+  return { inc, wealth, pedu, hood, fam, sibs, start };
+}
+const tier = h => h.start >= 62 ? 'high' : h.start >= 34 ? 'mid' : 'low';
+const T = (h, lo, mi, hi) => tier(h)==='low' ? lo : tier(h)==='mid' ? mi : hi;
+const famWord = h => h.fam===2 ? 'your parents' : h.fam===1 ? 'your mom' : 'your grandma';
+const famCap = h => { const w = famWord(h); return w[0].toUpperCase() + w.slice(1); };
+const hoodName = h => h.hood>=4 ? 'Oak Hills' : h.hood===3 ? 'Maple Street' : 'the east side';
+
+/* ---------------- life state ---------------- */
+function newLife(h){
+  return {
+    h, roundIdx: 0, adult: false,
+    money: 0, steady: 50, health: 62, people: 40,
+    score: 0, wise: 0, wiseMax: 0,
+    debt: 0, path: null,
+    degree: false, cert: false, ownHome: false, ownBiz: false, gritJob: false,
+    kidHelp: false,
+    ledger: [], handNotes: []
+  };
+}
+function debtWord(d){ return d===0 ? 'none' : d===1 ? 'some' : 'heavy'; }
+function computeDrift(L){
+  let drift;
+  if (!L.adult) drift = Math.round(L.h.start/14 + R()*2);
+  else {
+    drift = Math.round(clamp((L.money*0.9 + (L.steady-40)*0.7 + (L.people-30)*0.5)/9, -4, 14));
+    if (L.debt===2) drift -= 6; else if (L.debt===1) drift -= 2;
+    drift = clamp(drift, -8, 16);
+  }
+  return drift;
+}
+function applyResult(L, r, w, label, rd){
+  (r.fx||[]).forEach(([m,d])=>{
+    if (!L.adult && (m==='money'||m==='steady')) return;
+    L[m] = clamp((L[m]||0) + d, 0, 100);
+  });
+  const drift = computeDrift(L);
+  const sc = r.score||0;
+  L.score += sc + drift;
+  L.wise += w; L.wiseMax += 2;
+  if (r.note) L.handNotes.push(r.note);
+  L.ledger.push({ age: rd.age, title: rd.title, choice: label, pts: sc, drift });
+  return { sc, drift };
+}
+function computeBonuses(L){
+  const bonus = [];
+  const add = (label, pts, pos) => bonus.push({label, pts, pos: !!pos});
+  if (L.degree) add('Finished a degree', 110);
+  else if (L.cert) add('Earned a trade credential', 70);
+  if (L.ownHome) add('Owns the home', 90);
+  if (L.ownBiz) add('The business made it', 60);
+  if (L.money>=55) add('Real savings', 70); else if (L.money>=30) add('Some savings', 35);
+  if (L.debt===2) add('Heavy debt still riding', -70); else if (L.debt===1) add('Some debt left', -25);
+  if (L.health>=62) add('Health held up', 55); else if (L.health<40) add('Health is a worry', -35);
+  if (L.people>=60) add('Rich in people', 55);
+  if (L.steady>=62) add('Steady footing', 65); else if (L.steady<40) add('Still one bad month from trouble', -35);
+  if (L.h.wealth>=3) add('The family net, whether or not it was ever used', 50, true);
+  return bonus;
+}
+
+/* ---------------- rounds ----------------
+   Each choice: t, d, w (0-2 wisdom weight), gray (reason string), only (bool), out(h,L)->{text,fx,score,note}
+   Money month round: type 'allocate', items(h,L) -> 5 items {t,d,w,keep(h,L)->{...},drop(h,L)->{...}} */
+
+const ROUNDS = [
+
+{ age:'Age 6', title:'Where you start',
+  vign(h){
+    let a = T(h,
+      `You grow up in a two bedroom apartment on the east side. ${famCap(h)} ${h.fam===2?'work':'works'} long hours, and dinner is whatever is fast.`,
+      `You grow up in a rented house on Maple Street. Money is tight some months and fine in others. Nobody talks about it much.`,
+      `You grow up in a house with a yard in Oak Hills. There is a piano in the living room and a calendar on the fridge full of practices and lessons.`);
+    if (h.sibs>=2) a += ` You share a room with ${h.sibs===2?'a sibling':'your siblings'}.`;
+    if (h.fam===0) a += ` Your grandma raised her own kids already. Now she is raising you.`;
+    return a + `\n\nIt is September. What do you do after school?`;
+  },
+  view(h){ return T(h,
+    `Everyone you know lives close and works hard. Everything costs, and everyone keeps track.`,
+    `Everyone you know owns some things and owes on the rest. One good year and one bad transmission apart.`,
+    `Everyone you know seems to know how things work, and who to call when they do not.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Watch your cousins while the grown ups work', d:'Somebody has to, and you are good at it.', w:2,
+        out(){ return { text:'You learn to make noodles and keep the little ones off the counter. You are six, and the family already counts on you.', fx:[['people',4]], score: 9+Math.round(R()*5), note:'Age 6: care work started early. Activities were for other schedules.' }; } },
+      { t:'The free program at the rec center', d:'It runs till six, across Fenton Avenue.', w:1,
+        out(){ return { text:'You get good at two sports and at crossing four lanes of traffic. Nobody can pick you up, so winter nights you walk home in the dark.', fx:[['people',4],['health',4]], score: 10+Math.round(R()*5) }; } },
+      { t:'Stay in where it is quiet', d:'The apartment, the TV, the couch.', w:1,
+        out(){ return { text:'You let yourself in with the key on the shoelace and keep the door locked like you were told.', fx:[], score: 5+Math.round(R()*4) }; } }
+    ],
+    [ // mid
+      { t:'Sign up for the fall soccer league', d:'The fee fits, if nothing breaks this fall.', w:1,
+        out(){ return { text:'Practices, orange slices, a whole sideline of parents. In November the water heater goes, and your mom does the math out loud at the kitchen table.', fx:[['people',5],['health',4]], score: 13+Math.round(R()*6) }; } },
+      { t:'Scouts with the church troop', d:'Cheap, steady, every Tuesday.', w:2,
+        out(){ return { text:'Knots, badges, a camping trip in the spring. It costs almost nothing and it is always there.', fx:[['people',4]], score: 12+Math.round(R()*5) }; } },
+      { t:'The neighborhood kids and the TV', d:'The block raises you together.', w:1,
+        out(){ return { text:'Bikes until the streetlights, then cartoons. An ordinary childhood, which is its own kind of luck.', fx:[['people',3],['health',2]], score: 8+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The full calendar', d:'Soccer, piano, Mandarin on Saturdays.', w:1,
+        out(){ return { text:'Every hour has a purpose and a carpool. By Sunday dinner you are six years old and tired in a way that has a schedule.', fx:[['people',5],['health',-2]], score: 20+Math.round(R()*7), note:'Age 6: the full calendar was the default setting, not a choice anyone debated.' }; } },
+      { t:'Just soccer, keep the afternoons', d:'One thing, done well, and time to be a kid.', w:2,
+        out(){ return { text:'You play, and then you climb the tree in the backyard because nothing else is scheduled. Your parents call it unstructured time, approvingly, to their friends.', fx:[['people',3],['health',4]], score: 16+Math.round(R()*6) }; } },
+      { t:'Whatever the neighborhood kids are doing', d:'There must be neighborhood kids somewhere.', w:1,
+        out(){ return { text:'You find them three cul de sacs over. Your parents exchange a look and allow it, and check the county map of registered offenders first.', fx:[['people',4]], score: 12+Math.round(R()*5) }; } }
+    ]);
+  }
+},
+
+{ age:'Age 10', title:'Fourth grade',
+  vign(h){
+    return T(h,
+      `Fourth grade at Eastgate. Thirty two kids, one teacher, and reading books older than you. Your teacher is kind and tired.`,
+      `Fourth grade at Fairview Elementary. It is fine. Big classes, decent teachers, a book fair every fall.`,
+      `Fourth grade at Oak Hills. Nineteen kids, a classroom aide, and a science fair with real judges.`)
+      + `\n\nThen fractions arrive, and for the first time school stops making sense. What do you do?`;
+  },
+  view(h){ return T(h,
+    `Help exists here. There is just one of everything, and a line.`,
+    `The school is fine. Fine gets you through, and through is not the same as ahead.`,
+    `Trouble here gets noticed early and handled quietly.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Ask for help at home', d:'Somebody there might remember fractions.', w:1,
+        out(){ return h.pedu>=2
+          ? { text:`${famCap(h)} remember${h.fam===2?'':'s'} enough. You get through it at the kitchen table between shifts.`, fx:[], score: 9+Math.round(R()*5) }
+          : { text:`Your ${h.fam===1?'mom':'family'} looks at the worksheet a long time. Fractions were a long time ago, and the shift starts at six. You work out some of it together anyway.`, fx:[['people',2]], score: 6+Math.round(R()*4), note:'Age 10: nobody at home could explain fractions, and it was nobody’s fault.' }; } },
+      { t:'Stay after and ask the teacher', d:'It costs nothing but nerve.', w:2,
+        out(){ return { text:'She wants to help. She also has thirty one other kids and bus duty. You get five good minutes, twice a week, and you make them count.', fx:[['people',2]], score: 8+Math.round(R()*5), note:'Age 10: the free help was real. There was just less of it to go around.' }; } },
+      { t:'The high schooler two doors down', d:'She did this four years ago.', w:2,
+        out(){ return { text:'She shows you the trick with the pizza slices on her building’s front steps. The block looks out for its own.', fx:[['people',3]], score: 9+Math.round(R()*5) }; } },
+      { t:'Let math become not your thing', d:'Plenty of people say it out loud.', w:0,
+        out(){ return { text:'You pass, barely. The label goes on quietly, and next year they seat you in the group that gets the easier worksheets.', fx:[], score: 0, note:'Age 10: one hard unit turned into a track, and the track had a direction.' }; } }
+    ],
+    [ // mid
+      { t:'Ask for help at home', d:'Somebody there might remember fractions.', w: h.pedu>=2?2:1,
+        out(){ return h.pedu>=2
+          ? { text:`${famCap(h)} pull${h.fam===2?'':'s'} a chair up to the table and it clicks in twenty minutes. There is usually somebody home who can do this.`, fx:[], score: 13+Math.round(R()*5) }
+          : { text:`It is not really anyone’s subject at home. You and your ${h.fam===1?'mom':'family'} muddle through half of it.`, fx:[['people',2]], score: 8+Math.round(R()*4) }; } },
+      { t:'The tutor, twelve dollars an hour', d:'The math teacher knows a college kid.', w:1,
+        out(){ return { text:'Four Tuesdays and it clicks. Twelve dollars an hour is also exactly what the brake job was going to cost, and the brakes wait a month.', fx:[], score: 14+Math.round(R()*5), note:'Age 10: the tutor cost what the brake job cost. Something always waited.' }; } },
+      { t:'Stay after and ask the teacher', d:'It costs nothing but nerve.', w:2,
+        out(){ return { text:'She has fifteen minutes on Thursdays and she gives them to you. It mostly clicks.', fx:[['people',2]], score: 11+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The tutor your mom already found', d:'She noticed the quiz before you mentioned it.', w:1,
+        out(){ return { text:'A cheerful education major appears on Tuesdays. By December you are ahead of the class and mildly bored.', fx:[], score: 18+Math.round(R()*6), note:'Age 10: the tutor was booked before you even asked. Falling behind was never on the menu.' }; } },
+      { t:'The tutor, plus the Saturday enrichment class', d:'As long as we are fixing math, your dad says.', w:1,
+        out(){ return { text:'Now math has two extra hours and a workbook with a mascot. Your scores climb. Saturday mornings stop belonging to you.', fx:[['health',-2]], score: 20+Math.round(R()*6) }; } },
+      { t:'Just the tutor is plenty', d:'Push back on the Saturday class.', w:2,
+        out(){ return { text:'You make the case for your own Saturday and win. A small rehearsal for every negotiation after it.', fx:[['health',2],['people',2]], score: 16+Math.round(R()*5) }; } }
+    ]);
+  }
+},
+
+{ age:'Age 13', title:'The middle years',
+  vign(h){
+    return T(h,
+      `Eighth grade. The district cuts the after school program to save money. The rec center picks up some of the slack.`,
+      `Eighth grade. The school is talking about cutting the arts budget again, but the teams and clubs are still running.`,
+      `Eighth grade. A letter comes home inviting you to the accelerated track. Most of your friends got one too.`)
+      + `\n\nWhere do your afternoons go?`;
+  },
+  view(h){ return T(h,
+    `When budgets tighten somewhere downtown, it lands here first.`,
+    `There is one of most things here. You pick, and picking closes doors.`,
+    `The track has tracks. Everyone here is already on one.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Play for the school team', d:'Free, and the bus takes you.', w:2,
+        out(){ return { text:'You make it. Practice ends at five, and the cousins need watching at four. Your aunt rearranges her shift, mostly, and you owe her.', fx:[['people',4],['health',4]], score: 11+Math.round(R()*5) }; } },
+      { t:'Start hustling small jobs', d:'Lawns, snow, watching kids.', w:1,
+        out(){ L.gritJob = true; return { text:'You learn what work is and what it pays. Some of it goes to ' + famWord(h) + ', and at thirteen your money already matters.', fx:[['people',3]], score: 11+Math.round(R()*5), note:'Age 13: a kid’s earnings were part of the household math.' }; } },
+      { t:'Run with the older kids on the block', d:'They know everybody. They go everywhere.', w:1,
+        out(){ const bad = R()<0.3;
+          return bad
+          ? { text:'Most nights it is jokes and corner stores. One night goes wrong around you, nothing you did, exactly, but you were there, and the school hears about it.', fx:[['people',3],['health',-3]], score: 2, note:'Age 13: being nearby was enough to get a reputation. Some places file kids early.' }
+          : { text:'They look out for you, teach you the bus system and who to avoid. Belonging is worth something everywhere, and here it is the whole economy.', fx:[['people',6]], score: 10+Math.round(R()*5) }; } }
+    ],
+    [ // mid
+      { t:'The travel team', d:'Four hundred dollars before uniforms.', w:1,
+        out(){ return { text:'Weekends in minivans and hotel pools. You get good and you get known, and the vacation fund quietly becomes the tournament fund.', fx:[['people',5],['health',4]], score: 15+Math.round(R()*6), note:'Age 13: four hundred dollars bought a skill, a network of parents, and a summer that never happened.' }; } },
+      { t:'The school team', d:'Free, close, fine.', w:2,
+        out(){ return { text:'Practice, road games, an away jersey you have to give back in June. It is enough.', fx:[['people',4],['health',4]], score: 13+Math.round(R()*5) }; } },
+      { t:'A paper route and your bike', d:'Money of your own, dark mornings.', w:1,
+        out(){ L.gritJob = true; return { text:'You learn every porch in a half mile radius. The money is yours, which at thirteen is a kind of magic.', fx:[['health',3]], score: 12+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The elite travel program', d:'Five days a week, a coach with a system.', w:1,
+        out(){ return { text:'You train like it is a job. College coaches learn your name at fourteen. Your childhood narrows to a lane, a fast one.', fx:[['people',5],['health',-3]], score: 22+Math.round(R()*7), note:'Age 13: the elite program cost thousands a season, and nobody at the table blinked.' }; } },
+      { t:'The school team, and your dad’s opinion', d:'He uses the word coasting at dinner.', w:2,
+        out(){ return { text:'You play because you like playing. Your dad audits your effort from the bleachers. You hold the line, and it costs something at home.', fx:[['health',4],['people',2]], score: 15+Math.round(R()*5) }; } },
+      { t:'The coding camp your parents picked', d:'It was their idea. It usually is.', w:1,
+        out(){ return { text:'You build a game where a taco dodges rain. It goes on a resume you did not know you had.', fx:[['people',2]], score: 18+Math.round(R()*6), note:'Age 13: the resume was already under construction, with staff.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 16', title:'Sixteen',
+  vign(h){
+    return T(h,
+      `${famCap(h)} ${h.fam===2?'sit':'sits'} you down. Hours got cut at work. Nobody asks you to get a job. Nobody has to.`,
+      `Sixteen. Some friends have cars, some have jobs, and everybody suddenly talks about the SAT like it is weather.`,
+      `Sixteen. The SAT class is booked for March, your parents mention. The real question is what your summer does for your file.`)
+      + `\n\nWhat fills the year?`;
+  },
+  view(h){ return T(h,
+    `A teenager’s paycheck is real money here. The SAT is a fee first and a test second.`,
+    `The class exists, the money argues. Most things here are a trade.`,
+    `Sixteen here is a resume year. Everyone’s summer is doing something for their file.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'Twenty five hours at the grocery store', d:'The check covers your phone and some of the light bill.', w:1,
+        out(){ L.gritJob = true; return { text:'You stock shelves after close. The check goes home and it matters. Your grades slip in the spring, and nobody at work is surprised.', fx:[['people',3]], score: 11+Math.round(R()*5), note:'Age 16: the paycheck went home. Homework happened after close.' }; } },
+      { t:'Weekend shifts, weekdays for school', d:'Less money home. You feel it at dinner.', w:2,
+        out(){ L.gritJob = true; return { text:'You guard your weeknights for the library practice book and pay for it in guilt. Nobody says anything, which is louder.', fx:[], score: 13+Math.round(R()*5), note:'Age 16: studying was bought with guilt, an hour at a time.' }; } },
+      { t:'The cash job at the demo site', d:'No papers, better money, now.', w:1,
+        out(){ const hurt = R()<0.25;
+          return hurt
+          ? { text:'Good money for two months, then a pallet comes down wrong on your hand. No papers means no claim. You tape it and go back.', fx:[['health',-8]], score: 4, note:'Age 16: the best paying job came with no protections at all.' }
+          : { text:'Cash on Fridays, more than the grocery store pays. You do not tell the school, and the school does not ask.', fx:[], score: 14+Math.round(R()*5), note:'Age 16: the off books economy paid best and protected least.' }; } }
+    ],
+    [ // mid
+      { t:'The SAT class, nine hundred dollars', d:'It is the brake job and the dentist together.', w:1,
+        out(){ return { text:'Tricks, timing drills, two full practice tests. Your score climbs the way a paid score climbs, and the dentist waits until fall.', fx:[], score: 17+Math.round(R()*6), note:'Age 16: the score went up because a class was paid for, and something else waited its turn.' }; } },
+      { t:'The practice book and a job for a car', d:'Independence, on a budget.', w:1,
+        out(){ L.gritJob = true; return { text:'You buy a Civic with 180 thousand miles and name it. The practice book gets your tired hours, the job gets the rest.', fx:[['people',3]], score: 13+Math.round(R()*5) }; } },
+      { t:'The practice book, no job, all grades', d:'Free, if you actually do it.', w:2,
+        out(){ return { text:'Saturday mornings with a pencil and a timer you run yourself. The score climbs some. Nobody checked whether you showed up except you.', fx:[], score: 15+Math.round(R()*5) }; } }
+    ],
+    [ // high
+      { t:'The internship at your uncle’s firm', d:'Filing, coffee, and watching how it works.', w:1,
+        out(){ return { text:'Two weeks watching people in nice shirts have meetings. You leave with three business cards and a feel for the room.', fx:[['people',7]], score: 24+Math.round(R()*7), note:'Age 16: an uncle opened a door most kids never see. The SAT class ran in the background, already paid.' }; } },
+      { t:'Lifeguard with your friends', d:'A whistle, a tan, an ordinary summer.', w:2,
+        out(){ return { text:'You save nobody and you are ready to. The best summer of your life so far, and it still counts as a job on the form.', fx:[['people',5],['health',4]], score: 17+Math.round(R()*6) }; } },
+      { t:'The service trip abroad', d:'Two weeks, a school build, a photographer.', w:1,
+        out(){ return { text:'You mix concrete badly and mean well. It shows up in every college essay draft after.', fx:[['people',3]], score: 20+Math.round(R()*6), note:'Age 16: even the good deed came with a travel budget and a college angle.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 17', title:'The fork',
+  vign(h){
+    let a = T(h,
+      `Senior year. The counselor has three hundred students and a stack of forms.`,
+      `Senior year. The counselor hands you the flagship brochure and a federal aid worksheet in the same folder.`,
+      `Senior year. The counselor knows your name, your file, and your father’s preference.`);
+    if (h.pedu<=1) a += ` No one at home has filled out a FAFSA before. The form sits on the counter for a month.`;
+    else a += ` At home the question is not whether. It is which.`;
+    return a + `\n\nWhat happens after graduation?`;
+  },
+  view(h){ return T(h,
+    `College costs money you do not have. Work pays money the house needs. Everyone has an opinion and nobody has a map.`,
+    `The map exists here. The money mostly follows, with loans filling the gap.`,
+    `Every door is open. The question is whose hand is on your shoulder while you choose.`); },
+  choices(h,L){
+    return T(h,
+    [ // low
+      { t:'The state university, away', d:'The aid letter has a lot of asterisks.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=8; L.debt=2;
+          return { text:'You sign for heavy loans and pack one suitcase. You are the first, and everyone comes outside to see you off.', fx:[], score: 22+Math.round(R()*8), note:'Age 17: the same campus other families wrote a check for, carried on heavy loans.' }; } },
+      { t:'Community college, keep the job', d:'Cheap credits, live at home, help out.', w:2, pop:0.3,
+        out(){ L.path='cc'; L.adult=true; L.money=10;
+          return { text:'You stack credits and shifts. The plan is transfer in two years, and plans here need protecting.', fx:[], score: 16+Math.round(R()*6) }; } },
+      { t:'Full time at Ridgeline Distribution', d:'The warehouse pays now, not in four years.', w:1, pop:0.4,
+        out(){ L.path='work'; L.adult=true; L.money=12; L.kidHelp=true;
+          return { text:'Real checks. Some of every one goes home, and it needs to. College people call it a gap year. You call it Tuesday.', fx:[['steady',6]], score: 14+Math.round(R()*6), note:'Age 17: the paycheck was needed at home this year, and every year.' }; } },
+      { t:'Enlist', d:'Training, travel, and the GI Bill after.', w:2, pop:0.15,
+        out(){ L.path='mil'; L.adult=true; L.money=14;
+          return { text:'You ship out in July. It is the first time anyone in your class has seen the ocean.', fx:[['steady',8],['health',3],['people',4]], score: 16+Math.round(R()*6) }; } }
+    ],
+    [ // mid
+      { t:'The state university, away', d:'Loans cover what the aid letter calls the gap.', w:2, pop:0.35,
+        out(){ L.path='college'; L.adult=true; L.money=18; L.debt=1;
+          return { text:'Dorms, a meal plan, a roommate from three hours away. The loan total is a number nobody says out loud yet.', fx:[], score: 20+Math.round(R()*7), note:'Age 17: the same campus, bought partly on credit.' }; } },
+      { t:'The state university, commuting', d:'Save the dorm money, live at home.', w:1, pop:0.2,
+        out(){ L.path='college'; L.adult=true; L.money=22;
+          return { text:'Same lectures, same diploma. You attend the classes and skip the campus, and the campus is where half of it happens.', fx:[['people',-3]], score: 17+Math.round(R()*6), note:'Age 17: commuting saved thousands and cost the network nobody prices.' }; } },
+      { t:'Community college, then transfer', d:'Two cheap years, one plan.', w:1, pop:0.3,
+        out(){ L.path='cc'; L.adult=true; L.money=16;
+          return { text:'Half your high school is in the parking lot. The counselor calls it a smart play in a voice that suggests otherwise.', fx:[], score: 15+Math.round(R()*6) }; } },
+      { t:'Enlist', d:'Structure, travel, and the GI Bill after.', w:1, pop:0.15,
+        out(){ L.path='mil'; L.adult=true; L.money=14;
+          return { text:'You ship out in July. Your parents put a sticker on the car.', fx:[['steady',8],['health',3],['people',4]], score: 15+Math.round(R()*6) }; } }
+    ],
+    [ // high
+      { t:'The flagship, where your dad went', d:'Covered. His roommate’s firm still hires from there.', w:1, pop:0.3,
+        out(){ L.path='college'; L.adult=true; L.money=30;
+          return { text:'The bill is handled and so, quietly, is the path. His old fraternity sends a letter before you even move in.', fx:[['people',6]], score: 26+Math.round(R()*8), note:'Age 17: the bill was covered, and the network came pre installed.' }; } },
+      { t:'The private college with the famous alumni', d:'Small classes, leafy campus, sticker price.', w:2, pop:0.3,
+        out(){ L.path='college'; L.adult=true; L.money=32;
+          return { text:'Sticker price is unspeakable and nobody speaks it. The alumni network alone, your dad says, pays for itself.', fx:[['people',8]], score: 28+Math.round(R()*8), note:'Age 17: a private campus and its address book, bought at full price.' }; } },
+      { t:'The art school you actually want', d:'They will pay. They will not pretend to be pleased.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=26;
+          return { text:'You get in on a real portfolio. Your parents pay the deposit and start describing it to friends as a foundation year.', fx:[['people',2],['health',3]], score: 21+Math.round(R()*7), note:'Age 17: even the rebellion was fully funded.' }; } },
+      { t:'A year abroad first', d:'See something before buckling down.', w:1, pop:0.15,
+        out(){ L.path='college'; L.adult=true; L.money=26;
+          return { text:'Hostels, trains, a language you half learn. The university holds your spot. Doors hold for some people.', fx:[['people',5],['health',4]], score: 20+Math.round(R()*7), note:'Age 17: a whole year off, and the door stayed open.' }; } },
+      { t:'Skip college, take the desk at the firm', d:'There has always been a desk with your name on it.', w:1, pop:0.1,
+        out(){ L.path='work'; L.adult=true; L.money=30;
+          return { text:'You skip the lecture halls entirely. The ladder is internal, the floor is carpeted, and the name on the building helps with the climbing.', fx:[['steady',8],['people',4]], score: 20+Math.round(R()*7), note:'Age 17: even skipping college was safe. The firm was the net.' }; } }
+    ]);
+  }
+},
+
+{ age:'Age 19', title:'Making it stick',
+  vign(h,L){
+    if (L.path==='college'){
+      return T(h,
+        `Sophomore year. Then the car dies in October, the aid office finds a paperwork problem, and ${famWord(h)} stop${h.fam===2?'':'s'} mentioning how things are going at home, which is how you know.\n\nWhat do you do?`,
+        `Sophomore year. Classes are fine. The job, the clubs, and the grades all want the same twenty hours.\n\nWhat do you do?`,
+        `Sophomore year. Classes are fine. The question is what else these four years are for, and everyone here has a theory.\n\nWhat do you do?`);
+    }
+    if (L.path==='cc') return `Three semesters in at Fairview Community. Credits are stacking. The transfer window opens this spring.\n\nWhat do you do?`;
+    if (L.path==='mil') return `Two years in. You have a rank, a routine, and a decision coming about what the service was for.\n\nWhat do you do?`;
+    if (tier(h)==='high') return `Two years at the firm. You know the accounts, the golf schedule, and which partners matter.\n\nWhat do you do?`;
+    return `Two years at Ridgeline. You know the floor, the forklift, and which supervisors matter.\n\nWhat do you do?`;
+  },
+  view(h,L){
+    if (L.path==='college') return T(h,
+      `One paperwork problem up here can end the whole thing. The school calls it a hold. It feels like a trapdoor.`,
+      `The degree is the floor now. What separates people is everything stacked on top of it.`,
+      `Everyone lands on their feet here. The family nets are invisible until someone falls.`);
+    if (L.path==='cc') return `The transfer path works, for the ones who survive the paperwork, the schedule, and the jobs. Most of the attrition is nobody’s decision.`;
+    if (L.path==='mil') return `The service is the one ladder that never asked what your parents make.`;
+    if (tier(h)==='high') return `The firm promotes family the way gravity pulls down. Nobody calls it that in the meetings.`;
+    return `The floor pays honest money. The ladder out of it runs through certificates, seniority, and who the supervisor likes.`;
+  },
+  choices(h,L){
+    if (L.path==='college'){
+      if (tier(h)==='low') return [
+        { t:'Take a term off to sort things out', d:'Just one term.', w:1, pop:0.35,
+          out(){ const back = R() < 0.45;
+            if (back){ return { text:'You work, you help, and against the odds you re-enroll in the fall. Most people who step off this track never step back on. You did.', fx:[['steady',3]], score: 14+Math.round(R()*6), note:'Age 19: a term off almost became forever. It usually does.' }; }
+            L.path='work';
+            return { text:'One term becomes two. The job becomes full time. The university sends mail for a while, then stops.', fx:[['steady',4]], score: 6+Math.round(R()*4), note:'Age 19: one term off quietly became the rest of the plan. It usually does.' }; } },
+        { t:'Borrow more and stay enrolled', d:'The loans are already heavy.', w:2, pop:0.25,
+          out(){ L.debt=2; return { text:'You sign again. The number on the exit counseling sheet stops feeling real, which is its own kind of problem.', fx:[], score: 16+Math.round(R()*6), note:'Age 19: staying enrolled cost new debt. For some teams this round was a club fair.' }; } },
+        { t:'Sell the car and work doubles on weekends', d:'The bus adds ninety minutes a day.', w:2, pop:0.2,
+          out(){ return { text:'You make it work. Your grades pay some of the fare, and so does sleep.', fx:[['health',-6],['money',8]], score: 13+Math.round(R()*6), note:'Age 19: the crisis was survived with hours and sleep.' }; } },
+        { t:'Transfer home to community college', d:'Protect the wallet, lose the four year track.', w:1, pop:0.2,
+          out(){ L.path='cc'; L.debt=1; return { text:'You move home and keep the credits. The four year door does not close, exactly. It just gets heavier every year.', fx:[['steady',2]], score: 10+Math.round(R()*5), note:'Age 19: retreat was the financially sound move. It also rerouted the whole track.' }; } }
+      ];
+      if (tier(h)==='mid') return [
+        { t:'Twenty five hours at the campus job', d:'Spending money and no new loans.', w:1,
+          out(){ L.money+=10; return { text:'You miss some of campus life and none of your bills. There are two colleges here, and you attend the one with a name tag.', fx:[['people',-2]], score: 12+Math.round(R()*5) }; } },
+        { t:'Clubs, offices, the network', d:'The meetings are free. The time is not.', w:1,
+          out(){ return { text:'You end up vice president of two things and known by half the campus. Your grades wobble and hold.', fx:[['people',8]], score: 15+Math.round(R()*6) }; } },
+        { t:'Go deep on grades', d:'The GPA opens doors later.', w:2,
+          out(){ return { text:'Office hours, study groups, a professor who starts saying things like when you apply.', fx:[['people',3]], score: 17+Math.round(R()*6) }; } },
+        { t:'A semester abroad', d:'Everyone says it changed their life.', w:1,
+          gray(h2,L2){ return L2.money<20 ? 'The program costs more than you have, even with the aid.' : null; },
+          out(){ L.money-=12; return { text:'It does change something. You come back with stories, contacts, and a line interviewers always ask about.', fx:[['people',6],['health',4]], score: 16+Math.round(R()*6), note:'Age 20: a semester abroad, paid for without drama.' }; } }
+      ];
+      return [ // high
+        { t:'The junior internship your dad arranged', d:'You did not ask him to make the call.', w:1,
+          out(){ return { text:'A summer downtown with a badge and a mentor. The resume builds itself, which is what resumes do at this altitude.', fx:[['people',6]], score: 22+Math.round(R()*7), note:'Age 20: the internship came from a phone call you never heard.' }; } },
+        { t:'Officer in everything', d:'Three clubs deep by October.', w:1,
+          out(){ return { text:'You collect titles and people. The calendar is brutal and the address book grows.', fx:[['people',9],['health',-2]], score: 17+Math.round(R()*6) }; } },
+        { t:'Actually study, ignore the noise', d:'Let the GPA be the argument.', w:2,
+          out(){ return { text:'You read, you write, you sleep. A professor starts saying when you apply, not if.', fx:[['people',2],['health',3]], score: 19+Math.round(R()*6) }; } },
+        { t:'A semester abroad', d:'Florence, or Copenhagen, or both.', w:1,
+          out(){ L.money-=10; return { text:'You come back with a language, a wardrobe adjustment, and friends whose parents own things in three countries.', fx:[['people',6],['health',4]], score: 18+Math.round(R()*6), note:'Age 20: abroad was a given, not a windfall.' }; } }
+      ];
+    }
+    if (L.path==='cc') return [
+      { t:'Transfer applications, all in', d:'The university takes the credits.', w:2, pop:0.3,
+        out(){
+          if (tier(h)==='low' && R()<0.45){
+            L.cert=true;
+            return { text:'The acceptance comes on a Tuesday. Then the schedule, the job, and the commute take their cut, one term at a time. You finish the applied certificate instead, which is real, and is not what the acceptance letter said.', fx:[['steady',4]], score: 12+Math.round(R()*5), note:'Age 21: the transfer track was open and the life around it was not. Most attrition is nobody’s decision.' };
+          }
+          L.path='college'; if (tier(h)!=='high') L.debt = Math.max(L.debt,1);
+          return { text:'The acceptance comes on a Tuesday. Two cheap years plus two real ones equals the same diploma.', fx:[], score: 18+Math.round(R()*7) }; } },
+      { t:'Finish the applied certificate', d:'HVAC pays real money.', w:2, pop:0.3,
+        out(){ L.cert=true; return { text:'Eighteen months and a wallet card. People will always need cold air and hot water.', fx:[['steady',8]], score: 15+Math.round(R()*6) }; } },
+      { t:'Slow down to night classes and work days', d:'Life keeps charging rent.', w:1, pop:0.4,
+        out(){ L.money+=8; return { text:'Progress drops to a class a term. The math says six more years. The math is patient even when you are not.', fx:[], score: 8+Math.round(R()*4), note:'Age 19: slowing down was the responsible move, and the slow lane mostly does not arrive.' }; } }
+    ];
+    if (L.path==='mil') return [
+      { t:'Re-enlist', d:'The devil you know, plus a bonus.', w:1, pop:0.4,
+        out(){ L.money+=12; return { text:'Four more years. The bonus clears the car loan and starts a real savings account.', fx:[['steady',8]], score: 13+Math.round(R()*5) }; } },
+      { t:'Out, and use the GI Bill', d:'College, paid, if you use it.', w:2, pop:0.35,
+        out(){ L.path='college'; return { text:'You enroll at the state university at twenty one, older than everyone and better at mornings.', fx:[], score: 18+Math.round(R()*7), note:'Age 21: the GI Bill bought what other families buy with wealth.' }; } },
+      { t:'Out, straight to work', d:'Security firms love veterans.', w:1, pop:0.25,
+        out(){ L.path='work'; L.money+=6; return { text:'Good pay, nights, a uniform that is almost the old uniform.', fx:[['steady',6]], score: 12+Math.round(R()*5) }; } }
+    ];
+    if (tier(h)==='high') return [ // the family firm
+      { t:'Learn every desk in the building', d:'Earn it, or close enough.', w:2,
+        out(){ return { text:'You rotate through billing, accounts, the warehouse the firm owns. People stop lowering their voices when you walk in.', fx:[['steady',8],['people',5]], score: 20+Math.round(R()*7) }; } },
+      { t:'Coast on the name', d:'The reviews will be kind either way.', w:0,
+        out(){ return { text:'Long lunches, soft deadlines. The reviews are kind, the way weather is kind to a house with a roof.', fx:[['people',2]], score: 10+Math.round(R()*5), note:'Age 19: the floor under a famous last name is higher than most people’s ceiling.' }; } },
+      { t:'Night classes anyway', d:'A degree, in case the name ever stops working.', w:1,
+        out(){ L.cert=true; return { text:'Two nights a week. The partners call it initiative. Your dad calls it unnecessary, fondly.', fx:[['health',-2]], score: 16+Math.round(R()*6) }; } }
+    ];
+    return [
+      { t:'The union apprenticeship', d:'Electricians. Four years, real wages the whole way.', w:2,
+        out(){ L.cert=true; return { text:'You get in on the second try. Journeyman money is professor money, and nobody tells teenagers that.', fx:[['steady',10],['money',8]], score: 20+Math.round(R()*7), note:'Age 19: the union was the one door here that led somewhere and paid while you walked.' }; } },
+      { t:'Certificate classes at night', d:'Logistics tech. The warehouse would promote you.', w:2,
+        out(){ L.cert=true; return { text:'Two nights a week for a year. Your badge changes color and so does the check.', fx:[['steady',6]], score: 15+Math.round(R()*6) }; } },
+      { t:'Pick up every overtime shift', d:'Money now beats money later.', w:1,
+        out(){ L.money+=14; return { text:'Sixty hour weeks. The account grows and your back files its first complaint.', fx:[['health',-6]], score: 11+Math.round(R()*5) }; } },
+      { t:'Coast with the crew', d:'The job is fine. Life is elsewhere.', w:0,
+        out(){ return { text:'Clock in, clock out, weekends with your people. There are worse lives, and the ceiling is close enough to touch.', fx:[['people',4]], score: 6+Math.round(R()*4) }; } }
+    ];
+  }
+},
+
+{ age:'Age 23', title:'First real chances',
+  vign(h,L){
+    if (L.path==='college' && !L.degreeChecked){ L.degree = true; L.degreeChecked = true; }
+    return L.degree
+      ? `Degree in hand. Now the part nobody grades: getting somebody to pay you for it.\n\nWhat is the move?`
+      : `Twenty three. You know your work and your worth. The question is where they go next.\n\nWhat is the move?`;
+  },
+  view(h,L){
+    if (L.degree) return T(h,
+      `Everyone you graduated with is applying to the same two hundred jobs. The ones who land fast had a name to mention.`,
+      `The degree opens the room. Somebody still has to wave you over, or you wait in line with everyone else.`,
+      `Down here on the job market, you notice something: half your class was hired by somebody’s father.`);
+    if (tier(h)==='high' && L.path==='work') return `No degree, no problem, up here. The name on the building is its own credential.`;
+    return `Job listings ask for the certificate. The certificate asks for time and a fee. Time and fees ask for a paycheck. The circle is the point.`;
+  },
+  choices(h,L){
+    if (L.degree) return [
+      { t:'The referral', d:'Your roommate’s dad knows the hiring manager.', w:1,
+        only: (h.inc>=4 || L.people>=60),
+        out(){ return { text:'One phone call moves your resume from the pile to the desk. The interview is friendly because it was always going to be.', fx:[['money',16],['steady',14]], score: 38+Math.round(R()*14), note:'Age 23: a phone call did what four hundred applications do for other people.' }; } },
+      { t:'The unpaid internship at the firm', d:'The famous one. It leads places.', w:1,
+        gray(h2,L2){ return (L2.money<22 && h2.wealth<3) ? 'The internship pays nothing. Rent is due anyway.' : null; },
+        out(){ L.money-=10; return { text:'Six unpaid months, then the offer. You could afford to work for free, which is the quiet requirement.', fx:[['people',6],['steady',10]], score: 28+Math.round(R()*10), note:'Age 23: working free for six months was affordable. That was the door.' }; } },
+      { t:'Apply wide, take the best offer', d:'The long game of cover letters.', w:2,
+        out(){ return { text:'Eleven weeks and one hundred forty applications later, a decent offer at a decent company. You earned every inch of it.', fx:[['money',10],['steady',10]], score: 22+Math.round(R()*9) }; } },
+      { t:'The hometown offer', d:'Twenty minutes from everyone who needs you.', w:1,
+        out(){ const near = tier(h)==='low' || L.kidHelp;
+          return { text: near
+            ? 'A good job with a visible ceiling, close to home. You take the calls, drive the rides, cover the gaps. Somebody has to, and it is you.'
+            : 'A good job with a visible ceiling, close to home. Sunday dinners come standard.',
+            fx:[['steady',8],['money',8],['people',5]], score: 16+Math.round(R()*7),
+            note: near ? 'Age 23: staying close carried the family and capped the climb. Both are true.' : undefined }; } },
+      { t:'Move to the bigger city', d:'That is where the jobs are.', w:2,
+        gray(h2,L2){ return L2.money<18 ? 'First month, last month, deposit. You cannot get there from here.' : null; },
+        out(){ L.money-=12; return { text:'A shared apartment and a bigger market. The move costs real money and buys real options.', fx:[['people',5],['steady',6]], score: 20+Math.round(R()*8), note:'Age 23: moving to opportunity had a cover charge.' }; } }
+    ];
+    if (tier(h)==='high' && L.path==='work') return [ // the family firm, no degree
+      { t:'Take the regional accounts', d:'The step everyone assumed you would take.', w:2,
+        out(){ return { text:'You get the accounts and the assistant that comes with them. The clients like you before the handshake ends.', fx:[['money',14],['steady',12]], score: 26+Math.round(R()*9), note:'Age 23: the promotion was waiting before the work was. The name closed the gap.' }; } },
+      { t:'Strike out where nobody knows the name', d:'Prove it somewhere neutral.', w:1,
+        out(){ return { text:'A rival firm two states over. You start at the bottom, which for you is the middle, and earn the rest for real.', fx:[['money',8],['steady',6],['people',-3]], score: 18+Math.round(R()*7) }; } },
+      { t:'Finish a degree on the side', d:'It nags at you.', w:1,
+        out(){ L.degree=true; return { text:'Three years of nights. Nobody at the firm cares, and you do, which turns out to be the point.', fx:[['health',-3]], score: 16+Math.round(R()*7) }; } }
+    ];
+    return [
+      { t:'Go for shift lead', d:'The next rung where you are.', w:2,
+        out(){ return { text:'You get it. More money, more headaches, a key to the building.', fx:[['money',8],['steady',8]], score: 16+Math.round(R()*7) }; } },
+      { t:'Apply into the office', d:'Scheduling, dispatch, a desk.', w:1,
+        out(){ return (L.cert||L.degree)
+          ? { text:'The certificate carries you across the floor to a chair. Same building, different life expectancy for your knees.', fx:[['money',9],['steady',10]], score: 19+Math.round(R()*7) }
+          : { text:'They go with somebody who has the certificate. The floor keeps you.', fx:[], score: 6+Math.round(R()*4), note:'Age 23: the desk job wanted a credential the floor never had time to earn.' }; } },
+      { t:'Start classes again on the side', d:'It is never quite too late.', w:2,
+        out(){ L.cert=true; return { text:'Tuesday and Thursday nights. It takes years, and it counts.', fx:[['health',-2]], score: 14+Math.round(R()*6) }; } },
+      { t:'Chase better pay across town', d:'The new warehouse pays two dollars more.', w:1,
+        out(){ return { text:'You jump. The raise is real, the seniority resets to zero, and zero matters when cuts come.', fx:[['money',7],['steady',-4]], score: 9+Math.round(R()*5) }; } }
+    ];
+  }
+},
+
+{ age:'Age 26', title:'Setting up',
+  vign(h,L){
+    let a = `Twenty six. Friends are pairing off, leases are ending, and the word thirty appears on the horizon.`;
+    if (L.debt===2) a += ` The loan payment arrives every month like a second rent.`;
+    return a + `\n\nWhere do you live and what do you build?`;
+  },
+  view(h,L){ return T(h,
+    `Rent eats first here. Saving a deposit while paying rent is bailing a boat that is still filling.`,
+    `The mortgage math almost works. Almost is the middle’s whole housing story.`,
+    `Around you, down payments appear like weather. Nobody calls it what it is at dinner.`); },
+  choices(h,L){
+    const cs = [];
+    if (h.wealth>=3) cs.push(
+      { t:'Buy the starter house, with help', d:'Your parents cover most of the down payment.', w:2,
+        out(){ L.ownHome=true; L.money-=8;
+          return { text:'Your dad calls it an early inheritance and waves it off at Thanksgiving. The equity clock starts a decade early.', fx:[['steady',12]], score: 26+Math.round(R()*9), note:'Age 26: the down payment was a gift. The equity clock started ten years early.' }; } });
+    cs.push(
+      { t:'Buy the starter house on your own', d:'Every dollar you have, and then some.', w:2,
+        gray(h2,L2){ return L2.money<32 ? 'The down payment might as well be a moon landing.' : null; },
+        out(){ L.ownHome=true; L.money-=24;
+          return { text:'Every dollar you scraped for eight years goes into a house on the east side. The mortgage is less than rent was.', fx:[['steady',12]], score: 28+Math.round(R()*9), note:'Age 26: the down payment took eight years of scraping that some teams skipped entirely.' }; } },
+      { t:'Rent the nice place downtown', d:'Walkable, social, not cheap.', w:1,
+        out(){ L.money-=8; return { text:'Rooftop birthdays and a fifteen minute walk to everything. The rent eats the savings line every single month.', fx:[['people',6],['health',2]], score: 12+Math.round(R()*5) }; } },
+      { t:'Rent cheap and stack savings', d:'Roommates at twenty six. It is fine.', w:2,
+        out(){ L.money+=16; return { text:'The place is ugly and the account is not. Delayed gratification is easy to praise and hard to live in.', fx:[['people',-2]], score: 15+Math.round(R()*6) }; } });
+    if (tier(h)==='low' || L.kidHelp) cs.push(
+      { t:'Send money home instead of saving', d:'The deposit fund keeps becoming the family fund.', w:1,
+        out(){ L.money=Math.max(0,L.money-6); return { text:'Your cousin’s books, your mom’s brakes, the gap in the light bill. None of it is optional and none of it comes back.', fx:[['people',5]], score: 10+Math.round(R()*5), note:'Age 26: money flowed up the family, not down. The savings account never got its turn.' }; } });
+    else if (h.fam>=1) cs.push(
+      { t:'Move back home for a while', d:'Free rent, full fridge.', w:1,
+        out(){ L.money+=20; return { text:'Two years in your old room. Embarrassing at parties, unbeatable in a spreadsheet.', fx:[['people',-3]], score: 16+Math.round(R()*6), note:'Age 26: the family home worked as a free launch pad.' }; } });
+    return cs;
+  }
+},
+
+{ age:'Age 28', title:'The money month', type:'allocate',
+  vign(h,L){ return T(h,
+    `Then February happens. Hours get cut, the tax refund is late, and five things land due in the same two weeks. There is money for three.\n\nPick the three that get covered. The other two go without.`,
+    `Then February happens. Five things land in the same month, and covering all five means emptying the emergency fund that finally exists. There is room for three.\n\nPick the three that get covered. The other two wait.`,
+    `February. The bills pay themselves on autopay, and what is left over is the actual question. There is time and appetite for three of these.\n\nPick the three that get a yes.`); },
+  view(h,L){ return T(h,
+    `Here the month is triage. Something always goes without, and it is never nothing.`,
+    `The middle is a juggling act that mostly works. Dropping a ball costs. So does catching them all.`,
+    `Here February is a menu of upsides. The only scarce thing left is time.`); },
+  items(h,L){
+    return T(h,
+    [ // low
+      { t:'Rent', d:'Due on the first, like always.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const kind = R()<0.45;
+          return kind
+          ? { text:'The landlord works with you, this time, with a late fee and a look.', fx:[['steady',-4]], score: 0 }
+          : { text:'Three days late becomes a notice on the door. It gets resolved and it gets remembered.', fx:[['steady',-14]], score: -6, note:'Age 28: one late month put the housing on thin ice. The margin was that thin.' }; } },
+      { t:'The car’s timing belt', d:'The shop says soon. The car says nothing.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const dies = R()<0.55;
+          return dies
+          ? { text:'The belt goes on a Thursday, nineteen miles from work, and takes the engine’s good mood with it.', fx:[['steady',-8]], score: -5, note:'Age 28: skipping the repair cost triple later. Being broke is expensive.' }
+          : { text:'The belt holds. You drive gently and listen hard for months.', fx:[], score: 0 }; } },
+      { t:'Your prescriptions', d:'The refill, the copay, the usual.', w:2,
+        keep(){ return { text:'', fx:[], score: 4 }; },
+        drop(){ return { text:'You stretch the pills to every other day. The refill can wait, says the part of you the pills are for.', fx:[['health',-8]], score: -4, note:'Age 28: health was the bill that could be skipped quietly. It kept its own ledger.' }; } },
+      { t:'Your sister’s daycare gap', d:'Two weeks between her jobs.', w:1,
+        keep(){ return { text:'', fx:[['people',5]], score: 4 }; },
+        drop(){ return { text:'She figures it out. Something between you gets quieter for a while.', fx:[['people',-6]], score: -2 }; } },
+      { t:'The class you are halfway through', d:'The certificate is four months away.', w:1,
+        keep(){ return { text:'', fx:[], score: 6 }; },
+        drop(){ return { text:'The certificate moves to next year. Next year is a busy place.', fx:[], score: -2, note:'Age 28: the future was the only bill with no late fee, so the future got dropped.' }; } }
+    ],
+    [ // mid
+      { t:'The student loan payment', d:'The balance barely moves as it is.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ L.debt=Math.min(2,L.debt+1); return { text:'One skipped month. The balance grows quietly, the way it likes to.', fx:[], score: -4 }; } },
+      { t:'The transmission', d:'The shop found the leak.', w:2,
+        keep(){ return { text:'', fx:[], score: 5 }; },
+        drop(){ const dies = R()<0.45;
+          return dies
+          ? { text:'It lets go on the highway ramp in April. The tow truck driver is nice about it.', fx:[['steady',-8]], score: -4 }
+          : { text:'It leaks, you top it off, it holds. Cars run on luck more than anyone admits.', fx:[], score: 0 }; } },
+      { t:'The dental crown', d:'The dentist used the word eventually.', w:1,
+        keep(){ return { text:'', fx:[['health',2]], score: 4 }; },
+        drop(){ return { text:'The tooth will wait, and charge interest.', fx:[['health',-6]], score: -3 }; } },
+      { t:'Being in the wedding', d:'Flights, the suit, the weekend.', w:1,
+        keep(){ return { text:'', fx:[['people',6]], score: 4 }; },
+        drop(){ return { text:'You send a gift and an apology. The photos go up without you, and stay up.', fx:[['people',-6]], score: -2 }; } },
+      { t:'The certification exam fee', d:'Work would have to give you the title.', w:1,
+        keep(){ return { text:'', fx:[], score: 6 }; },
+        drop(){ return { text:'The exam moves to the fall window. Careers are patient right up until they are not.', fx:[], score: -2 }; } }
+    ],
+    [ // high
+      { t:'Max the retirement match', d:'Free money, the advisor keeps saying.', w:2,
+        keep(){ L.money+=6; return { text:'', fx:[], score: 8, note:'Age 28: extra money went to work making more money. That is the whole trick up here.' }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'The trip with college friends', d:'Lisbon, a group chat, forty tabs.', w:1,
+        keep(){ return { text:'', fx:[['people',6],['health',3]], score: 5 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'Your roommate’s startup round', d:'A small check, a big maybe.', w:1,
+        keep(){ const hits = R()<0.4;
+          return hits
+          ? { text:'', fx:[['money',12]], score: 9, note:'Age 28: a spare check turned into a windfall. Spare checks do that here.' }
+          : { text:'', fx:[['money',-6]], score: 0 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'The charity board your mentor suggested', d:'Second Tuesdays, good cause, better rolodex.', w:1,
+        keep(){ return { text:'', fx:[['people',7]], score: 5, note:'Age 28: even the volunteering came with deal flow.' }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } },
+      { t:'A down payment loan to your brother', d:'He would do it for you.', w:1,
+        keep(){ return { text:'', fx:[['people',5]], score: 4 }; },
+        drop(){ return { text:'', fx:[], score: 0 }; } }
+    ]);
+  },
+  closeText(h){ return T(h,
+    `The month ends. The two you dropped do not disappear. They wait.`,
+    `The month ends. The two you dropped go on the list for spring.`,
+    `The month ends. The two you skipped cost you nothing at all. Not choosing is free up here, and that is the whole difference.`); }
+},
+
+{ age:'Age 31', title:'The year everything happens',
+  vign(h,L){
+    const t = tier(h);
+    const roll = R();
+    let shock;
+    if (t==='high') shock = roll<0.25 ? 'layoff' : roll<0.4 ? 'health' : roll<0.55 ? 'car' : roll<0.8 ? 'promo' : 'inherit';
+    else if (t==='mid') shock = roll<0.3 ? 'layoff' : roll<0.5 ? 'health' : roll<0.65 ? 'car' : roll<0.8 ? 'parent' : 'promo';
+    else shock = roll<0.3 ? 'layoff' : roll<0.55 ? 'health' : roll<0.75 ? 'car' : roll<0.95 ? 'parent' : 'promo';
+    L.shock = shock;
+    const map = {
+      layoff:`The company restructures. Your whole department learns a new word, redundant. Severance covers three weeks, and the next job takes months to find.`,
+      health:`A pain you ignored stops being ignorable. The doctor uses the word procedure${L.steady<50?', and your insurance uses the word deductible':''}.`,
+      car:`The transmission dies on a Tuesday. The quote is twenty eight hundred dollars, and work is nineteen miles away.`,
+      parent:`${famCap(h)} call${h.fam===2?'':'s'}. It is health, it is serious, and somebody has to step up. Everyone knows who somebody means.`,
+      promo:`Your boss takes you to lunch and slides a new title across the table.`,
+      inherit:`Your grandmother passes in the spring. The will leaves you a share of the Maple Street house.`
+    };
+    return `Thirty one arrives, and it brings company.\n\n` + map[shock] + `\n\nWhat do you do?`;
+  },
+  view(h,L){ return T(h,
+    `The ER bills in envelopes that do not stop. The payday window is open late. Every shock lands on the last one’s bruise.`,
+    `One shock is survivable here. It is the second one, landing before the first is paid off, that decides things.`,
+    `Someone at the bank moves some things around. Most problems at this altitude are phone calls.`); },
+  choices(h,L){
+    const sh = L.shock;
+    if (sh==='promo') return [
+      { t:'Take the promotion', d:'More money, more hours.', w:2,
+        out(){ return { text:'The title is real and so is the raise. Your calendar develops opinions about your weekends.', fx:[['money',14],['steady',10],['health',-3]], score: 24+Math.round(R()*10) }; } },
+      { t:'Take it, and negotiate hard', d:'They came to you, after all.', w:2,
+        out(){ const win = R()<0.6; return win
+          ? { text:'You ask for more and get most of it. Turns out the first number was the opening bid.', fx:[['money',18],['steady',10]], score: 30+Math.round(R()*10) }
+          : { text:'They meet you halfway with a flicker of annoyance. Still a win, slightly taxed.', fx:[['money',13],['steady',8]], score: 21+Math.round(R()*8) }; } },
+      { t:'Pass, protect the life you have', d:'The current job fits.', w:1,
+        out(){ return { text:'You stay put. The ladder will still be there, people say, not quite believing it.', fx:[['health',3]], score: 10+Math.round(R()*6) }; } }
+    ];
+    if (sh==='inherit') return [
+      { t:'Keep the house, rent it out', d:'A landlord in the family at last.', w:2,
+        out(){ L.money+=15; return { text:'Rent covers the taxes and then some. Money now arrives while you sleep, which is how the other half has always done it.', fx:[['steady',8]], score: 24+Math.round(R()*10), note:'Age 31: an inheritance started paying monthly. Wealth works even when you do not.' }; } },
+      { t:'Sell your share', d:'Clean and simple.', w:1,
+        out(){ L.money+=25; return { text:'The check clears and the family group chat goes quiet for a month. Money and grief make awkward roommates.', fx:[['people',-4]], score: 19+Math.round(R()*8), note:'Age 31: an inheritance arrived as a lump sum.' }; } }
+    ];
+    const opts = [
+      { t:'Cover it from savings', d:'This is what the account was for.', w:2,
+        gray(h2,L2){ return L2.money<20 ? 'The account will not cover it. That is the whole problem.' : null; },
+        out(){ L.money-=15; return { text:'It hurts and it holds. The buffer did its one job, and now it needs rebuilding.', fx:[['steady',-2]], score: 17+Math.round(R()*8) }; } },
+      { t:'Call home for help', d:'Swallow the pride, make the call.', w:1,
+        gray(h2){ return h2.wealth<2 ? 'There is nothing to borrow. You know that before you dial.' : null; },
+        out(){ return { text:'Your dad covers it and tells you to pay it back whenever. Whenever is a payment plan with no interest and no term.', fx:[], score: 19+Math.round(R()*8), note:'Age 31: the family backstop absorbed the shock without a scratch.' }; } },
+      { t:'Put it on the card', d:'Twenty six percent, but it is tonight.', w:1,
+        out(){ L.debt=Math.min(2,L.debt+1); return { text:'Solved in ten minutes, paid for over three years. The interest quietly becomes its own small emergency.', fx:[['steady',-4]], score: 6+Math.round(R()*5), note:'Age 31: the only credit on offer charged twenty six percent for the privilege of being poor.' }; } },
+      { t:'Take extra shifts and ride it out', d:'Sleep is negotiable, apparently.', w:1,
+        out(){ return { text:'You cover it with hours. The body keeps the books on this kind of loan and always collects.', fx:[['health',-8],['money',5]], score: 10+Math.round(R()*6) }; } }
+    ];
+    if (sh==='parent') opts.push(
+      { t:'Move back and be the one', d:'Somebody has to, and it is you.', w:1,
+        out(){ L.kidHelp=true; return { text:'You move home. Career plans go in a drawer that gets harder to open every year. Nobody thanks you correctly, and you do it anyway.', fx:[['people',6],['steady',-8],['money',-5]], score: 13+Math.round(R()*7), note:'Age 31: a parent’s health redirected the whole decade. Care work found its person, again.' }; } },
+      { t:'Pay for care instead', d:'Help from a distance.', w:1,
+        gray(h2,L2){ return (L2.money<30 && h2.wealth<3) ? 'Care costs more per month than your rent. It is not an option, it is a brochure.' : null; },
+        out(){ L.money-=15; return { text:'A good aide, four days a week. Money substitutes for presence, imperfectly, the way it always has.', fx:[], score: 15+Math.round(R()*7), note:'Age 31: care could be hired instead of becoming your life.' }; } }
+    );
+    return opts;
+  }
+},
+
+{ age:'Age 35', title:'The swing',
+  vign(h,L){
+    return `Thirty five. Settled enough to be restless. A friend wants to open a business with you, your industry is posting openings one rung up, and the ${L.degree?'alumni office':'extension school'} keeps emailing.\n\nTake a swing or hold steady?`;
+  },
+  view(h,L){ return T(h,
+    `Risk is priced differently down here. The same bet that is a story for some people is a crater for you.`,
+    `You can afford exactly one swing. The question is which decade gets it.`,
+    `People here take risks constantly and call it boldness. The net underneath is doing most of the work.`); },
+  choices(h,L){ return [
+    { t:'Start the business', d:'The coffee shop and roastery. A real plan, real risk.', w:1, pop:0.1,
+      gray(h2,L2){ return (L2.money<30 && h2.wealth<3) ? 'There is no cushion under this trapeze. You cannot responsibly jump.' : null; },
+      out(){ const win = R()<0.5;
+        if (win){ L.money+=25; L.ownBiz=true; return { text:'Two brutal years, then it works. Line out the door on Saturdays, your name on the cups.', fx:[['steady',8],['people',8],['health',-4]], score: 36+Math.round(R()*14) }; }
+        if (h.wealth>=3){ L.money-=10; return { text:'It does not make it. The family absorbs the loss, you land a marketing job in six weeks, and at parties it becomes a story about learning.', fx:[['health',-3]], score: 12+Math.round(R()*6), note:'Age 35: the business failed softly. Family money was the net.' }; }
+        L.money=Math.max(0,L.money-25); L.debt=Math.min(2,L.debt+1);
+        return { text:'It does not make it, and the debt is yours alone. The same failure that is a story for some people is a crater for others.', fx:[['steady',-10],['health',-5]], score: 5+Math.round(R()*4), note:'Age 35: the business failed hard. There was no net.' }; } },
+    { t:'Go back for the degree', d:'Nights and weekends for three years.', w:2, pop:0.1,
+      only: !L.degree,
+      out(){
+        if (tier(h)==='low' && R()<0.5){
+          L.cert=true; L.debt=Math.min(2,L.debt+1);
+          return { text:'Two good semesters. Then the overtime season, the car, the family, the tiredness. The credits sit there, real and unfinished, like most adult degrees.', fx:[['health',-3]], score: 9+Math.round(R()*5), note:'Age 35: going back was allowed. Staying back was the expensive part.' };
+        }
+        L.degree=true; L.debt=Math.min(2,L.debt+1); return { text:'You finish at thirty eight, tired and credentialed. The raise takes a year to show up and then keeps showing up.', fx:[['health',-4],['steady',6]], score: 22+Math.round(R()*10) }; } },
+    { t:'Push for the next rung', d:'Same track, higher and harder.', w:2, pop:0.35,
+      out(){ const win = R() < (L.people>=55?0.7:0.45); return win
+        ? { text:'You get it. Somebody on the panel knew your work, which is another way of saying somebody knew you.', fx:[['money',12],['steady',8]], score: 24+Math.round(R()*10) }
+        : { text:'Close, but it goes to an outside hire. You bank the interview practice and the small bitterness.', fx:[], score: 8+Math.round(R()*6) }; } },
+    { t:'Hold steady, live the life', d:'Coach the team, plant the garden.', w:1, pop:0.45,
+      out(){ return { text:'You stop climbing and start living where you are. The ambition industry never mentions this option, and plenty of happy people take it.', fx:[['health',6],['people',6]], score: 13+Math.round(R()*6) }; } }
+  ]; }
+},
+
+{ age:'Age 40', title:'Where you land', closer:true,
+  vign(h,L){
+    const okMoney = L.money>=40, okSteady = L.steady>=60;
+    let a = `Forty. `;
+    a += L.ownHome ? `The house is slowly becoming yours. ` : `The lease renews every year, and every year the rent renews harder. `;
+    a += L.debt===2 ? `The loans are still there, a quiet tax on everything. ` : L.debt===1 ? `The last of the debt is nearly gone. ` : ``;
+    a += okSteady ? `Work is stable enough that you have stopped checking the listings. ` : `Work still feels like standing on one foot. `;
+    a += `\n\nYour kid is seven. `;
+    a += okMoney
+      ? `When their laptop breaks, it is replaced that weekend. There is a form on the fridge for the fall soccer league, and the fee is not a conversation.`
+      : `When their laptop breaks, it stays broken for a while. There is a form for the fall soccer league that does not make it home, and your kid already knows better than to ask.`;
+    a += `\n\nThe deal you were handed at birth has been re-dealt, one generation on.`;
+    return a;
+  },
+  choices(){ return []; }
+}
+];
+
+/* ---------------- engine ---------------- */
+function grayOf(c,h,L){ return typeof c.gray==='function' ? c.gray(h,L) : (c.gray||null); }
+function liveChoices(rd,h,L){ return rd.choices(h,L).filter(c => c.only === undefined || c.only); }
+function simulateLife(hand, style, trace){
+  const L = newLife(hand);
+  for (let ri = 0; ri < ROUNDS.length; ri++){
+    L.roundIdx = ri;
+    const rd = ROUNDS[ri];
+    if (rd.closer) break;
+    rd.vign(L.h, L); // may roll state
+    if (rd.type==='allocate'){
+      const items = rd.items(L.h, L);
+      let idx = items.map((it,i)=>i);
+      if (style==='careful') idx.sort((a,b)=>items[b].w-items[a].w || a-b);
+      else if (style==='loose') idx.sort((a,b)=>items[a].w-items[b].w || a-b);
+      else { for (let i=idx.length-1;i>0;i--){ const j=Math.floor(R()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; } }
+      const keepSet = new Set(idx.slice(0,3));
+      let allFx=[], score=0, wsum=0;
+      items.forEach((it,i)=>{
+        const r = keepSet.has(i) ? it.keep(L.h,L) : it.drop(L.h,L);
+        allFx.push(...(r.fx||[])); score += r.score||0;
+        if (keepSet.has(i)) wsum += it.w;
+      });
+      applyResult(L, {fx:allFx, score}, 0, 'money month', rd);
+      L.wiseMax += 4; L.wise += wsum;
+      if (trace) trace.push({ age: rd.age, choice: 'Covers ' + [...keepSet].map(i=>items[i].t.toLowerCase()).join(', '), text: rd.closeText(L.h) });
+      continue;
+    }
+    const cs = liveChoices(rd, L.h, L).filter(c => !grayOf(c, L.h, L));
+    if (!cs.length) continue;
+    let c;
+    if (style==='careful'){ let best = Math.max(...cs.map(x=>x.w)); const top = cs.filter(x=>x.w===best); c = top[Math.floor(R()*top.length)]; }
+    else if (style==='loose'){ let worst = Math.min(...cs.map(x=>x.w)); const bot = cs.filter(x=>x.w===worst); c = bot[Math.floor(R()*bot.length)]; }
+    else if (cs.some(x=>x.pop!==undefined)){
+      // popularity-weighted typical play where weights exist
+      const tot = cs.reduce((a,x)=>a+(x.pop||0.05),0);
+      let roll = R()*tot;
+      c = cs[0];
+      for (const x of cs){ roll -= (x.pop||0.05); if (roll<=0){ c = x; break; } }
+    }
+    else c = cs[Math.floor(R()*cs.length)];
+    const r = c.out(L.h, L);
+    applyResult(L, r, c.w, c.t, rd);
+    if (trace) trace.push({ age: rd.age, choice: c.t, text: r.text });
+  }
+  // Starting college is not finishing it. Roughly 4 in 10 US students who enrol in a
+  // four year program have no degree six years later, and completion tracks family
+  // income. These rates were set so the model's degree shares land near the measured
+  // ones (Pell Institute, by age 24: 15 / 25 / 44 / 58 percent by family income quarter).
+  if (L.degree){
+    const t = tier(L.h);
+    const finish = t === 'low' ? 0.80 : t === 'mid' ? 0.44 : 0.55;
+    if (R() > finish){ L.degree = false; if (R() < 0.35) L.cert = true; }
+  }
+  // Economic position at forty. Only the RANKING matters: the cutoffs below are
+  // calibrated so the model reproduces measured mobility, so the weights here just
+  // order lives, they do not claim to price anything.
+  const base = L.money * 1.0
+    + (L.steady - 40) * 0.55
+    + (L.degree ? 22 : L.cert ? 13 : 0)
+    + (L.ownHome ? 16 : 0)
+    + (L.ownBiz ? 7 : 0)
+    - (L.debt === 2 ? 15 : L.debt === 1 ? 5 : 0)
+    + (L.health - 50) * 0.12;
+  // Everything the model does not contain: illness, recessions, discrimination, talent,
+  // who a person happens to meet. Its size (SIGMA) was not guessed. It is the single number
+  // fitted so the model reproduces the measured mobility table as closely as it can.
+  // The residual setting shifts this draw. At 'typical' the shift is zero, which is the
+  // only setting the calibration against the national table applies to.
+  const shift = style === 'careful' ? 0.6 : style === 'loose' ? -0.6 : 0;
+  const attain = base + (normalDraw() + shift) * SIGMA;
+  return { degree: L.degree, cert: L.cert, credentialFlag: !!(L.degree || L.cert),
+           ownHome: L.ownHome, debt: L.debt, health: L.health, steady: L.steady, money: L.money,
+           attain, dest: destQuintile(attain), security: securityPct(base) };
+}
+/* SECURITY AT FORTY. This is the model's own composite, not a published measure.
+   It exists because a single income rank misses housing, health, debt and job security.
+   It is reported as a percentile against all simulated lives, so it only has meaning
+   inside this page. REF holds the 0th to 100th percentile of base across the pooled
+   simulated population, computed 2026-08-04. */
+const REF = [-20.2,6.08,11.88,15.4,18.18,20.42,22.48,24.22,25.98,27.5,28.78,30.18,31.44,32.62,33.8,34.88,35.98,37.04,38.06,39.02,39.96,40.96,41.98,43.02,43.96,44.92,45.8,46.66,47.56,48.42,49.34,50.16,51.04,51.9,52.8,53.76,54.6,55.42,56.2,57,57.9,58.78,59.64,60.4,61.28,62.04,62.92,63.8,64.62,65.52,66.34,67.12,67.96,68.76,69.62,70.46,71.32,72.18,73.1,73.96,74.88,75.72,76.64,77.5,78.32,79.26,80.12,81.1,82,82.96,83.88,84.9,85.86,86.88,87.82,88.8,89.86,90.94,91.96,93.02,94.02,95.16,96.34,97.52,98.78,100.16,101.58,103,104.4,105.88,107.38,109.2,111.06,113.28,115.32,117.86,120.64,123.96,128.38,134.72,169.64];
+function securityPct(v){
+  if (!REF) return null;
+  let lo = 0, hi = REF.length - 1;
+  while (lo < hi){ const mid = (lo + hi) >> 1; if (REF[mid] < v) lo = mid + 1; else hi = mid; }
+  return lo;
+}
+function normalDraw(){
+  let u = 0, v = 0;
+  while (u === 0) u = R();
+  while (v === 0) v = R();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+/* CALIBRATION. Fitted 2026-08-04 against Chetty, Hendren, Kline and Saez 2014, all 25 cells
+   of the national quintile transition matrix. SIGMA is the one free parameter. The cutoffs
+   are the 20th, 40th, 60th and 80th percentiles of the pooled population, which is what an
+   income fifth is by definition, so they were not tuned to flatter the model.
+   Mean absolute error: about 2 percentage points per cell. Worst fit is the top start. */
+const SIGMA = 49;
+const CUTS = [18.8, 52.8, 82.5, 116.8];
+function destQuintile(a){
+  if (a < CUTS[0]) return 1;
+  if (a < CUTS[1]) return 2;
+  if (a < CUTS[2]) return 3;
+  if (a < CUTS[3]) return 4;
+  return 5;
+}
+// Chetty et al. 2014, Table II. Rows are parent fifth, columns child fifth.
+const CHETTY_ROWS = {
+  1: [33.7,28.0,18.4,12.3,7.5], 2: [24.2,24.2,21.7,17.6,12.3], 3: [17.8,19.8,22.1,22.0,18.3],
+  4: [13.4,16.0,20.9,24.4,25.4], 5: [10.9,11.9,17.0,23.6,36.5]
+};
+
+function setRandom(f){ RNG = f || Math.random; }
+return { simulateLife: simulateLife, setRandom: setRandom, clamp: clamp, CHETTY_ROWS: CHETTY_ROWS };
+})();/* The two lives students play. Everything here is made up; the patterns follow Lareau (2011) and Oliver and Shapiro (2006). */
+var BL_GAME = { A: null, B: null, listeners: [] };
+
+var BL_LIVES = {
+  A: {
+    name: "Life A",
+    reminder: "<strong>Life A:</strong> parents' income in the bottom fifth, no family wealth (the family rents and has no savings), parents finished high school, crowded neighborhood school.",
+    stages: [
+      { key: "s1", age: "Age 10", topic: "Falling behind in math",
+        text: function () { return "In fourth grade your class reaches fractions, and you start falling behind. Your class has 31 students and one teacher. Your mom works evenings."; },
+        ask: "What do you do?",
+        options: [
+          { t: "Stay after class and ask the teacher", d: "She helps when she can.",
+            out: function (s) { s.math = "caught up"; return { text: "Your teacher gives you a few minutes twice a week. You catch up by spring, but it takes most of the year.", why: "Free help was available, but one teacher had to divide her time among 31 students." }; } },
+          { t: "Ask for help at home", d: "Your mom gets home after 10 p.m.",
+            out: function (s) { s.math = "partly caught up"; return { text: "Your mom looks at the worksheet with you on Sunday. She has not done fractions since high school, and you get through about half of it.", why: "Help at home depends on whether a parent has the time and the schooling to give it." }; } },
+          { t: "Decide math is not your subject", d: "Plenty of people say that.",
+            out: function (s) { s.math = "behind"; return { text: "You pass with a D. The next year the school places you in the lower math group, which covers less material.", why: "Schools often sort students into groups based on early grades. A lower group covers less, so it is hard to move back up." }; } }
+        ] },
+      { key: "s2", age: "Age 16", topic: "The school year and the summer",
+        text: function () { return "Your mom's hours were cut at work. Nobody asks you to get a job, but the family needs the money."; },
+        ask: "How do you spend the year?",
+        options: [
+          { t: "Work 25 hours a week at a grocery store", d: "The paycheck covers the phone bill and part of the rent.",
+            out: function (s) { s.grades = "slipped"; return { text: "Most of your paycheck goes to household bills. Your grades drop in the spring because you do homework after late shifts.", why: "In many families, a teenager's paycheck is part of the household budget." }; } },
+          { t: "Work weekends only and study on weeknights", d: "Less money goes home.",
+            out: function (s) { s.grades = "held"; return { text: "You study for the SAT with a free practice book from the library. Your grades hold, but you know the family is short each month.", why: "Studying had a cost here: money the family did not get." }; } },
+          { t: "Join the track team and skip the job", d: "Practice runs until 6 p.m. every weekday.",
+            out: function (s) { s.grades = "held"; s.contacts.push("a coach who writes you a recommendation letter"); return { text: "You make friends, and your coach writes you a recommendation letter later. Money is tighter at home, and your aunt pays the electric bill one month.", why: "Activities that build connections are easier when a family can do without a teenager's income." }; } }
+        ] },
+      { key: "s3", age: "Age 18", topic: "After high school",
+        text: function () { return "You graduate. Your school counselor has more than 400 students. Nobody at home has filled out the federal college aid form (the FAFSA) before."; },
+        ask: "What do you do next?",
+        options: [
+          { t: "Go to the state university and take out loans", d: "Aid covers part of the cost.",
+            out: function (s) { s.path = "univ"; s.loans = true; return { text: "You borrow the rest of the cost and work 20 hours a week at a campus job. You are the first person in your family to go to college.", why: "You attend the same university as students whose parents paid, and you carry loans to do it." }; } },
+          { t: "Go to community college and keep your job", d: "Cheaper classes, and you live at home.",
+            out: function (s) { s.path = "cc"; return { text: "You take classes in the morning and work in the afternoon. Part of each paycheck still goes to the family.", why: "Living at home saved money, and it kept you available to help your family." }; } },
+          { t: "Work full time at a warehouse", d: "Steady pay starting now.",
+            out: function (s) { s.path = "work"; return { text: "The pay is steady, and part of every paycheck goes home.", why: "Your family needed the income now, which made college a harder choice." }; } },
+          { t: "Take a gap year first", gone: "Not available: nobody in your family can support you for a year without a paycheck." }
+        ] },
+      { key: "s4", age: "Age 23", topic: "Looking for a better job",
+        text: function (s) {
+          var where = s.path === "univ" ? "You finished your bachelor's degree at 22 and owe about $30,000 in student loans."
+            : s.path === "cc" ? "You finished an associate degree at 20 and take one night class each term toward a bachelor's degree."
+            : "You have worked at the warehouse for five years and are now a shift lead.";
+          return where + " You want a better job.";
+        },
+        ask: "How do you look for it?",
+        options: [
+          { t: "Apply to every job posting you can find", d: "Cover letters, job sites, and waiting.",
+            out: function (s) {
+              var job = s.path === "univ" ? "an entry-level job in a hospital billing office" : s.path === "cc" ? "a job as a medical records clerk" : "a job as a dispatcher at a trucking company";
+              s.job = job;
+              return { text: "You send more than 100 applications. After four months you get an offer for " + job + ".", why: "You found a job the way most people are told to: on your own, with no one vouching for you." }; } },
+          { t: "Take a job near home so you can help your family", d: "Your grandmother needs rides to her medical appointments.",
+            out: function (s) { s.job = "a lower-paying job near home"; return { text: "The pay is lower than you could get in a bigger city, but you can drive your grandmother to her appointments.", why: "Your family's needs shaped where you could live and work." }; } },
+          { t: "Take an unpaid internship in the city", gone: "Not available: you need to pay rent, and nobody can cover it for six months." }
+        ] },
+      { key: "s5", age: "Age 29", topic: "A $2,000 car repair",
+        text: function (s) { return "Your car needs a $2,000 repair, and you need the car to get to work. You have about $300 in savings." + (s.loans ? " Your student loan payment is $350 a month." : ""); },
+        ask: "How do you pay for it?",
+        options: [
+          { t: "Put it on a credit card", d: "The interest rate is 24 percent.",
+            out: function (s) { s.card = true; return { text: "The car is fixed the same day. With interest, the repair costs you about $2,800, and paying it off takes three years.", why: "When a family has no savings to fall back on, an emergency becomes a debt." }; } },
+          { t: "Work extra shifts for a month", d: "Borrow rides to work in the meantime.",
+            out: function (s) { return { text: "You work 60-hour weeks for five weeks and sleep about five hours a night. The car is fixed in the second month.", why: "Without savings, the only way to pay was with more hours of work." }; } },
+          { t: "Ask your family for help", gone: "Not available: your family does not have $2,000 to lend." }
+        ] }
+    ],
+    summary: function (s) {
+      var school = s.path === "univ" ? "Bachelor's degree" : s.path === "cc" ? "Associate degree, with night classes toward a bachelor's" : "High school diploma";
+      var debt = [];
+      if (s.loans) debt.push("student loans, $350 a month");
+      if (s.card) debt.push("a credit card balance at 24 percent interest");
+      return [
+        ["Schooling", school],
+        ["Debt", debt.length ? debt.join("; ") : "none"],
+        ["Savings", "about $300"],
+        ["Housing", "renting"],
+        ["Who can help in an emergency", "no one in the family has savings to lend"]
+      ];
+    }
+  },
+
+  B: {
+    name: "Life B",
+    reminder: "<strong>Life B:</strong> parents' income in the top fifth, family wealth (they own their home and have savings and investments), both parents have college degrees, well-funded neighborhood school.",
+    stages: [
+      { key: "s1", age: "Age 10", topic: "Falling behind in math",
+        text: function () { return "In fourth grade your class reaches fractions, and you start falling behind. Your class has 19 students and a classroom aide. Your mom sees your quiz grade before you mention it."; },
+        ask: "What do you do?",
+        options: [
+          { t: "Work with a tutor", d: "Your parents have already found one.",
+            out: function (s) { s.math = "ahead"; return { text: "You meet with the tutor twice a week. By December you are ahead of the class.", why: "Your parents arranged help before you asked. Sociologist Annette Lareau calls this concerted cultivation: parents actively managing a child's development." }; } },
+          { t: "Ask for help at home", d: "Your dad is an engineer.",
+            out: function (s) { s.math = "caught up"; return { text: "Your dad explains fractions at the kitchen table. You catch up in a week.", why: "Help at home was available because a parent had the time and the schooling to give it." }; } },
+          { t: "Decide math is not your subject", d: "Plenty of people say that.",
+            out: function (s) { s.math = "caught up"; return { text: "Your parents email the teacher, set up a meeting, and hire a tutor anyway. You catch up by winter break.", why: "Your parents stepped in before the choice could follow you into the next grade." }; } }
+        ] },
+      { key: "s2", age: "Age 16", topic: "The school year and the summer",
+        text: function () { return "Your parents have already signed you up for an SAT prep course in March. It costs about $1,000. They ask what you want to do this summer."; },
+        ask: "How do you spend the summer?",
+        options: [
+          { t: "Intern at a family friend's law office", d: "Your mom made one phone call.",
+            out: function (s) { s.contacts.push("a lawyer who writes you a recommendation letter"); return { text: "You file papers and sit in on meetings for six weeks. You leave with a recommendation letter and three new contacts.", why: "A family friend opened a door most 16-year-olds never see. Sociologists call help that comes through who your family knows social capital." }; } },
+          { t: "Work as a lifeguard with friends", d: "Spending money and a summer outside.",
+            out: function (s) { return { text: "You earn spending money and have a good summer. The SAT course still happens in March.", why: "Your paycheck was for you, not for the household, and the SAT course was paid for either way." }; } },
+          { t: "Go to a three-week science camp at a university", d: "It costs $3,000.",
+            out: function (s) { s.contacts.push("a professor you met at camp"); return { text: "You live in a dorm, make a research poster, and meet a professor. The camp goes on your college applications.", why: "Your family's money bought a head start on college applications." }; } }
+        ] },
+      { key: "s3", age: "Age 18", topic: "After high school",
+        text: function () { return "You graduate. Your school counselor knows your name and has helped you with every application. Your parents have saved for your college since you were born."; },
+        ask: "What do you do next?",
+        options: [
+          { t: "Go to the state university, where your dad went", d: "Your parents pay tuition and housing.",
+            out: function (s) { s.path = "univ"; return { text: "You live on campus and finish in four years with no loans.", why: "Your parents' savings turned college into a choice with no debt attached." }; } },
+          { t: "Go to a private college", d: "It costs about $60,000 a year.",
+            out: function (s) { s.path = "private"; s.contacts.push("the college's alumni network"); return { text: "Your parents pay for it. You finish in four years with no loans and a large alumni network.", why: "The price did not decide whether you could go." }; } },
+          { t: "Take a gap year first", d: "Travel and work part time.",
+            out: function (s) { s.path = "gap"; return { text: "You travel and work part time. The university holds your place, and you start a year later. Your parents pay, and you finish with no loans.", why: "A year off was safe because your family could support you and the university held your place." }; } }
+        ] },
+      { key: "s4", age: "Age 23", topic: "Looking for a better job",
+        text: function () { return "You finished your bachelor's degree with no student loans. You want a better job than the one you have."; },
+        ask: "How do you look for it?",
+        options: [
+          { t: "Ask a family friend for a referral", d: "Your dad's college roommate works at a company you like.",
+            out: function (s) { s.job = "a job at the company your dad's roommate works for"; return { text: "He passes your resume to the hiring manager. You have an interview within a week and an offer within a month.", why: "A referral moved you to the front of the line. Who your family knows worked like money here." }; } },
+          { t: "Take an unpaid internship in the city", d: "Six months, no pay.",
+            out: function (s) { s.job = "a full-time job that grew out of the internship"; return { text: "Your parents pay your rent for six months. The internship turns into a full-time job.", why: "An unpaid internship is open only to people who can afford to work for free." }; } },
+          { t: "Apply to every job posting you can find", d: "Cover letters, job sites, and waiting.",
+            out: function (s) { s.job = "an entry-level office job"; return { text: "You send 40 applications. After two months you get an offer.", why: "You applied on your own, but with a degree, no loans, and internships on your resume." }; } }
+        ] },
+      { key: "s5", age: "Age 29", topic: "A $2,000 car repair",
+        text: function () { return "Your car needs a $2,000 repair, and you need the car to get to work. You have about $8,000 in savings."; },
+        ask: "How do you pay for it?",
+        options: [
+          { t: "Pay for it from your savings", d: "This is what savings are for.",
+            out: function (s) { return { text: "The car is fixed the same day. You rebuild your savings over the next few months.", why: "Savings turned an emergency into an inconvenience." }; } },
+          { t: "Put it on a credit card", d: "The interest rate is 24 percent.",
+            out: function (s) { return { text: "You pay off the credit card balance the next month from your savings, so you pay almost no interest.", why: "The same choice that became a three-year debt in Life A cost almost nothing here, because savings stood behind it." }; } },
+          { t: "Ask your parents for help", d: "They have offered before.",
+            out: function (s) { return { text: "Your parents send the money that afternoon and tell you to pay it back whenever you can.", why: "Your parents' wealth worked as a safety net you could use at any age." }; } }
+        ] }
+    ],
+    summary: function (s) {
+      return [
+        ["Schooling", s.path === "private" ? "Bachelor's degree from a private college" : "Bachelor's degree"],
+        ["Debt", "none"],
+        ["Savings", "about $8,000"],
+        ["Housing", "owns a home. At 27, your parents gave you $20,000 toward the down payment. You did not choose this; it came with the family."],
+        ["Who can help in an emergency", "your parents"]
+      ];
+    }
+  }
+};
+
+function blLifeBlock(which) {
+  var life = BL_LIVES[which];
+  return {
+    type: "custom", id: "life" + which, label: life.name,
+    questions: life.stages.map(function (st) {
+      return life.name + ", " + st.age + " (" + st.topic + "): " + st.text({ path: "univ", loans: true, contacts: [] }).replace(/<[^>]+>/g, "") + " " + st.ask + " Options: " + st.options.map(function (o) { return o.t + (o.gone ? " [" + o.gone + "]" : ""); }).join(" | ");
+    }),
+    render: function (el, api) {
+      blStyles();
+      var s = { contacts: [], picks: [] };
+      var idx = 0;
+      el.appendChild(api.html("div", "note", life.reminder));
+      var log = api.html("div", "bl-log"); el.appendChild(log);
+      var stageBox = api.html("div", "box"); el.appendChild(stageBox);
+      var live = api.html("div", "sr-only"); live.setAttribute("aria-live", "polite"); el.appendChild(live);
+
+      function show() {
+        stageBox.innerHTML = "";
+        if (idx >= life.stages.length) { finish(); return; }
+        var st = life.stages[idx];
+        stageBox.appendChild(api.html("div", "bl-age", st.age + ": " + st.topic + " (stage " + (idx + 1) + " of " + life.stages.length + ")"));
+        stageBox.appendChild(api.html("p", "bl-text", st.text(s)));
+        var qid = "blq" + which + idx;
+        var q = api.html("div", "prompt", st.ask); q.id = qid; stageBox.appendChild(q);
+        var row = api.html("div", "choices column"); row.setAttribute("role", "group"); row.setAttribute("aria-labelledby", qid);
+        stageBox.appendChild(row);
+        var res = api.html("div", "bl-result"); res.setAttribute("aria-live", "polite"); stageBox.appendChild(res);
+        st.options.forEach(function (o, i) {
+          var b = api.html("button", "opt bl-opt" + (o.gone ? " bl-gone" : ""), "<span class=\"bl-t\">" + o.t + "</span><span class=\"bl-d\">" + (o.gone || o.d) + "</span>");
+          b.type = "button";
+          if (o.gone) { b.disabled = true; b.setAttribute("aria-disabled", "true"); }
+          b.addEventListener("click", function () {
+            if (o.gone) return;
+            Array.prototype.forEach.call(row.children, function (x) { x.disabled = true; });
+            b.classList.add("chosen"); b.setAttribute("aria-pressed", "true");
+            var r = o.out(s);
+            s.picks.push({ stage: st, pick: o, text: r.text });
+            res.innerHTML = "<p><strong>What happened:</strong> " + r.text + "</p><p class=\"bl-why\"><strong>What the starting point did:</strong> " + r.why + "</p>";
+            var nb = api.html("button", "btn", idx === life.stages.length - 1 ? "See where " + life.name + " ends up" : "Next stage"); nb.type = "button";
+            nb.addEventListener("click", function () {
+              var li = api.html("div", "bl-logline", "<strong>" + st.age + ":</strong> " + o.t + ". " + r.text);
+              log.appendChild(li);
+              idx++; show();
+              var f = stageBox.querySelector("button:not([disabled])"); if (f) f.focus();
+            });
+            res.appendChild(nb);
+            api.record(s.picks.map(function (p) { return p.stage.age + " (" + p.stage.topic + "): " + p.pick.t; }));
+          });
+          row.appendChild(b);
+        });
+      }
+      function finish() {
+        var rows = life.summary(s);
+        var gone = 0; life.stages.forEach(function (st) { st.options.forEach(function (o) { if (o.gone) gone++; }); });
+        var html = "<h3 class=\"bl-h\">" + life.name + " at age 30</h3><dl class=\"bl-dl\">" + rows.map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + r[1] + "</dd>"; }).join("") +
+          "<dt>Options you could not choose</dt><dd>" + (gone ? gone + " of the options in this life were not available" : "none; every option in this life was available") + "</dd></dl>";
+        stageBox.innerHTML = html;
+        live.textContent = life.name + " is complete.";
+        BL_GAME[which] = s;
+        api.result({ picks: s.picks.map(function (p) { return p.pick.t; }) });
+        api.done();
+        BL_GAME.listeners.forEach(function (f) { f(); });
+      }
+      api.onAutoplay(function () {
+        var guard = 0;
+        while (idx < life.stages.length && guard++ < 50) {
+          var b = stageBox.querySelector(".bl-opt:not([disabled])"); if (!b) break; b.click();
+          var nb = stageBox.querySelector(".bl-result .btn"); if (nb) nb.click();
+        }
+      });
+      show();
+    }
+  };
+}
+
+function blSideBySide() {
+  return {
+    type: "custom", id: "sideBySide", label: "Side by side", required: false, record: false,
+    render: function (el, api) {
+      blStyles();
+      var box = api.html("div", "bl-side"); el.appendChild(box);
+      function draw() {
+        if (!BL_GAME.A || !BL_GAME.B) {
+          box.innerHTML = "<div class=\"note caution\">Finish both lives first. This tab fills in once Life A and Life B are both complete.</div>";
+          return;
+        }
+        var html = "";
+        BL_LIVES.A.stages.forEach(function (stA, i) {
+          var stB = BL_LIVES.B.stages[i];
+          html += "<div class=\"box\"><div class=\"bl-age\">" + stA.age + ": " + stA.topic + "</div><div class=\"bl-cols\">";
+          [["A", stA], ["B", stB]].forEach(function (pair) {
+            var g = BL_GAME[pair[0]], st = pair[1];
+            var picked = g.picks[i] ? g.picks[i].pick : null;
+            html += "<div><div class=\"bl-colh\">Life " + pair[0] + " menu</div><ul class=\"bl-menu\">" + st.options.map(function (o) {
+              var tag = o.gone ? " <span class=\"bl-tag bl-tag-no\">not available</span>" : (o === picked ? " <span class=\"bl-tag\">your choice</span>" : "");
+              return "<li" + (o.gone ? " class=\"bl-struck\"" : "") + ">" + o.t + tag + "</li>";
+            }).join("") + "</ul>" + (picked ? "<p class=\"bl-small\"><strong>What happened:</strong> " + g.picks[i].text + "</p>" : "") + "</div>";
+          });
+          html += "</div></div>";
+        });
+        html += "<div class=\"box\"><div class=\"bl-age\">The same choice in both lives</div>" +
+          "<p class=\"bl-small\"><strong>Deciding math is not your subject (age 10).</strong> In Life A, the school placed you in the lower math group the next year. In Life B, your parents emailed the teacher and hired a tutor, and you caught up by winter break.</p>" +
+          "<p class=\"bl-small\"><strong>Putting the car repair on a credit card (age 29).</strong> In Life A, the $2,000 repair cost about $2,800 and took three years to pay off. In Life B, you paid off the credit card balance the next month from savings.</p></div>";
+        box.innerHTML = html;
+      }
+      BL_GAME.listeners.push(draw);
+      draw();
+      api.done();
+    }
+  };
+}
+
+function blStyles() {
+  if (document.getElementById("bl-styles")) return;
+  var st = document.createElement("style"); st.id = "bl-styles";
+  st.textContent = [
+    ".bl-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}",
+    ".bl-t{font-weight:600}",
+    ".bl-d{font-size:.92em;font-weight:400;color:var(--text-2)}",
+    ".opt.chosen .bl-d{color:var(--on-accent)}",
+    ".bl-gone{border-style:dashed}",
+    ".bl-gone .bl-t{text-decoration:line-through}",
+    ".bl-age{font-weight:700;font-size:1.05em}",
+    ".bl-text{margin:6px 0 2px}",
+    ".bl-result p{margin:8px 0}",
+    ".bl-why{color:var(--text-2)}",
+    ".bl-log{display:flex;flex-direction:column;gap:6px;margin:10px 0}",
+    ".bl-logline{font-size:.92em;color:var(--text-2);border-left:3px solid var(--grid);padding-left:10px}",
+    ".bl-h{margin:0 0 8px}",
+    ".bl-dl{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:6px 14px;margin:0}",
+    ".bl-dl dt{font-weight:600}",
+    ".bl-dl dd{margin:0}",
+    "@media (max-width:560px){.bl-dl{grid-template-columns:1fr}.bl-dl dd{margin-bottom:6px}}",
+    ".bl-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}",
+    "@media (max-width:640px){.bl-cols{grid-template-columns:1fr}}",
+    ".bl-colh{font-weight:600;margin-bottom:4px}",
+    ".bl-menu{margin:0;padding-left:18px}",
+    ".bl-menu li{margin:3px 0}",
+    ".bl-struck{color:var(--text-2)}",
+    ".bl-tag{display:inline-block;font-size:.8em;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--accent);color:var(--accent);margin-left:4px}",
+    ".bl-tag-no{border-color:var(--warn);color:var(--warn)}",
+    ".bl-small{font-size:.92em;margin:8px 0 0}",
+    ".bl-side .box + .box{margin-top:12px}",
+    ".bl-seg{display:flex;flex-wrap:wrap;gap:6px}",
+    ".bl-seg button{font:inherit;font-size:.92em;padding:6px 10px;border-radius:8px;border:1px solid var(--grid);background:transparent;color:inherit;cursor:pointer}",
+    ".bl-seg button[aria-pressed=true]{border-color:var(--accent);background:var(--accent);color:var(--on-accent,#fff)}",
+    ".bl-lever{margin:10px 0}",
+    ".bl-lever .bl-lab{font-weight:600;margin-bottom:4px}",
+    ".bl-hint{font-size:.9em;color:var(--text-2);margin:2px 0 6px}"
+  ].join("\n");
+  document.head.appendChild(st);
+}
+/* The Run 500 lives tab: the earlier page's levers simulation with shorter text. */
+function blSimBlock() {
+  var LEVERS = [
+    { id: "inc", lab: "Parents' income", opts: [[1, "Bottom fifth"], [2, "Second fifth"], [3, "Middle fifth"], [4, "Fourth fifth"], [5, "Top fifth"]] },
+    { id: "wealth", lab: "Family wealth", opts: [[0, "None"], [1, "A little"], [2, "Some savings"], [3, "A paid-off house"], [4, "A lot"]] },
+    { id: "pedu", lab: "Parents' schooling", opts: [[0, "No diploma"], [1, "High school"], [2, "Some college"], [3, "College degrees"]] },
+    { id: "hood", lab: "Neighborhood schools", opts: [[1, "Underfunded"], [3, "Average"], [5, "Well funded"]] },
+    { id: "fam", lab: "Who raises the child", opts: [[2, "Two parents"], [1, "One parent"], [0, "A grandparent"]] },
+    { id: "style", lab: "Everything else", hint: "Everything the starting point does not cover: choices, health, luck, timing, and how a person is treated.", opts: [["careful", "Goes well"], ["typical", "Average"], ["loose", "Goes badly"]] }
+  ];
+  var WORDS = {
+    inc: ["", "bottom fifth income", "second fifth income", "middle fifth income", "fourth fifth income", "top fifth income"],
+    wealth: ["no wealth", "a little wealth", "some savings", "a paid-off house", "a lot of wealth"],
+    pedu: ["parents with no diploma", "parents with high school", "parents with some college", "parents with college degrees"],
+    hood: { 1: "underfunded schools", 3: "average schools", 5: "well-funded schools" },
+    fam: ["raised by a grandparent", "one parent", "two parents"],
+    style: { careful: "everything else goes well", typical: "everything else average", loose: "everything else goes badly" }
+  };
+  var FIFTHS = ["Bottom fifth", "Second fifth", "Middle fifth", "Fourth fifth", "Top fifth"];
+  var N = 500;
+
+  return {
+    type: "custom", id: "sim", label: "Simulation runs",
+    questions: ["Set a starting point, run 500 lives, then change one setting and run again. Compare where the lives ended up with the real figures."],
+    render: function (el, api) {
+      blStyles();
+      BL_MODEL.setRandom(api.random);
+      var D = { inc: 1, wealth: 0, pedu: 1, hood: 1, fam: 1, style: "typical" };
+      var last = null, kept = null, runs = [];
+
+      var box = api.html("div", "box"); el.appendChild(box);
+      LEVERS.forEach(function (lv) {
+        var wrap = api.html("div", "bl-lever");
+        var labId = "bl-lv-" + lv.id;
+        var lab = api.html("div", "bl-lab", lv.lab); lab.id = labId; wrap.appendChild(lab);
+        if (lv.hint) wrap.appendChild(api.html("div", "bl-hint", lv.hint));
+        var seg = api.html("div", "bl-seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-labelledby", labId);
+        lv.opts.forEach(function (o) {
+          var b = api.html("button", "", o[1]); b.type = "button";
+          b.setAttribute("aria-pressed", String(D[lv.id]) === String(o[0]) ? "true" : "false");
+          b.addEventListener("click", function () {
+            D[lv.id] = o[0];
+            Array.prototype.forEach.call(seg.children, function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+          });
+          seg.appendChild(b);
+        });
+        wrap.appendChild(seg); box.appendChild(wrap);
+      });
+      var btns = api.html("div", "btnrow");
+      var run = api.html("button", "btn", "Run 500 lives"); run.type = "button";
+      var keep = api.html("button", "btn secondary", "Keep this run to compare"); keep.type = "button"; keep.disabled = true;
+      btns.appendChild(run); btns.appendChild(keep); box.appendChild(btns);
+      var out = api.html("div", ""); out.setAttribute("aria-live", "polite"); el.appendChild(out);
+      var keptBox = api.html("div", ""); el.appendChild(keptBox);
+
+      function hand() {
+        var raw = D.inc * 2.6 + D.wealth * 2.2 + D.pedu * 1.7 + D.hood * 1.7 + (D.fam === 2 ? 1.6 : D.fam === 1 ? 0.6 : 0) - 0.35;
+        var start = Math.max(2, Math.min(98, Math.round((raw - 1) / (25.8 - 1) * 100)));
+        return { inc: D.inc, wealth: D.wealth, pedu: D.pedu, hood: D.hood, fam: D.fam, sibs: 1, start: start };
+      }
+      function words(r) {
+        return [WORDS.inc[r.inc], WORDS.wealth[r.wealth], WORDS.pedu[r.pedu], WORDS.hood[r.hood], WORDS.fam[r.fam], WORDS.style[r.style]].join(", ");
+      }
+      function simulate() {
+        var h = hand(), res = [];
+        for (var i = 0; i < N; i++) res.push(BL_MODEL.simulateLife(h, D.style));
+        var pct = function (f) { return Math.round(100 * res.filter(f).length / N); };
+        return {
+          inc: D.inc, wealth: D.wealth, pedu: D.pedu, hood: D.hood, fam: D.fam, style: D.style,
+          credential: pct(function (o) { return o.degree || o.cert; }),
+          home: pct(function (o) { return o.ownHome; }),
+          secure: pct(function (o) { return o.steady >= 62; }),
+          heavy: pct(function (o) { return o.debt === 2; }),
+          dest: [1, 2, 3, 4, 5].map(function (q) { return Math.round(1000 * res.filter(function (o) { return o.dest === q; }).length / N) / 10; })
+        };
+      }
+      function block(r, title) {
+        var wrap = api.html("div", "panel");
+        wrap.appendChild(api.html("h3", "bl-h", title));
+        wrap.appendChild(api.html("p", "bl-small", "<strong>Starting point:</strong> " + words(r) + "."));
+        api.render([{ type: "bars", max: 100, caption: "Share of the 500 lives that reached each outcome by age 40. A life can reach more than one, so the bars do not add to 100.", rows: [
+          { label: "Finished a degree or trade credential", value: r.credential, display: r.credential + "%" },
+          { label: "Owned a home", value: r.home, display: r.home + "%" },
+          { label: "Had steady, secure work", value: r.secure, display: r.secure + "%" },
+          { label: "Still had heavy debt", value: r.heavy, display: r.heavy + "%" }
+        ] }], wrap);
+        if (r.style === "typical") {
+          var real = BL_MODEL.CHETTY_ROWS[r.inc], rows = [];
+          FIFTHS.forEach(function (f, i) {
+            rows.push({ label: f + ": model", value: r.dest[i], display: r.dest[i] + "%" });
+            rows.push({ label: f + ": real children", value: real[i], display: real[i] + "%", tone: "good" });
+          });
+          var miss = Math.round(r.dest.reduce(function (a, v, i) { return a + Math.abs(v - real[i]); }, 0) / 5 * 10) / 10;
+          wrap.appendChild(api.html("p", "bl-small", "<strong>Which income fifth the lives ended up in as adults.</strong> Each fifth shows the model's share, then the share of real children raised in the same fifth (Chetty and others, 2014)."));
+          api.render([{ type: "bars", max: 40, rows: rows, caption: "On average the model missed the real figures by " + miss + " percentage points per fifth." }], wrap);
+        } else {
+          wrap.appendChild(api.html("div", "note", "The real figures describe everyone raised in a given fifth, so they cannot be compared with a run where everything else goes well or badly. Set <strong>Everything else</strong> to Average to compare the model with real children."));
+        }
+        return wrap;
+      }
+      run.addEventListener("click", function () {
+        last = simulate();
+        out.innerHTML = ""; out.appendChild(block(last, "This run"));
+        api.animateBars(out);
+        keep.disabled = false;
+        runs.push(words(last) + ": degree or credential " + last.credential + "%, top fifth as adults " + last.dest[4] + "%");
+        api.record(runs.slice(-6));
+        api.done();
+      });
+      keep.addEventListener("click", function () {
+        if (!last) return;
+        kept = last; keptBox.innerHTML = ""; keptBox.appendChild(block(kept, "Kept run, for comparison"));
+        api.animateBars(keptBox);
+      });
+      api.onAutoplay(function () { run.click(); keep.click(); });
+    }
+  };
+}
+window.LAB = {
+  title: "Born Lucky",
+  course: "SOCL 1133 Introductory Sociology",
+  labLabel: "In-class lab",
+  institution: "Midwestern State University",
+  retrieved: "October 2026",
+  lmsName: "D2L",
+
+  intro: "<strong>Where you start in life shapes which choices you get to make, and what each choice costs.</strong> In this lab you live two made-up lives, one that starts in the bottom fifth of family income and one that starts in the top fifth. You make one choice at each of five stages in each life. Then you compare the two lives, check them against real data, and run a simulation. You can work with a partner. Nothing is submitted; the questions in the last tab are for class discussion.",
+
+  sections: [
+    {
+      tab: "Two starts",
+      title: "Two children, born the same year in the same city",
+      lede: "Neither child chose anything about where they started. Read both profiles, then answer the question below.",
+      blocks: [
+        { type: "entries", items: [
+          { kicker: "Life A", title: "Starts in the bottom fifth",
+            rows: [
+              { label: "Parents' income", html: "Bottom fifth (the lowest-earning 20 percent of families)" },
+              { label: "Family wealth", html: "None. The family rents and has no savings." },
+              { label: "Parents' schooling", html: "High school diploma" },
+              { label: "Neighborhood school", html: "Crowded classes, few extra programs" } ] },
+          { kicker: "Life B", title: "Starts in the top fifth",
+            rows: [
+              { label: "Parents' income", html: "Top fifth (the highest-earning 20 percent of families)" },
+              { label: "Family wealth", html: "They own their home and have savings and investments." },
+              { label: "Parents' schooling", html: "Both have college degrees" },
+              { label: "Neighborhood school", html: "Small classes, tutors and test prep nearby" } ] }
+        ] },
+        { type: "check", id: "qcWealth", label: "Quick check (income or wealth)",
+          prompt: "The profiles list income and wealth separately. Which of these is wealth rather than income?",
+          options: [ { v: "pay", t: "A weekly paycheck" }, { v: "house", t: "A house the family owns" }, { v: "ss", t: "A monthly Social Security check" }, { v: "ot", t: "Overtime pay" } ],
+          answer: "house", right: "Right. A house the family owns is wealth.",
+          reveal: [ { type: "note", html: "<strong>Income</strong> is money that comes in over time, such as wages, tips, or benefit checks. <strong>Wealth</strong> is what a family owns (a home, savings, investments) minus what it owes. Two families with the same income can have very different wealth. Watch for where wealth matters in the two lives." } ] },
+        { type: "note", tone: "caution", html: "Both lives are made up. The stages and outcomes follow patterns sociologists have documented, especially Annette Lareau's research on parenting and social class and Melvin Oliver and Thomas Shapiro's research on wealth. They are illustrations, not data." }
+      ]
+    },
+    {
+      tab: "Life A",
+      title: "Life A: starting in the bottom fifth",
+      lede: "Make one choice at each stage. After each choice you will see what happened and what the starting point had to do with it. Some options are shown but not available; read why.",
+      blocks: [ blLifeBlock("A") ]
+    },
+    {
+      tab: "Life B",
+      title: "Life B: starting in the top fifth",
+      lede: "The same five stages, with a different starting point. Make one choice at each stage.",
+      blocks: [ blLifeBlock("B") ]
+    },
+    {
+      tab: "Side by side",
+      title: "The two menus, side by side",
+      lede: "For each stage, here are the options each life had and the one you picked. Look for options that only one life had.",
+      blocks: [ blSideBySide() ]
+    },
+    {
+      tab: "The real numbers",
+      panels: [
+        { title: "Where real children ended up",
+          lede: "Researchers used federal tax records for about 10 million American children born from 1980 to 1982. They compared each child's family income while growing up with the child's own income around age 30. Make a guess before you see each figure.",
+          blocks: [
+            { type: "guess", id: "gBottom", label: "Guess (bottom fifth to top fifth, per 100)",
+              prompt: "Out of 100 children raised in the bottom fifth, how many were in the top fifth as adults?",
+              min: 0, max: 50, step: 0.5, start: 25, answer: 7.5, close: 3,
+              format: { decimals: 1 },
+              answerText: "The real figure is 7.5 out of 100.",
+              reveal: [
+                { type: "bars", max: 40, caption: "Children raised in the bottom fifth: which fifth they were in around age 30, out of 100.", rows: [
+                  { label: "Bottom fifth", value: 33.7, display: "33.7" }, { label: "Second fifth", value: 28.0, display: "28.0" },
+                  { label: "Middle fifth", value: 18.4, display: "18.4" }, { label: "Fourth fifth", value: 12.3, display: "12.3" },
+                  { label: "Top fifth", value: 7.5, display: "7.5" } ] },
+                { type: "note", html: "If where you start made no difference, each bar would be 20. About one in three children raised in the bottom fifth stayed there." } ] },
+            { type: "guess", id: "gTop", label: "Guess (top fifth staying on top, per 100)",
+              prompt: "Out of 100 children raised in the top fifth, how many were still in the top fifth as adults?",
+              min: 0, max: 100, step: 0.5, start: 60, answer: 36.5, close: 5,
+              format: { decimals: 1 },
+              answerText: "The real figure is 36.5 out of 100.",
+              reveal: [
+                { type: "bars", max: 40, caption: "Children raised in the top fifth: which fifth they were in around age 30, out of 100.", rows: [
+                  { label: "Bottom fifth", value: 10.9, display: "10.9" }, { label: "Second fifth", value: 11.9, display: "11.9" },
+                  { label: "Middle fifth", value: 17.0, display: "17.0" }, { label: "Fourth fifth", value: 23.6, display: "23.6" },
+                  { label: "Top fifth", value: 36.5, display: "36.5" } ] },
+                { type: "note", html: "A child raised in the top fifth was almost five times as likely to end up in the top fifth as a child raised in the bottom fifth (36.5 compared with 7.5). Starting at the top did not guarantee staying there: about 1 in 10 fell to the bottom fifth." } ] }
+          ],
+          source: "Chetty, R., Hendren, N., Kline, P., and Saez, E. (2014). Where is the land of opportunity? The geography of intergenerational mobility in the United States. <em>Quarterly Journal of Economics</em>, 129(4), 1553-1623, Table II. Children born 1980 to 1982; parents' income 1996 to 2000; children's income 2011 to 2012." },
+        { title: "Who finishes college",
+          blocks: [
+            { type: "guess", id: "gDegree", label: "Guess (bachelor's by 24, lowest income quarter)",
+              prompt: "In 2022, 58 percent of young people from the highest-income quarter of families had a bachelor's degree by age 24. What percent of young people from the lowest-income quarter did?",
+              min: 0, max: 60, step: 1, start: 35, answer: 16, close: 4,
+              format: { suffix: "%" },
+              answerText: "The real figure is 16 percent.",
+              reveal: [
+                { type: "bars", max: 60, caption: "Bachelor's degree by age 24, by family income quarter, United States, 2022.", rows: [
+                  { label: "Lowest-income quarter", value: 16, display: "16%" }, { label: "Second quarter", value: 25, display: "25%" },
+                  { label: "Third quarter", value: 44, display: "44%" }, { label: "Highest-income quarter", value: 58, display: "58%" } ] },
+                { type: "note", html: "Young people from the highest-income families were more than three times as likely to have a bachelor's degree by 24. Starting college and finishing it are different steps, and money affects both." } ] }
+          ],
+          source: "Pell Institute for the Study of Opportunity in Higher Education. <em>Indicators of Higher Education Equity in the United States: 2024 Historical Trend Report</em>, Indicator 5a(i): estimated bachelor's degree attainment by age 24 by family income quartile (U.S. Census Bureau data)." },
+        { title: "Covering an emergency",
+          blocks: [
+            { type: "guess", id: "gEmergency", label: "Guess (adults who could cover $400 in cash)",
+              prompt: "Both lives faced a $2,000 car repair at age 29. In a 2025 Federal Reserve survey, what percent of U.S. adults said they could cover a much smaller emergency, $400, using cash or its equivalent?",
+              min: 0, max: 100, step: 1, start: 85, answer: 63, close: 5,
+              format: { suffix: "%" },
+              answerText: "The real figure is 63 percent.",
+              reveal: [ { type: "note", html: "About 37 percent of adults said they could not cover a $400 expense with cash or its equivalent. Many of them would borrow, sell something, or not be able to pay it at all. This is the situation Life A faced at age 29." } ] }
+          ],
+          source: "Board of Governors of the Federal Reserve System. Survey of Household Economics and Decisionmaking, 2025 survey: unexpected expenses data table, Report on the Economic Well-Being of U.S. Households." }
+      ]
+    },
+    {
+      tab: "Run 500 lives",
+      title: "Run 500 lives",
+      lede: "This simulation runs 500 made-up lives from a starting point you choose and reports where they ended up at age 40. Start with the settings below, click Run, then change one setting at a time and run again.",
+      blocks: [
+        { type: "note", tone: "caution", html: "<strong>This is a model, not a measurement.</strong> A person wrote its rules by hand, based on sociology research. Two numbers in it were adjusted so that, with Everything else set to Average, its results come close to the real figures from Chetty and others (2014). It is closest for poorer starts and furthest off for the richest start. When the model and the real figures disagree, trust the real figures." },
+        blSimBlock()
+      ]
+    }
+  ],
+
+  ending: {
+    mode: "discussion",
+    tab: "Talk about it",
+    title: "Questions for discussion",
+    intro: "Use specific stages and numbers from the lab in your answers.",
+    questions: [
+      "In the Side by side tab, Life B could take an unpaid internship at age 23 and Life A could not. Find one more stage where an option was open to one life and not the other. What about each family made the difference?",
+      "Both lives had the option to decide that math was not their subject at age 10. In Life A, the school moved you to a lower math group. In Life B, your parents stepped in and you caught up. Why did the same choice cost Life A more?",
+      "At age 29, both lives needed $2,000 for a car repair. Life A had about $300 in savings, and Life B had about $8,000 and parents who could help. Use this example to explain the difference between income and wealth.",
+      "Of every 100 children raised in the bottom fifth, 7.5 reached the top fifth by about age 30. Of every 100 raised in the top fifth, 36.5 stayed there. People often explain success as hard work and good choices. Using these numbers and the two lives, what does that explanation get right, and what does it leave out?",
+      "In the Run 500 lives tab, run the bottom fifth, then change one setting (for example, family wealth) and run it again. Which change moved the results the most? Since a person wrote the model's rules, what would you want to see in real data before believing that this setting matters that much?",
+      "The two lives differed in income, wealth, parents' schooling, and neighborhood. They did not have a race or a gender. Pick one stage of Life A. How might race or gender have changed what happened at that stage?"
+    ]
+  },
+
+  sources: [
+    "Lareau, A. (2011). <em>Unequal Childhoods: Class, Race, and Family Life</em> (2nd ed.). University of California Press.",
+    "Oliver, M. L., and Shapiro, T. M. (2006). <em>Black Wealth/White Wealth: A New Perspective on Racial Inequality</em> (2nd ed.). Routledge.",
+    "The two lives and the simulation in this lab are fictional. The simulation's rules were written by hand and calibrated against Chetty and others (2014), Table II."
+  ]
+};
+
+/* =================== END LAB CONFIG =================== */
+</script>
+
+<script>
+/* Lab engine. Authors edit the config above, not this script.
+   Everything the student does stays in this page until they copy or download it. */
+(function () {
+  'use strict';
+  var LAB = window.LAB;
+  var app = document.getElementById('app');
+  if (!LAB) { app.innerHTML = '<div class="panel"><p class="lede">This lab has no content yet.</p></div>'; return; }
+
+  /* ---------- small helpers ---------- */
+  var uid = 0;
+  function nid(p) { uid += 1; return (p || 'x') + uid; }
+  function el(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function txt(html) { var d = document.createElement('div'); d.innerHTML = html == null ? '' : String(html); return (d.textContent || '').replace(/\s+/g, ' ').trim(); }
+  function arr(x) { return x == null ? [] : (Array.isArray(x) ? x : [x]); }
+  function refOf(r) {
+    if (r == null) return null;
+    if (Array.isArray(r)) return { v: r[0], why: r[1] || '' };
+    if (typeof r === 'string') return { v: r, why: '' };
+    return { v: r.v, why: r.why || '' };
+  }
+  function isArguable(v) { return v === 'arguable' || v === '*'; }
+  function accepts(v, choice) { if (isArguable(v)) return true; return arr(v).indexOf(choice) !== -1; }
+  function fmtNum(n, f) {
+    f = f || {};
+    var d = f.decimals == null ? 0 : f.decimals;
+    var s = Number(n).toFixed(d);
+    if (f.thousands !== false) { var parts = s.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); s = parts.join('.'); }
+    return (f.prefix || '') + s + (f.suffix || '');
+  }
+  function fmtDiff(n, f) {
+    f = f || {};
+    if (f.diffSuffix != null) return fmtNum(n, { decimals: f.decimals, thousands: f.thousands, prefix: f.prefix }) + f.diffSuffix;
+    return fmtNum(n, f);
+  }
+  var seed = (function () { var m = /[?&]seed=(\d+)/.exec(location.search || ''); return m ? Number(m[1]) : null; })();
+  var rand = seed == null ? Math.random : (function (s) { return function () { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; }; })(seed);
+
+  /* ---------- registries ---------- */
+  var BLOCKS = [];        // interactive blocks in page order: {id, group, lines(), complete(), play(mode), questions()}
+  var RESULTS = {};       // cross-block results by block id
+  var SOURCES = [];       // {group, html}
+  var SECTIONS = [];      // {id, tab, node}
+  var dirty = false;      // typed text not yet copied or downloaded
+  var curSec = null;
+  function reg(kind, group) { var r = { kind: kind, group: group, sec: curSec }; BLOCKS.push(r); return r; }
+  function addSource(group, html) {
+    if (!html) return;
+    var t = txt(html);
+    for (var i = 0; i < SOURCES.length; i++) if (txt(SOURCES[i].html) === t) return;
+    SOURCES.push({ group: group || 'Other sources', html: html });
+  }
+
+  /* ---------- page chrome ---------- */
+  var subParts = [LAB.course, LAB.labLabel, LAB.institution].filter(Boolean);
+  document.title = [LAB.title, LAB.course, LAB.labLabel].filter(Boolean).join(' · ');
+  var head = el('header', 'top');
+  head.setAttribute('role', 'presentation');
+  head.innerHTML = '<h1>' + LAB.title + (subParts.length ? ' <span class="sub">' + subParts.join(' · ') + '</span>' : '') + '</h1>';
+  var themeBtn = el('button', 'theme-btn', 'Dark mode'); themeBtn.type = 'button';
+  themeBtn.addEventListener('click', function () { setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+  head.appendChild(themeBtn);
+  app.appendChild(head);
+  function setTheme(t) {
+    if (t === 'dark') { document.documentElement.setAttribute('data-theme', 'dark'); themeBtn.textContent = 'Light mode'; }
+    else { document.documentElement.removeAttribute('data-theme'); themeBtn.textContent = 'Dark mode'; }
+  }
+  if (LAB.theme === 'dark' || (LAB.theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) setTheme('dark');
+
+  if (LAB.intro) { var ip = el('div', 'panel'); ip.appendChild(el('div', 'lede', LAB.intro)); app.appendChild(ip); }
+
+  /* ---------- reveal and bar animation ---------- */
+  function animateBars(node) {
+    if (!node) return;
+    var fills = node.querySelectorAll('.bfill[data-w]');
+    Array.prototype.forEach.call(fills, function (b) {
+      if (b.offsetParent === null) return;
+      requestAnimationFrame(function () { b.style.width = b.getAttribute('data-w'); });
+    });
+  }
+  function reveal(node) { if (!node) return; node.style.display = 'block'; animateBars(node); }
+
+  /* ---------- static blocks ---------- */
+  function renderStatic(b, group) {
+    var n;
+    switch (b.type) {
+      case 'heading': return el('h3', '', b.text || b.html);
+      case 'text': return el('div', 'prose', b.html);
+      case 'note': n = el('div', 'note' + (b.tone === 'caution' ? ' caution' : ''), b.html); return n;
+      case 'source': addSource(group, b.html); return el('p', 'src', (b.label === false ? '' : '<strong>' + (b.label || 'Source') + ':</strong> ') + b.html);
+      case 'entries':
+        n = el('div', 'entries');
+        arr(b.items).forEach(function (it) {
+          var e = el('div', 'entry');
+          if (it.kicker) e.appendChild(el('div', 'kicker', it.kicker));
+          if (it.title) e.appendChild(el('div', 'title', it.title));
+          if (it.quote) e.appendChild(el('div', 'quote', it.quote));
+          if (it.body) e.appendChild(el('div', 'body', it.body));
+          arr(it.rows).forEach(function (r) { e.appendChild(el('div', 'row', '<span class="lab">' + r.label + '</span>' + r.html)); });
+          n.appendChild(e);
+          if (it.source) addSource(group, it.source);
+        });
+        if (b.source) addSource(group, b.source);
+        return n;
+      case 'stats':
+        n = el('div', 'stats');
+        arr(b.items).forEach(function (s) { n.appendChild(el('div', 'stat' + (s.tone ? ' ' + s.tone : ''), '<div class="v">' + s.value + '</div><div class="l">' + s.label + '</div>')); });
+        if (b.source) addSource(group, b.source);
+        return n;
+      case 'bars':
+        n = el('div', 'bars');
+        var max = b.max || Math.max.apply(null, arr(b.rows).map(function (r) { return Number(r.value) || 0; })) || 1;
+        arr(b.rows).forEach(function (r) {
+          var w = Math.max(0, Math.min(100, (Number(r.value) || 0) / max * 100));
+          var row = el('div', 'brow', '<span class="blabel">' + r.label + '</span><div class="btrack" aria-hidden="true"><div class="bfill' + (r.tone ? ' ' + r.tone : '') + '" data-w="' + w.toFixed(1) + '%"></div></div><span class="bval">' + (r.display != null ? r.display : r.value) + '</span>');
+          n.appendChild(row);
+        });
+        if (b.caption) { var wrap = el('div'); wrap.appendChild(n); wrap.appendChild(el('p', 'src', b.caption)); if (b.source) addSource(group, b.source); return wrap; }
+        if (b.source) addSource(group, b.source);
+        return n;
+    }
+    return null;
+  }
+
+  function renderBlocks(list, container, group) {
+    arr(list).forEach(function (b) {
+      if (typeof b === 'string') b = { type: 'text', html: b };
+      var node = renderStatic(b, group);
+      if (!node) node = renderInteractive(b, group);
+      if (node) container.appendChild(node);
+    });
+  }
+  function revealBox(blocks, group) {
+    var box = el('div', 'veiled');
+    var inner = el('div'); inner.style.display = 'flex'; inner.style.flexDirection = 'column'; inner.style.gap = '12px';
+    if (typeof blocks === 'string') inner.appendChild(el('div', 'note', blocks)); else renderBlocks(blocks, inner, group);
+    box.appendChild(inner);
+    return box;
+  }
+
+  /* ---------- interactive blocks ---------- */
+  function renderInteractive(b, group) {
+    switch (b.type) {
+      case 'check': return renderCheck(b, group);
+      case 'guess': return renderGuess(b, group);
+      case 'sort': return renderSort(b, group);
+      case 'trace': return renderTrace(b, group);
+      case 'pick': return renderPick(b, group);
+      case 'custom': return renderCustom(b, group);
+    }
+    var warn = el('div', 'note caution', 'Unknown block type: ' + b.type);
+    return warn;
+  }
+
+  /* check: one question, pick one, then the explanation */
+  function renderCheck(b, group) {
+    var id = b.id || nid('check');
+    var R = reg('check', b.recordAs || group);
+    var wrap = el('div', 'box');
+    wrap.appendChild(el('div', 'prompt', b.prompt));
+    var row = el('div', 'choices' + (b.layout === 'column' ? ' column' : ''));
+    row.setAttribute('role', 'group'); row.setAttribute('aria-label', txt(b.prompt).slice(0, 120));
+    var verdict = el('div', 'verdict'); verdict.setAttribute('aria-live', 'polite');
+    var rv = b.reveal || b.explain ? revealBox(b.reveal || b.explain, group) : null;
+    var state = { choice: null };
+    var hasAnswer = b.answer != null;
+    arr(b.options).forEach(function (o) {
+      var btn = el('button', 'opt', o.t); btn.type = 'button'; btn.setAttribute('data-choice', '1'); btn.setAttribute('aria-pressed', 'false');
+      btn.addEventListener('click', function () {
+        if (state.choice !== null) return;
+        state.choice = o.v;
+        Array.prototype.forEach.call(row.children, function (x, i) {
+          x.disabled = true;
+          var ov = arr(b.options)[i].v;
+          if (ov === o.v) { x.classList.add('chosen'); x.setAttribute('aria-pressed', 'true'); }
+          if (hasAnswer && accepts(b.answer, ov) && !isArguable(b.answer)) x.classList.add('answer');
+        });
+        if (hasAnswer) {
+          var right = accepts(b.answer, o.v);
+          verdict.innerHTML = right ? (b.right || 'Right.') : (b.wrong || ('The reference answer is ' + arr(b.options).filter(function (x) { return accepts(b.answer, x.v); }).map(function (x) { return txt(x.t); }).join(' or ') + '.' + (rv ? ' The note below explains why.' : '')));
+        } else if (b.after) verdict.innerHTML = b.after;
+        reveal(rv);
+        RESULTS[id] = { choice: o.v, correct: hasAnswer ? accepts(b.answer, o.v) : null };
+      });
+      row.appendChild(btn);
+    });
+    wrap.appendChild(row); wrap.appendChild(verdict); if (rv) wrap.appendChild(rv);
+    if (b.source) { addSource(group, b.source); wrap.appendChild(el('p', 'src', '<strong>Source:</strong> ' + b.source)); }
+    Object.assign(R, {
+      id: id,
+      lines: function () {
+        if (b.record === false) return [];
+        var label = b.label || txt(b.prompt);
+        var o = arr(b.options).filter(function (x) { return x.v === state.choice; })[0];
+        return [label + ': ' + (o ? txt(o.t) : 'not answered')];
+      },
+      complete: function () { return state.choice !== null; },
+      play: function (mode) {
+        if (state.choice !== null) return;
+        var opts = arr(b.options); var pickI = 0;
+        if (mode === 'random') pickI = Math.floor(rand() * opts.length);
+        if (mode === 'reference' && hasAnswer) opts.forEach(function (x, i) { if (accepts(b.answer, x.v)) pickI = i; });
+        row.children[pickI].click();
+      },
+      questions: function () { return ['Check: ' + txt(b.prompt) + ' Options: ' + arr(b.options).map(function (x) { return txt(x.t) + (hasAnswer && accepts(b.answer, x.v) && !isArguable(b.answer) ? ' [reference]' : ''); }).join(' | ')]; }
+    });
+    return wrap;
+  }
+
+  /* guess: commit to a number on a slider, then the real figure */
+  function renderGuess(b, group) {
+    var id = b.id || nid('guess');
+    var R = reg('guess', b.recordAs || group);
+    var f = b.format || {};
+    var wrap = el('div', 'box');
+    var pid = nid('gp');
+    var p = el('div', 'prompt', b.prompt); p.id = pid; wrap.appendChild(p);
+    var row = el('div', 'slider');
+    var input = document.createElement('input'); input.type = 'range'; input.min = b.min; input.max = b.max; input.step = b.step || 1; input.value = b.start != null ? b.start : Math.round((Number(b.min) + Number(b.max)) / 2);
+    input.setAttribute('aria-labelledby', pid);
+    var val = el('span', 'gval', fmtNum(input.value, f)); val.setAttribute('aria-hidden', 'true');
+    input.setAttribute('aria-valuetext', fmtNum(input.value, f));
+    var lock = el('button', 'btn', b.lockText || 'Lock in my guess'); lock.type = 'button'; lock.setAttribute('data-choice', '1');
+    row.appendChild(input); row.appendChild(val); row.appendChild(lock);
+    var verdict = el('div', 'verdict'); verdict.setAttribute('aria-live', 'polite');
+    var rv = b.reveal ? revealBox(b.reveal, group) : null;
+    var state = { guess: null };
+    input.addEventListener('input', function () { val.textContent = fmtNum(input.value, f); input.setAttribute('aria-valuetext', fmtNum(input.value, f)); });
+    lock.addEventListener('click', function () {
+      if (state.guess !== null) return;
+      var g = Number(input.value), a = Number(b.answer), d = g - a, close = b.close != null ? Number(b.close) : 0;
+      state.guess = g; lock.disabled = true; input.disabled = true;
+      var t = 'You guessed ' + fmtNum(g, f) + '. ' + (b.answerText || ('The answer is ' + fmtNum(a, f) + '.')) + ' ';
+      if (Math.abs(d) <= close) t += d === 0 ? 'Exactly right.' : (b.closeText || ('Within ' + fmtDiff(close, f) + '.'));
+      else t += 'You were ' + fmtDiff(Math.abs(d), f) + (d > 0 ? ' high.' : ' low.');
+      verdict.textContent = t;
+      RESULTS[id] = { guess: g, answer: a, diff: d };
+      reveal(rv);
+    });
+    wrap.appendChild(row); wrap.appendChild(verdict); if (rv) wrap.appendChild(rv);
+    if (b.source) { addSource(group, b.source); wrap.appendChild(el('p', 'src', '<strong>Source:</strong> ' + b.source)); }
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; return [(b.label || txt(b.prompt)) + ': ' + (state.guess === null ? 'not answered' : 'guessed ' + fmtNum(state.guess, f) + ' (answer ' + fmtNum(b.answer, f) + ')')]; },
+      complete: function () { return state.guess !== null; },
+      play: function (mode) {
+        if (state.guess !== null) return;
+        var lo = Number(b.min), hi = Number(b.max), st = Number(b.step || 1);
+        var v = mode === 'reference' ? Number(b.answer) : mode === 'random' ? lo + Math.round(rand() * (hi - lo) / st) * st : Number(input.value);
+        input.value = v; input.dispatchEvent(new Event('input')); lock.click();
+      },
+      questions: function () { return ['Guess: ' + txt(b.prompt) + ' Range ' + fmtNum(b.min, f) + ' to ' + fmtNum(b.max, f) + '. Answer ' + fmtNum(b.answer, f) + '.']; }
+    });
+    return wrap;
+  }
+
+  /* shared item renderer for sort and trace */
+  function buildItems(cfg, items, host, onItemDone, group) {
+    var dims = arr(cfg.dims);
+    var mode = cfg.reveal || 'item';
+    var state = items.map(function () { return {}; });
+    var itemLabel = cfg.itemLabel || 'Item';
+    items.forEach(function (it, i) {
+      var box = el('div', 'item');
+      var hd = el('div', 'head');
+      if (cfg.numbered !== false) hd.appendChild(el('span', 'num', itemLabel + ' ' + (i + 1)));
+      if (it.title) hd.appendChild(el('span', 'title', it.title));
+      box.appendChild(hd);
+      if (it.text) box.appendChild(el('div', 'text', it.text));
+      if (it.src) { box.appendChild(el('div', 'meta', '<strong>Source:</strong> ' + it.src)); addSource(cfg.sourceGroup || group, '<strong>' + itemLabel + ' ' + (i + 1) + '.</strong> ' + it.src); }
+      arr(it.meta).forEach(function (m) { box.appendChild(el('div', 'meta', '<strong>' + m.label + ':</strong> ' + m.html)); });
+      var refs = {};
+      dims.forEach(function (d) {
+        var dw = el('div', 'dim' + ((d.layout || cfg.layout) === 'column' ? '' : ' inline'));
+        var lab = el('div', 'dlabel', d.label || 'Your call');
+        dw.appendChild(lab);
+        var row = el('div', 'choices' + ((d.layout || cfg.layout) === 'column' ? ' column' : ''));
+        row.setAttribute('role', 'group');
+        row.setAttribute('aria-label', (it.title ? txt(it.title) + ', ' : itemLabel + ' ' + (i + 1) + ', ') + txt(d.label || 'Your call'));
+        arr(d.options).forEach(function (o) {
+          var btn = el('button', 'opt', o.t); btn.type = 'button'; btn.setAttribute('data-choice', '1'); btn.setAttribute('aria-pressed', 'false');
+          btn.addEventListener('click', function () {
+            if (state[i][d.key] != null) return;
+            state[i][d.key] = o.v;
+            Array.prototype.forEach.call(row.children, function (x, k) {
+              x.disabled = true;
+              if (arr(d.options)[k].v === o.v) { x.classList.add('chosen'); x.setAttribute('aria-pressed', 'true'); }
+            });
+            if (mode === 'each') showRef(i, d);
+            var all = dims.every(function (dd) { return state[i][dd.key] != null; });
+            if (all) {
+              if (mode !== 'each') dims.forEach(function (dd) { showRef(i, dd); });
+              if (it.note) { var nn = box.querySelector('.itemnote'); nn.innerHTML = '<strong>' + (cfg.noteLabel || 'Why this ' + itemLabel.toLowerCase() + ' is here.') + '</strong> ' + it.note; nn.style.display = 'block'; }
+              onItemDone(i);
+            }
+          });
+          row.appendChild(btn);
+        });
+        dw.appendChild(row);
+        var rf = el('div', 'ref'); rf.setAttribute('aria-live', 'polite');
+        refs[d.key] = rf;
+        box.appendChild(dw); box.appendChild(rf);
+      });
+      box.appendChild(el('div', 'itemnote'));
+      it._refs = refs; it._box = box;
+      host.appendChild(box);
+    });
+    function showRef(i, d) {
+      var it = items[i];
+      var r = refOf(it.ref && it.ref[d.key]);
+      var rf = it._refs[d.key];
+      var choice = state[i][d.key];
+      if (!r) { rf.style.display = 'none'; return; }
+      var opts = arr(d.options);
+      var optText = function (v) { var o = opts.filter(function (x) { return x.v === v; })[0]; return o ? txt(o.t) : String(v); };
+      var tag, tail;
+      if (isArguable(r.v)) { tag = '<span class="tag arg">arguable</span>'; tail = ' ' + (cfg.arguableText || 'Either call is defensible.'); }
+      else {
+        var refV = arr(r.v)[0];
+        var o = opts.filter(function (x) { return x.v === refV; })[0];
+        var tone = o && o.tone ? o.tone : (accepts(r.v, choice) ? 'good' : 'warn');
+        var refTxt = arr(r.v).map(optText).join(' or ');
+        tag = refTxt.length > 40
+          ? '<span class="tag ' + tone + '">' + (cfg.refPrefix || 'Reference') + ' answer marked above.</span>'
+          : '<span class="tag ' + tone + '">' + (cfg.refPrefix === false ? '' : (cfg.refPrefix || 'Reference') + ': ') + refTxt + '</span>';
+        tail = accepts(r.v, choice) ? ' You agreed.' : (opts.length === 2 ? ' You called it the other way.' : ' You chose ' + optText(choice).toLowerCase() + '.');
+      }
+      if (!isArguable(r.v)) Array.prototype.forEach.call(rf.previousSibling.querySelector('.choices').children, function (x, k) { if (accepts(r.v, opts[k].v)) x.classList.add('answer'); });
+      rf.innerHTML = tag + r.why + '<strong>' + tail + '</strong>';
+      rf.style.display = 'block';
+    }
+    return {
+      state: state,
+      score: function () { var s = 0, n = 0; items.forEach(function (it, i) { dims.forEach(function (d) { var r = refOf(it.ref && it.ref[d.key]); if (!r || state[i][d.key] == null) return; n++; if (accepts(r.v, state[i][d.key])) s++; }); }); return { agree: s, of: n }; },
+      itemLine: function (i) {
+        var it = items[i];
+        return (cfg.numbered !== false ? (i + 1) + '. ' : '') + (it.title ? txt(it.title) : itemLabel + ' ' + (i + 1)) + ': ' + dims.map(function (d) {
+          var v = state[i][d.key]; var o = arr(d.options).filter(function (x) { return x.v === v; })[0];
+          return (dims.length > 1 ? txt(d.label) + ' = ' : '') + (o ? txt(o.t) : 'not answered');
+        }).join('; ');
+      },
+      done: function (i) { return dims.every(function (d) { return state[i][d.key] != null; }); },
+      play: function (mode) {
+        items.forEach(function (it, i) {
+          dims.forEach(function (d) {
+            if (state[i][d.key] != null) return;
+            var opts = arr(d.options), k = 0;
+            if (mode === 'random') k = Math.floor(rand() * opts.length);
+            if (mode === 'reference') { var r = refOf(it.ref && it.ref[d.key]); if (r && !isArguable(r.v)) opts.forEach(function (x, j) { if (accepts(r.v, x.v)) k = j; }); }
+            var row = it._box.querySelectorAll('.choices')[dims.indexOf(d)];
+            row.children[k].click();
+          });
+        });
+      }
+    };
+  }
+
+  /* sort: every item gets a call on one or more dimensions */
+  function renderSort(b, group) {
+    var id = b.id || nid('sort');
+    var R = reg('sort', b.recordAs || group);
+    var wrap = el('div');
+    var items = arr(b.items);
+    var host = el('div');
+    var prog = el('p', 'progress'); prog.setAttribute('aria-live', 'polite');
+    var summary = el('div', 'veiled');
+    var api;
+    function update() {
+      var n = items.filter(function (_, i) { return api.done(i); }).length;
+      var unit = (b.itemPlural || ((b.itemLabel || 'item').toLowerCase() + 's'));
+      var t = n + ' of ' + items.length + ' ' + unit + ' ' + (b.progressVerb || 'done') + '.';
+      var sc0 = api.score(); RESULTS[id] = { state: api.state, agree: sc0.agree, of: sc0.of, done: n, total: items.length };
+      if (n === items.length) {
+        var nx = nextSectionName(wrap);
+        t += nx && b.pointNext !== false ? ' Go to the next tab, ' + nx + '.' : '';
+        if (b.summary && !summary.hasChildNodes()) {
+          var content = typeof b.summary === 'function' ? b.summary(RESULTS[id], api.state) : b.summary;
+          renderBlocks(typeof content === 'string' ? [{ type: 'note', html: content }] : content, summary, group);
+          reveal(summary);
+        }
+      }
+      prog.textContent = t;
+    }
+    api = buildItems(b, items, host, update, group);
+    if (b.prompt) wrap.appendChild(el('div', 'lede', b.prompt));
+    wrap.appendChild(host); wrap.appendChild(prog); wrap.appendChild(summary);
+    summary.style.marginTop = '12px'; prog.style.marginTop = '10px';
+    setTimeout(update, 0);
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; var L = items.map(function (_, i) { return api.itemLine(i); }); var sc = api.score(); if (b.recordScore !== false && sc.of) L.push('Matched the reference call on ' + sc.agree + ' of ' + sc.of + ' calls (arguable calls count as matches).'); return L; },
+      complete: function () { return items.every(function (_, i) { return api.done(i); }); },
+      play: function (mode) { api.play(mode); },
+      questions: function () {
+        var out = [];
+        arr(b.dims).forEach(function (d) { out.push('Sort dimension: ' + txt(d.label || 'Your call') + '. Options: ' + arr(d.options).map(function (o) { return txt(o.t); }).join(' | ')); });
+        items.forEach(function (it, i) {
+          out.push('  ' + (b.itemLabel || 'Item') + ' ' + (i + 1) + ': ' + txt(it.title || it.text) + '. Reference: ' + arr(b.dims).map(function (d) { var r = refOf(it.ref && it.ref[d.key]); if (!r) return 'no reference'; if (isArguable(r.v)) return 'arguable'; return arr(r.v).map(function (v) { var o = arr(d.options).filter(function (x) { return x.v === v; })[0]; return o ? txt(o.t) : v; }).join(' or '); }).join(' / '));
+        });
+        return out;
+      }
+    });
+    return wrap;
+  }
+
+  /* trace: choose one scenario, then decide for each row (system, stage, actor) */
+  function renderTrace(b, group) {
+    var id = b.id || nid('trace');
+    var R = reg('trace', b.recordAs || group);
+    var wrap = el('div');
+    if (b.prompt) wrap.appendChild(el('div', 'lede', b.prompt));
+    var pick = el('div', 'choices' + (b.layout === 'column' ? ' column' : ''));
+    pick.setAttribute('role', 'group'); pick.setAttribute('aria-label', b.chooseLabel || 'Choose a scenario');
+    var stage = el('div', 'veiled');
+    var traces = [];
+    var current = null;
+    arr(b.scenarios).forEach(function (sc, si) {
+      var btn = el('button', 'opt', sc.title); btn.type = 'button'; btn.setAttribute('data-choice', '1');
+      btn.addEventListener('click', function () { start(si); });
+      pick.appendChild(btn);
+    });
+    function start(si) {
+      var sc = arr(b.scenarios)[si];
+      Array.prototype.forEach.call(pick.children, function (x, k) { x.disabled = true; x.classList.toggle('chosen', k === si); });
+      stage.innerHTML = '';
+      var head = el('div', 'item');
+      head.innerHTML = '<div class="head"><span class="num">' + (b.scenarioLabel || 'Your scenario') + '</span><span class="title">' + sc.title + '</span></div>' + (sc.text ? '<div class="text">' + sc.text + '</div>' : '');
+      if (sc.src) { head.appendChild(el('div', 'meta', '<strong>Source:</strong> ' + sc.src)); addSource(group, sc.src); }
+      stage.appendChild(head);
+      var rows = arr(b.rows).map(function (r) { return { title: r.name, text: r.detail, ref: (function () { var o = {}; o.call = sc.ref && sc.ref[r.key]; return o; })() }; });
+      var host = el('div'); host.style.marginTop = '12px';
+      var sumBox = el('div', 'veiled'); sumBox.style.marginTop = '12px';
+      var cfg = { dims: [{ key: 'call', label: b.callLabel || 'Your call', options: b.options }], itemLabel: b.rowLabel || 'System', numbered: b.numbered === true, reveal: 'item', refPrefix: b.refPrefix, layout: b.layout };
+      var api = buildItems(cfg, rows, host, function () {
+        if (!rows.every(function (_, i) { return api.done(i); })) return;
+        var sc2 = api.score();
+        var rec = { title: txt(sc.title), lines: rows.map(function (_, i) { return api.itemLine(i); }), agree: sc2.agree, of: sc2.of };
+        traces.push(rec); current.done = true;
+        RESULTS[id] = { traces: traces };
+        var content = [];
+        if (sc.note) content.push({ type: 'note', html: '<strong>' + (b.noteLabel || 'Why this scenario is here.') + '</strong> ' + sc.note });
+        if (b.summary) { var s = typeof b.summary === 'function' ? b.summary(rec, sc) : b.summary; content = content.concat(typeof s === 'string' ? [{ type: 'note', html: s }] : s); }
+        renderBlocks(content, sumBox, group);
+        if (b.repeat !== false && traces.length < arr(b.scenarios).length) {
+          var again = el('button', 'btn secondary', b.againText || 'Trace another scenario'); again.type = 'button';
+          again.addEventListener('click', function () { Array.prototype.forEach.call(pick.children, function (x) { x.disabled = false; x.classList.remove('chosen'); }); stage.style.display = 'none'; current = null; pick.scrollIntoView({ block: 'start' }); });
+          var r = el('div', 'btnrow'); r.appendChild(again); sumBox.appendChild(r);
+        }
+        reveal(sumBox);
+      }, group);
+      current = { api: api, done: false, si: si };
+      stage.appendChild(host); stage.appendChild(sumBox);
+      reveal(stage);
+    }
+    wrap.appendChild(pick); wrap.appendChild(stage); stage.style.marginTop = '12px';
+    Object.assign(R, {
+      id: id,
+      lines: function () {
+        if (b.record === false) return [];
+        if (!traces.length) return ['No scenario traced.'];
+        var L = [];
+        traces.forEach(function (t, k) { L.push('Scenario ' + (k + 1) + ': ' + t.title + ' (matched the reference on ' + t.agree + ' of ' + t.of + ')'); t.lines.forEach(function (x) { L.push('   ' + x); }); });
+        return L;
+      },
+      complete: function () { return traces.length >= (b.minTraces || 1); },
+      play: function (mode) {
+        if (traces.length >= (b.minTraces || 1)) return;
+        if (!current || current.done) {
+          var used = traces.map(function (t) { return t.title; });
+          var free = []; arr(b.scenarios).forEach(function (sc, j) { if (used.indexOf(txt(sc.title)) === -1) free.push(j); });
+          if (!free.length) return;
+          var k = mode === 'random' ? free[Math.floor(rand() * free.length)] : free[0];
+          start(k);
+        }
+        current.api.play(mode);
+      },
+      questions: function () {
+        var out = ['Trace' + (b.prompt ? ': ' + txt(b.prompt) : '') + '. Options per row: ' + arr(b.options).map(function (o) { return txt(o.t); }).join(' | ')];
+        arr(b.scenarios).forEach(function (sc) { out.push('  Scenario: ' + txt(sc.title) + '. Reference: ' + arr(b.rows).map(function (r) { var rf = refOf(sc.ref && sc.ref[r.key]); if (!rf) return txt(r.name) + ' = no reference'; var o = arr(b.options).filter(function (x) { return x.v === rf.v; })[0]; return txt(r.name) + ' = ' + (isArguable(rf.v) ? 'arguable' : (o ? txt(o.t) : rf.v)); }).join('; ')); });
+        return out;
+      }
+    });
+    return wrap;
+  }
+
+  /* pick: choose exactly n of the options (a budget, a triage), then see what each choice did */
+  function renderPick(b, group) {
+    var id = b.id || nid('pick');
+    var R = reg('pick', b.recordAs || group);
+    var n = b.n || 1;
+    var wrap = el('div', 'box');
+    wrap.appendChild(el('div', 'prompt', b.prompt));
+    var row = el('div', 'choices column');
+    var count = el('span', 'progress', '0 of ' + n + ' picked'); count.setAttribute('aria-live', 'polite');
+    var confirm = el('button', 'btn', b.confirmText || 'Confirm my choices'); confirm.type = 'button'; confirm.disabled = true; confirm.setAttribute('data-confirm', '1');
+    var results = el('div', 'veiled');
+    var sel = [], done = false;
+    arr(b.options).forEach(function (o, i) {
+      var btn = el('button', 'opt', '<strong>' + o.t + '</strong>' + (o.d ? '<br><span style="font-weight:500">' + o.d + '</span>' : '')); btn.type = 'button'; btn.setAttribute('aria-pressed', 'false'); btn.setAttribute('data-toggle', '1');
+      btn.addEventListener('click', function () {
+        if (done) return;
+        var k = sel.indexOf(i);
+        if (k !== -1) { sel.splice(k, 1); btn.classList.remove('toggled'); btn.setAttribute('aria-pressed', 'false'); }
+        else if (sel.length < n) { sel.push(i); btn.classList.add('toggled'); btn.setAttribute('aria-pressed', 'true'); }
+        count.textContent = sel.length + ' of ' + n + ' picked';
+        confirm.disabled = sel.length !== n;
+      });
+      row.appendChild(btn);
+    });
+    confirm.addEventListener('click', function () {
+      if (done || sel.length !== n) return;
+      done = true; confirm.disabled = true;
+      Array.prototype.forEach.call(row.children, function (x) { x.disabled = true; });
+      var list = [];
+      arr(b.options).forEach(function (o, i) {
+        var chosen = sel.indexOf(i) !== -1;
+        var r = chosen ? o.ifChosen : o.ifNot;
+        if (r) list.push({ type: 'note', html: '<strong>' + o.t + (chosen ? ' (chosen).' : ' (not chosen).') + '</strong> ' + r });
+      });
+      if (b.reveal) list = list.concat(typeof b.reveal === 'string' ? [{ type: 'note', html: b.reveal }] : b.reveal);
+      renderBlocks(list, results, group);
+      results.style.display = 'flex'; results.style.flexDirection = 'column'; results.style.gap = '10px';
+      animateBars(results);
+      RESULTS[id] = { chosen: sel.slice() };
+    });
+    var br = el('div', 'btnrow'); br.appendChild(count); br.appendChild(confirm);
+    wrap.appendChild(row); wrap.appendChild(br); wrap.appendChild(results);
+    Object.assign(R, {
+      id: id,
+      lines: function () { if (b.record === false) return []; return [(b.label || txt(b.prompt)) + ': ' + (done ? sel.map(function (i) { return txt(arr(b.options)[i].t); }).join('; ') : 'not answered')]; },
+      complete: function () { return done; },
+      play: function (mode) {
+        if (done) return;
+        var idx = arr(b.options).map(function (_, i) { return i; });
+        if (mode === 'random') idx.sort(function () { return rand() - 0.5; });
+        sel.slice().forEach(function (i) { row.children[i].click(); });
+        idx.slice(0, n).forEach(function (i) { row.children[i].click(); });
+        confirm.click();
+      },
+      questions: function () { return ['Pick ' + n + ': ' + txt(b.prompt) + ' Options: ' + arr(b.options).map(function (o) { return txt(o.t); }).join(' | ')]; }
+    });
+    return wrap;
+  }
+
+  /* custom: author-written interaction (a simulation, a drag task). See references/blocks.md. */
+  function renderCustom(b, group) {
+    var id = b.id || nid('custom');
+    var R = reg('custom', b.recordAs || group);
+    var wrap = el('div');
+    var lines = [], complete = false, player = null;
+    var api = {
+      el: wrap, id: id, random: rand, results: RESULTS, fmt: fmtNum,
+      record: function (x) { lines = arr(x).map(String); },
+      done: function () { complete = true; },
+      result: function (obj) { RESULTS[id] = obj; },
+      reveal: reveal, animateBars: animateBars, html: el, text: txt,
+      render: function (blocks, into) { renderBlocks(blocks, into || wrap, group); },
+      onAutoplay: function (fn) { player = fn; }
+    };
+    try { b.render(wrap, api); } catch (e) { wrap.appendChild(el('div', 'note caution', 'This part of the lab did not load: ' + e.message)); if (window.console) console.error(e); }
+    if (b.source) addSource(group, b.source);
+    Object.assign(R, {
+      id: id,
+      lines: function () { return b.record === false ? [] : (lines.length ? lines : [(b.label || 'Activity') + ': not completed']); },
+      complete: function () { return b.required === false || complete; },
+      play: function (mode) { if (player && !complete) player(mode); },
+      questions: function () { return arr(b.questions).map(function (q) { return 'Custom: ' + txt(q); }); }
+    });
+    return wrap;
+  }
+
+  /* ---------- sections and tabs ---------- */
+  var sections = arr(LAB.sections).slice();
+  var E = LAB.ending || { mode: 'none' };
+  if (E.mode && E.mode !== 'none') sections.push({ id: 'sec-ending', tab: E.tab || defaultEndingTab(E.mode), ending: true });
+  var sourcesAs = LAB.sourcesAs || 'tab';
+  if (sourcesAs === 'tab') sections.push({ id: 'sec-sources', tab: 'Sources', sources: true });
+  function defaultEndingTab(m) { return m === 'response' ? 'Your response sheet' : m === 'forum' ? 'Your forum post' : 'Talk about it'; }
+
+  var tablist = null;
+  if (sections.length > 1) { tablist = el('div', 'tabs'); tablist.setAttribute('role', 'tablist'); tablist.setAttribute('aria-label', 'Lab sections'); app.appendChild(tablist); }
+
+  sections.forEach(function (s, i) {
+    s.id = s.id || ('sec-' + (i + 1));
+    var node = el('div', 'section' + (i === 0 ? ' active' : '')); node.id = s.id;
+    if (tablist) {
+      var t = el('button', 'tab', s.tab); t.type = 'button'; t.id = 'tab-' + s.id;
+      t.setAttribute('role', 'tab'); t.setAttribute('aria-controls', s.id); t.setAttribute('aria-selected', i === 0 ? 'true' : 'false'); t.tabIndex = i === 0 ? 0 : -1;
+      t.addEventListener('click', function () { activate(s.id, true); });
+      t.addEventListener('keydown', function (e) {
+        var tabs = Array.prototype.slice.call(tablist.children), j = tabs.indexOf(t), k = null;
+        if (e.key === 'ArrowRight') k = (j + 1) % tabs.length; else if (e.key === 'ArrowLeft') k = (j - 1 + tabs.length) % tabs.length; else if (e.key === 'Home') k = 0; else if (e.key === 'End') k = tabs.length - 1;
+        if (k !== null) { e.preventDefault(); tabs[k].focus(); tabs[k].click(); }
+      });
+      tablist.appendChild(t);
+      node.setAttribute('role', 'tabpanel'); node.setAttribute('aria-labelledby', t.id); node.tabIndex = -1;
+    }
+    SECTIONS.push({ id: s.id, tab: s.tab, node: node });
+    app.appendChild(node);
+  });
+
+  function activate(id, fromTab) {
+    SECTIONS.forEach(function (s) {
+      var on = s.id === id;
+      s.node.classList.toggle('active', on);
+      var t = document.getElementById('tab-' + s.id);
+      if (t) { t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; }
+    });
+    var cur = document.getElementById(id);
+    animateBars(cur);
+    if (!fromTab && cur) { cur.focus({ preventScroll: true }); }
+    if (!fromTab && tablist) tablist.scrollIntoView({ block: 'start' });
+  }
+  function nextSectionName(node) {
+    var sec = node.closest ? node.closest('.section') : null;
+    if (!sec) return null;
+    for (var i = 0; i < SECTIONS.length - 1; i++) if (SECTIONS[i].id === sec.id) return SECTIONS[i + 1].tab;
+    return null;
+  }
+
+  /* fill content sections (ending and sources last, after all sources are known) */
+  sections.forEach(function (s, i) {
+    if (s.ending || s.sources) return;
+    var node = SECTIONS[i].node;
+    curSec = s.id;
+    var group = s.recordAs || s.tab || s.title || ('Part ' + (i + 1));
+    var panels = s.panels || [{ title: s.title, lede: s.lede, blocks: s.blocks }];
+    panels.forEach(function (p) {
+      var pn = el('div', 'panel');
+      if (p.title) pn.appendChild(el('h2', '', p.title));
+      if (p.lede) pn.appendChild(el('div', 'lede', p.lede));
+      renderBlocks(p.blocks, pn, p.recordAs || group);
+      if (p.source) { addSource(group, p.source); pn.appendChild(el('p', 'src', '<strong>Sources:</strong> ' + p.source)); }
+      node.appendChild(pn);
+    });
+    addNext(node, i);
+  });
+  function addNext(node, i) {
+    if (LAB.nextButtons === false || !tablist || i >= SECTIONS.length - 1) return;
+    var nx = SECTIONS[i + 1];
+    if (nx.id === 'sec-sources') return;
+    var r = el('div', 'nextrow'); var b = el('button', 'btn secondary', 'Next: ' + nx.tab); b.type = 'button';
+    b.addEventListener('click', function () { activate(nx.id, false); });
+    r.appendChild(b); node.appendChild(r);
+  }
+
+  /* ---------- ending ---------- */
+  var ending = { lines: null, build: null, fields: [] };
+  if (E.mode && E.mode !== 'none') {
+    var eIdx = SECTIONS.map(function (s) { return s.id; }).indexOf('sec-ending');
+    var enode = SECTIONS[eIdx].node;
+    var ep = el('div', 'panel');
+    enode.appendChild(ep);
+    if (E.mode === 'discussion') {
+      ep.appendChild(el('h2', '', E.title || 'Talk about it'));
+      if (E.intro) ep.appendChild(el('div', 'lede', E.intro));
+      var ul = el('ul', 'qs');
+      arr(E.questions).forEach(function (q) { ul.appendChild(el('li', '', typeof q === 'string' ? q : q.prompt)); });
+      ep.appendChild(ul);
+    } else {
+      buildWritten(ep, E);
+    }
+  }
+  function questionsOf(E) { return arr(E.questions).map(function (q, i) { return typeof q === 'string' ? { prompt: q, id: 'q' + (i + 1) } : q; }); }
+  function buildWritten(ep, E) {
+    var forum = E.mode === 'forum';
+    ep.appendChild(el('h2', '', E.title || (forum ? 'Your forum post' : 'Your response sheet')));
+    var dest = E.destination || (forum ? 'the discussion forum' : 'the assignment submission');
+    var intro = E.intro || (forum
+      ? 'Write your post in the boxes below. Then use the button at the bottom to put it together as one block of text, and paste that text into ' + dest + '.'
+      : 'Answer the questions below in complete sentences. Then use the button at the bottom to put your answers and your work from this lab into one block of text, and paste that text into ' + dest + (E.due ? ' ' + E.due : '') + '.');
+    ep.appendChild(el('div', 'lede', intro + ' Your answers stay on this page and are not sent anywhere until you paste them. If you close or reload the page, what you typed is lost, so submit before you leave.'));
+    if (forum && E.forum) {
+      var fd = el('div', 'forum'); var dl = el('dl');
+      [['What to post', E.forum.post], ['Replies', E.forum.reply], ['Due', E.forum.due]].forEach(function (p) { if (p[1]) { dl.appendChild(el('dt', '', p[0])); dl.appendChild(el('dd', '', p[1])); } });
+      fd.appendChild(dl); ep.appendChild(fd);
+    }
+    var nameIn = null;
+    if (E.name !== false) {
+      var nl = el('label', 'field'); nl.appendChild(el('span', 'qt', E.nameLabel || 'Your name'));
+      nameIn = document.createElement('input'); nameIn.type = 'text'; nameIn.autocomplete = 'name'; nameIn.placeholder = 'First and last name';
+      nl.appendChild(nameIn); ep.appendChild(nl);
+    }
+    var qs = questionsOf(E);
+    qs.forEach(function (q, i) {
+      var lab = el('label', 'field');
+      lab.appendChild(el('span', 'qt', (E.numbered === false ? '' : (i + 1) + '. ') + q.prompt));
+      var ta = document.createElement('textarea'); ta.id = 'ans-' + (q.id || i);
+      if (q.hint) { var hid = nid('h'); var hs = el('span', 'qh', q.hint); hs.id = hid; lab.appendChild(hs); ta.setAttribute('aria-describedby', hid); }
+      lab.appendChild(ta);
+      var wc = el('div', 'wc', '0 words'); wc.setAttribute('aria-hidden', 'true'); lab.appendChild(wc);
+      ta.addEventListener('input', function () { dirty = true; var n = (ta.value.trim().match(/\S+/g) || []).length; wc.textContent = n + (n === 1 ? ' word' : ' words'); });
+      ep.appendChild(lab);
+      ending.fields.push({ q: q, ta: ta, i: i });
+    });
+    var br = el('div', 'btnrow');
+    var build = el('button', 'btn', forum ? 'Put my post together' : 'Assemble my submission'); build.type = 'button';
+    var copy = el('button', 'btn secondary', 'Copy to clipboard'); copy.type = 'button'; copy.disabled = true;
+    br.appendChild(build); br.appendChild(copy);
+    var dl2 = null;
+    if (E.download) { dl2 = el('button', 'btn secondary', 'Download as a text file'); dl2.type = 'button'; dl2.disabled = true; br.appendChild(dl2); }
+    ep.appendChild(br);
+    var note = el('p', 'verdict'); note.setAttribute('aria-live', 'polite'); ep.appendChild(note);
+    var out = el('div', 'out'); var ota = document.createElement('textarea'); ota.readOnly = true; ota.setAttribute('aria-label', forum ? 'Your assembled post' : 'Your assembled submission'); out.appendChild(ota); ep.appendChild(out);
+    if (nameIn) nameIn.addEventListener('input', function () { dirty = true; });
+
+    function assemble() {
+      var L = [];
+      var name = nameIn ? (nameIn.value.trim() || '(no name entered)') : null;
+      if (forum) {
+        if (E.postTitle) L.push(E.postTitle, '');
+        ending.fields.forEach(function (f) {
+          var a = f.ta.value.trim();
+          if (E.labels !== false && qs.length > 1) L.push((f.q.short ? f.q.short : 'Question ' + (f.i + 1)) + '.');
+          L.push(a || '(blank)'); L.push('');
+        });
+        if (E.includeWork) { L.push('My work in the lab:'); workLines().forEach(function (x) { L.push(x); }); L.push(''); }
+        if (name && E.signName !== false) L.push(name);
+      } else {
+        L.push([LAB.course, LAB.labLabel, LAB.title].filter(Boolean).join(' · ').toUpperCase());
+        if (name) L.push('Name: ' + name);
+        L.push('Assembled: ' + new Date().toLocaleString());
+        L.push('');
+        if (E.includeWork !== false) { var w = workLines(); if (w.length) { L.push('YOUR WORK IN THE LAB'); w.forEach(function (x) { L.push(x); }); L.push(''); } }
+        ending.fields.forEach(function (f) {
+          L.push('QUESTION ' + (f.i + 1) + (f.q.short ? ' (' + f.q.short + ')' : ''));
+          if (E.includePrompts) L.push(txt(f.q.prompt));
+          L.push(f.ta.value.trim() || '(blank)'); L.push('');
+        });
+      }
+      return L.join('\n').replace(/\n+$/, '\n');
+    }
+    ending.build = assemble;
+    build.addEventListener('click', function () {
+      ota.value = assemble();
+      out.style.display = 'block'; copy.disabled = false; if (dl2) dl2.disabled = false;
+      var blanks = ending.fields.filter(function (f) { return !f.ta.value.trim(); }).length;
+      var unfinished = BLOCKS.filter(function (bk) { return !bk.complete(); }).length;
+      var msg = [];
+      if (blanks) msg.push(blanks + ' of ' + ending.fields.length + ' questions are still blank.');
+      if (unfinished && E.includeWork !== false && !forum) msg.push('Some parts of the lab are not finished yet, and they show as not answered.');
+      note.textContent = msg.length ? 'Assembled. ' + msg.join(' ') + ' You can finish them and assemble again.' : (forum ? 'Done. Copy the text below and paste it into ' + dest + '.' : 'Assembled. Copy the text below and paste it into ' + dest + '.');
+    });
+    copy.addEventListener('click', function () {
+      var okMsg = 'Copied. Paste it into ' + dest + '.';
+      var failMsg = 'Your browser blocked automatic copying. The text is selected, so press Ctrl+C (or Cmd+C on a Mac) to copy it.';
+      ota.focus(); ota.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      function done(v) { note.textContent = v ? okMsg : failMsg; if (v) dirty = false; }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ota.value).then(function () { done(true); }, function () { done(ok); });
+      else done(ok);
+    });
+    if (dl2) dl2.addEventListener('click', function () {
+      try {
+        var blob = new Blob([ota.value], { type: 'text/plain' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+        a.download = (E.fileName || (LAB.labLabel || LAB.title || 'lab').replace(/[^A-Za-z0-9]+/g, '_')) + '_' + ((nameIn && nameIn.value.trim()) || 'answers').replace(/[^A-Za-z0-9]+/g, '_') + '.txt';
+        document.body.appendChild(a); a.click(); a.remove(); dirty = false;
+        note.textContent = 'Downloaded. If nothing appeared, use the copy button instead.';
+      } catch (e) { note.textContent = 'This browser blocked the download. Use the copy button instead.'; }
+    });
+  }
+  function workLines() {
+    var L = [], lastGroup = null;
+    BLOCKS.forEach(function (bk) {
+      var lines = bk.lines(); if (!lines.length) return;
+      if (bk.group !== lastGroup) { if (lastGroup !== null) L.push(''); L.push(txt(bk.group).toUpperCase()); lastGroup = bk.group; }
+      lines.forEach(function (x) { L.push(x); });
+    });
+    return L;
+  }
+  window.addEventListener('beforeunload', function (e) { if (dirty && LAB.warnOnLeave !== false) { e.preventDefault(); e.returnValue = ''; return ''; } });
+
+  /* ---------- sources ---------- */
+  arr(LAB.sources).forEach(function (s) { addSource(typeof s === 'string' ? 'Readings and other sources' : (s.group || 'Readings and other sources'), typeof s === 'string' ? s : s.html); });
+  function renderSources(container) {
+    var groups = [];
+    SOURCES.forEach(function (s) { var g = groups.filter(function (x) { return x.name === s.group; })[0]; if (!g) { g = { name: s.group, items: [] }; groups.push(g); } g.items.push(s.html); });
+    var box = el('div', 'srclist');
+    groups.forEach(function (g) { box.appendChild(el('h3', '', g.name)); g.items.forEach(function (h) { box.appendChild(el('p', '', h)); }); });
+    if (LAB.retrieved) box.appendChild(el('p', 'src', 'Sources retrieved ' + LAB.retrieved + '.'));
+    container.appendChild(box);
+  }
+  if (SOURCES.length || LAB.retrieved) {
+    var sp = el('div', 'panel'); sp.appendChild(el('h2', '', 'Sources'));
+    renderSources(sp);
+    if (sourcesAs === 'tab') { SECTIONS[SECTIONS.length - 1].node.appendChild(sp); }
+    else app.appendChild(sp);
+  } else if (sourcesAs === 'tab') {
+    var last = SECTIONS.pop(); last.node.remove(); var lt = document.getElementById('tab-' + last.id); if (lt) lt.remove();
+  }
+
+  /* ---------- footer ---------- */
+  var foot = el('footer');
+  foot.setAttribute('role', 'contentinfo');
+  foot.innerHTML = LAB.footer || ('Built for ' + ([LAB.course, LAB.institution].filter(Boolean).join(', ') || 'this course') + '.' + (LAB.retrieved ? ' Sources retrieved ' + LAB.retrieved + '.' : '') + (['response', 'forum'].indexOf(E.mode) !== -1 ? ' Your clicks and answers stay on this page. Nothing is recorded or sent anywhere unless you copy or download it yourself.' : ' Your clicks stay on this page. Nothing is recorded or sent anywhere.'));
+  app.appendChild(foot);
+
+  /* ---------- small screen notice ---------- */
+  if (window.innerWidth < 740 && LAB.smallScreenNotice !== false) {
+    var nb = el('div', 'notice'); nb.setAttribute('role', 'region'); nb.setAttribute('aria-label', 'Display notice');
+    nb.appendChild(el('span', '', 'You are on a small screen. This page works here, but it is easier to use on a computer.'));
+    var ok = el('button', '', 'OK'); ok.type = 'button'; ok.addEventListener('click', function () { nb.remove(); }); nb.appendChild(ok);
+    document.body.insertBefore(nb, document.body.firstChild);
+  }
+
+  requestAnimationFrame(function () { animateBars(SECTIONS[0] && SECTIONS[0].node); });
+
+  /* ---------- test and review hooks (used by scripts/check_lab.py) ---------- */
+  window.__LAB = {
+    config: LAB,
+    sections: function () { return SECTIONS.map(function (s) { return { id: s.id, tab: s.tab }; }); },
+    activate: function (id) { activate(id, true); },
+    blocks: function () { return BLOCKS.map(function (b) { return { id: b.id, kind: b.kind, group: txt(b.group), complete: b.complete() }; }); },
+    incomplete: function () { return BLOCKS.filter(function (b) { return !b.complete(); }).map(function (b) { return b.id + ' (' + b.kind + ')'; }); },
+    autoplay: function (mode) {
+      for (var pass = 0; pass < 4; pass++) SECTIONS.forEach(function (s) { activate(s.id, true); BLOCKS.forEach(function (b) { if (b.sec !== s.id || !b.play) return; try { b.play(mode || 'first'); } catch (e) { console.error('autoplay ' + b.id + ': ' + e.message); } }); });
+      activate(SECTIONS[0].id, true);
+    },
+    fillEnding: function (prefix) { ending.fields.forEach(function (f) { f.ta.value = (prefix || 'Test answer') + ' ' + (f.i + 1); f.ta.dispatchEvent(new Event('input')); }); var n = app.querySelector('input[autocomplete=name]'); if (n) n.value = 'Test Student'; },
+    submission: function () { return ending.build ? ending.build() : null; },
+    endingQuestions: function () { return ending.fields.map(function (f) { return { prompt: txt(f.q.prompt), short: f.q.short || null }; }); },
+    results: RESULTS,
+    sources: function () { return SOURCES.map(function (s) { return s.group + ': ' + txt(s.html); }); },
+    questionList: function () {
+      var L = ['# Question list: ' + txt(LAB.title), ''];
+      var lastG = null;
+      BLOCKS.forEach(function (b) { var g = txt(b.group); if (g !== lastG) { L.push('', '## ' + g); lastG = g; } b.questions().forEach(function (q) { L.push('- ' + q); }); });
+      if (E.mode && E.mode !== 'none') {
+        L.push('', '## ' + (E.tab || defaultEndingTab(E.mode)) + ' (' + E.mode + ')');
+        arr(E.questions).forEach(function (q, i) { var p = typeof q === 'string' ? q : q.prompt; L.push((i + 1) + '. ' + txt(p) + (q.hint ? ' [' + txt(q.hint) + ']' : '')); });
+      }
+      return L.join('\n');
+    },
+    seed: seed
+  };
+})();
+</script>
+</body>
+</html>
