@@ -211,63 +211,83 @@
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab01_WhoCounts.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab01_WhoCounts.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab02_FollowTheHarm.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab02_FollowTheHarm.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab03_FraudTriangle.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab03_SutherlandsCount.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab04_SanctionThreat.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab04_FraudTriangle.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab05_DenyingTheGuiltyMind.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab05_SanctionThreat.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab06_DiffusionOfFraud.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab06_StrainOnTheRecord.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab07_PonziMachine.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab07_DenyingTheGuiltyMind.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab08_PriceOfADeath.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab08_DiffusionOfFraud.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab09_ECHO.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab09_PonziMachine.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab10_ThePaycheck.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab10_FraudAbuseOrNeither.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab11_SwapOrBet.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab11_PriceOfADeath.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab12_TheDeal.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab12_ECHO.html</loc>
+    <lastmod>2026-10-25</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab13_ThePaycheck_National.html</loc>
+    <lastmod>2026-10-25</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab13_ThePaycheck_Texas.html</loc>
+    <lastmod>2026-10-25</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab14_SwapOrBet.html</loc>
+    <lastmod>2026-10-25</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://membrezweiler.com/labs/SOCL4733_Lab15_TheDeal.html</loc>
+    <lastmod>2026-10-25</lastmod>
     <priority>0.5</priority>
   </url>
   <url>
@@ -347,11 +367,6 @@
   </url>
   <url>
     <loc>https://membrezweiler.com/labs/SOCL3633_Lab15_CountTheWords.html</loc>
-    <lastmod>2026-10-23</lastmod>
-    <priority>0.5</priority>
-  </url>
-  <url>
-    <loc>https://membrezweiler.com/labs/WCC_Lab10_ThePaycheck_Texas.html</loc>
     <lastmod>2026-10-23</lastmod>
     <priority>0.5</priority>
   </url>

@@ -12,7 +12,7 @@ Upload the entire contents of this folder to your host so that `index.html` sits
 
 **GitHub Pages.** Create a repository, upload these files to the root of the default branch, turn on Pages in the repository settings, and add the custom domain there.
 
-Whichever you pick, confirm afterward that `https://membrezweiler.com/labs/WCC_Lab01_WhoCounts.html` loads, which tells you the `labs` subfolder came across intact.
+Whichever you pick, confirm afterward that `https://membrezweiler.com/labs/SOCL4733_Lab01_WhoCounts.html` loads, which tells you the `labs` subfolder came across intact.
 
 ## What is in here
 
@@ -30,7 +30,7 @@ assets/css/site.css        The entire design system
 assets/js/site.js          Theme toggle and lab filtering
 assets/img/                Portrait, social share card, favicon
 assets/cv/                 CV in PDF and Word
-labs/                      The 64 lab pages, unmodified
+labs/                      The 67 lab pages
 ```
 
 ## Making changes
@@ -53,7 +53,7 @@ A few items came from sources that disagreed, or that I could not confirm. Worth
 
 2. **Dissertation link.** The research page mentions the NC State ETD collection without linking to it, because I could not verify a stable URL. Paste the real link in when you have it.
 
-3. **White-collar crime course number.** The Spring 2027 white-collar crime course is listed without a number on `cv.html` and `teaching.html`, since the department had not assigned one. Add it when you have it.
+3. **White-collar crime course number.** Added October 25, 2026: the Spring 2027 course is SOCL 4733, and its labs are now named `SOCL4733_LabNN_*.html` in calendar order (fifteen labs, plus the national version of The Paycheck). The old `WCC_Lab*.html` files are in `_superseded/labs/`; do not upload that folder.
 
 4. **The gambling paper in progress.** I described the legal-avoidance paper from your design memo. Check that the description matches where the paper actually landed, and that your coauthors are comfortable with it being listed publicly.
 
